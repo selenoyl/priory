@@ -4,7 +4,10 @@
   "exits": {
     "gate": "priory_gate",
     "village": "village_green",
-    "watch": "watch_post"
+    "watch": "watch_post",
+    "manor": "manor_hall",
+    "grange": "benedictine_grange",
+    "chapel": "pilgrim_road_chapel"
   },
   "actions": {
     "tracks": "Boot-marks and cart grooves overlap. Traffic is heavier than the priory likes to admit."

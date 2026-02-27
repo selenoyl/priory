@@ -4,7 +4,9 @@
   "exits": {
     "cart": "travel_road",
     "church": "parish_church",
-    "market": "market_lane"
+    "market": "market_lane",
+    "shops": "market_shop_lane",
+    "guildhall": "guildhall"
   },
   "actions": {
     "friar": "menu:friar_menu",

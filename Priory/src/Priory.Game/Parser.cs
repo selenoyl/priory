@@ -12,6 +12,7 @@ public enum Intent
     Inventory,
     Status,
     Save,
+    Quests,
     Quit,
     Numeric
 }
@@ -44,6 +45,9 @@ public static class Parser
         ["stats"] = Intent.Status,
         ["priory"] = Intent.Status,
         ["save"] = Intent.Save,
+        ["quests"] = Intent.Quests,
+        ["journal"] = Intent.Quests,
+        ["quest"] = Intent.Quests,
         ["quit"] = Intent.Quit,
         ["exit"] = Intent.Quit
     };

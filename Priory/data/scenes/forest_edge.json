@@ -4,7 +4,9 @@
   "exits": {
     "green": "village_green",
     "deep": "forest_deep",
-    "watch": "watch_post"
+    "watch": "watch_post",
+    "hermitage": "carmelite_hermitage",
+    "chapel": "pilgrim_road_chapel"
   },
   "actions": {
     "patrol": "menu:forest_patrol_menu"

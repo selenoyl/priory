@@ -35,6 +35,8 @@ public sealed class GameState
     public Dictionary<string, int> Counters { get; set; } = new();
     public HashSet<string> Flags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Inventory { get; set; } = new();
+    public HashSet<string> ActiveQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> CompletedQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string? ActiveMenuId { get; set; }
     public string? ActiveTimedId { get; set; }
     public DateTimeOffset? ActiveTimedDeadline { get; set; }
@@ -46,6 +48,9 @@ public sealed class StoryData
     public Dictionary<string, MenuDef> Menus { get; set; } = new();
     public Dictionary<string, TimedDef> Timed { get; set; } = new();
     public Dictionary<string, LifePathDef> LifePaths { get; set; } = new();
+    public Dictionary<string, QuestDef> Quests { get; set; } = new();
+    public Dictionary<string, ItemDef> Items { get; set; } = new();
+    public Dictionary<string, ShopDef> Shops { get; set; } = new();
 }
 
 public sealed class SceneDef
@@ -76,12 +81,16 @@ public sealed class MenuOptionDef
     public Dictionary<string, int>? CounterDelta { get; set; }
     public List<string>? SetFlags { get; set; }
     public List<string>? ClearFlags { get; set; }
+    public List<string>? RequireFlags { get; set; }
+    public List<string>? RequireNotFlags { get; set; }
     public int CoinDelta { get; set; }
     public List<string>? AddItems { get; set; }
     public List<string>? RemoveItems { get; set; }
     public string? NextMenu { get; set; }
     public string? NextTimed { get; set; }
     public string? Script { get; set; }
+    public string? StartQuest { get; set; }
+    public string? CompleteQuest { get; set; }
 }
 
 public sealed class TimedDef
@@ -102,6 +111,36 @@ public sealed class LifePathDef
     public int CoinMax { get; set; }
     public List<string> StarterItems { get; set; } = new();
     public string? IntroMenu { get; set; }
+}
+
+public sealed class QuestDef
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string? Category { get; set; }
+}
+
+public sealed class ItemDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    public int Value { get; set; }
+}
+
+public sealed class ShopDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    public List<ShopStockDef> Stock { get; set; } = new();
+}
+
+public sealed class ShopStockDef
+{
+    public string ItemId { get; set; } = "";
+    public int Price { get; set; }
 }
 
 public sealed record TimedPrompt(string Id, string Prompt, DateTimeOffset Deadline, int DurationSeconds, IReadOnlyList<string> Options);

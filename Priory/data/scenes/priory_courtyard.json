@@ -7,13 +7,17 @@
     "refectory": "priory_refectory",
     "fields": "priory_fields",
     "village": "village_green",
-    "road": "roadside_track"
+    "road": "roadside_track",
+    "friary": "franciscan_friary",
+    "grange": "benedictine_grange",
+    "hospice": "sisters_hospice"
   },
   "actions": {
     "tasks": "menu:task_board_menu",
     "chapter": "script:check_progress",
     "village petition": "script:goto_village_arc",
     "york letters": "script:goto_york_arc",
-    "winter council": "script:goto_winter_arc"
+    "winter council": "script:goto_winter_arc",
+    "quest log": "script:questlog"
   }
 }
