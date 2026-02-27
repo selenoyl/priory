@@ -1,6 +1,6 @@
 {
   "id": "priory_chapel",
-  "text": "The chapel is warm with candle smoke. Psalms echo off stone. Silence here is never empty.",
+  "text": "The chapel smells of beeswax and damp stone. Antiphons rise over cracked plaster, and even unfinished walls feel held by prayer and labor.",
   "exits": {
     "courtyard": "priory_courtyard"
   },

@@ -1,6 +1,6 @@
 {
   "id": "village_inn",
-  "text": "At the inn, ale and rumor move faster than reason. Carters from York bring news and trouble in equal measure.",
+  "text": "At the inn, carters, friars, and reeves trade news over sour ale: tolls, sermons, market fraud, and whose oath can still be trusted.",
   "exits": {
     "green": "village_green"
   },

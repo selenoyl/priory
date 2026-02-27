@@ -1,6 +1,6 @@
 {
   "id": "house",
-  "text": "Your family house is small but orderly: hearth, table, worn beams, and the road calling. Your mother stands by the fire. Your father watches quietly.",
+  "text": "Your father's house is poor but orderly: rushlight, worn psalter, and patched cloak. Rumor says Saint Rose seeks disciplined men for rebuilding and mercy-work.",
   "exits": {
     "outside": "lane"
   },

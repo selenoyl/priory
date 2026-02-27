@@ -41,6 +41,7 @@
 - web server mode (`PRIORY_SERVER_MODE=true`) with session API + lightweight browser client
 - lore-accurate sterling purse display (pounds / shillings / pence) plus Hanse mark exchange at Ravenscar
 - Hanse Letters + Holy Roman Empire (Lübeck / Cologne) expansion arc with doctrinal disputation content
+- additional paced arcs: Avignon Echoes, Bohemian Spark, Cloth and Candle, Road of Shells, Border of Ash, and The Sealed Room
 
 ## Run locally (CLI)
 
@@ -129,6 +130,10 @@ services:
 
 5. **Important**
    - Keep `PRIORY_SAVE_SECRET` stable. Rotating it invalidates previously issued save and party codes.
+
+
+## Arc pacing and cohesion
+Expansion arcs do not all trigger at once. They unlock in staged thresholds through long-form task progression (`check_progress`) so the priory narrative remains coherent and pressure rises season by season.
 
 ## HTTP API quick reference
 

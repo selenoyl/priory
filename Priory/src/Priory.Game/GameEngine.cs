@@ -456,6 +456,24 @@ public sealed class GameEngine
             case "goto_winter_arc":
                 GateArc("arc_longwinter", "long_winter", "Winter has not yet forced the priory into emergency measures.", lines);
                 return;
+            case "goto_avignon_arc":
+                GateArc("arc_avignon", "avignon_chapterhouse", "No Avignon-linked patronal packet has yet reached Saint Rose.", lines);
+                return;
+            case "goto_bohemia_arc":
+                GateArc("arc_bohemia", "bohemian_market", "No credible warning from Prague has yet reached Blackpine.", lines);
+                return;
+            case "goto_cloth_arc":
+                GateArc("arc_cloth", "cloth_ledger_house", "Trade pressure has not yet tightened enough to force new cloth arrangements.", lines);
+                return;
+            case "goto_shells_arc":
+                GateArc("arc_shells", "pilgrim_hostel", "The great pilgrim road has not yet opened through Blackpine.", lines);
+                return;
+            case "goto_border_arc":
+                GateArc("arc_border", "border_refuge", "No border deputation has yet asked Saint Rose for aid.", lines);
+                return;
+            case "goto_sealed_room_arc":
+                GateArc("arc_sealed_room", "priory_sealed_room", "The priory's internal crisis has not yet broken into daylight.", lines);
+                return;
             case "resolve_endgame":
                 ResolveEndgame(lines);
                 return;
@@ -540,6 +558,54 @@ public sealed class GameEngine
         {
             SetWorldFlag("arc_final");
             lines.Add("The first great rebuilding cycle is complete. The priory now faces consequences of everything you have chosen.");
+            return;
+        }
+
+        if (total >= 48 && !_state.Flags.Contains("arc_avignon"))
+        {
+            SetWorldFlag("arc_avignon");
+            StartQuest("avignon_echoes", lines);
+            lines.Add("Sealed letters tied to Avignon patronage arrive with elegant phrasing and perilous conditions.");
+            return;
+        }
+
+        if (total >= 56 && !_state.Flags.Contains("arc_bohemia"))
+        {
+            SetWorldFlag("arc_bohemia");
+            StartQuest("bohemian_spark", lines);
+            lines.Add("Travelers carry troubling reports from Prague: controversy now rides rumor roads faster than carts.");
+            return;
+        }
+
+        if (total >= 64 && !_state.Flags.Contains("arc_cloth"))
+        {
+            SetWorldFlag("arc_cloth");
+            StartQuest("cloth_and_candle", lines);
+            lines.Add("Wool and candle prices convulse; guild delegates now court Saint Rose with polished promises.");
+            return;
+        }
+
+        if (total >= 72 && !_state.Flags.Contains("arc_shells"))
+        {
+            SetWorldFlag("arc_shells");
+            StartQuest("road_of_shells", lines);
+            lines.Add("Pilgrim bands begin to pass through Blackpine, forcing charity and logistics into the same narrow doorway.");
+            return;
+        }
+
+        if (total >= 80 && !_state.Flags.Contains("arc_border"))
+        {
+            SetWorldFlag("arc_border");
+            StartQuest("border_of_ash", lines);
+            lines.Add("A daughter-house near the northern marches begs aid: medicine, mediation, and a steady preacher.");
+            return;
+        }
+
+        if (total >= 88 && !_state.Flags.Contains("arc_sealed_room"))
+        {
+            SetWorldFlag("arc_sealed_room");
+            StartQuest("sealed_room", lines);
+            lines.Add("An internal breach at Saint Rose forces discipline, truth, and mercy into painful collision.");
             return;
         }
 

@@ -21,6 +21,12 @@
     "quest log": "script:questlog",
     "hanse letters": "menu:hanse_packet_menu",
     "reich letters": "menu:reich_letters_menu",
-    "york clerk": "menu:york_clerk_menu"
+    "york clerk": "menu:york_clerk_menu",
+    "avignon echoes": "script:goto_avignon_arc",
+    "bohemian warnings": "script:goto_bohemia_arc",
+    "cloth delegation": "script:goto_cloth_arc",
+    "road of shells": "script:goto_shells_arc",
+    "border ash": "script:goto_border_arc",
+    "sealed room": "script:goto_sealed_room_arc"
   }
 }

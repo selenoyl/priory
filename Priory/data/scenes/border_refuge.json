@@ -1,0 +1,12 @@
+{
+  "id": "border_refuge",
+  "text": "Refugees from the northern marches arrive with burned carts, broken rosaries, and demands for justice that can quickly become vengeance.",
+  "exits": {
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "refugees": "menu:border_refugees_menu",
+    "retaliation": "menu:border_retaliation_menu",
+    "negotiation": "menu:border_negotiation_menu"
+  }
+}
