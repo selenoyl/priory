@@ -1,0 +1,13 @@
+{
+  "id": "house",
+  "text": "You stand in your family house. Your mother is by the hearth. Your father sits at the table. Your pack waits by the door.",
+  "exits": {
+    "outside": "lane"
+  },
+  "actions": {
+    "mother": "menu:mother_menu",
+    "father": "menu:father_menu",
+    "pack": "You shoulder your pack. The cart outside will not wait forever.",
+    "letter": "The sealed letter bears a faded lion crest. It is meant for Saint Rose Priory."
+  }
+}

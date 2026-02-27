@@ -1,0 +1,11 @@
+{
+  "id": "lane",
+  "text": "The air is cold and gray. A cart and driver wait in the lane. Beyond lies Blackpine square.",
+  "exits": {
+    "cart": "square",
+    "square": "square"
+  },
+  "actions": {
+    "driver": "The driver squints at you. 'Saint Rose? Don't be late.'"
+  }
+}

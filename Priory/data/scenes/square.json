@@ -1,0 +1,11 @@
+{
+  "id": "square",
+  "text": "Blackpine market stirs awake. A Franciscan friar stands near the church gate while your cart idles by the well.",
+  "exits": {
+    "cart": "travel",
+    "church": "church"
+  },
+  "actions": {
+    "friar": "menu:friar_menu"
+  }
+}

@@ -1,0 +1,104 @@
+[
+  {
+    "id": "life_path",
+    "prompt": "Choose your life path:",
+    "options": [
+      { "text": "Lay Aspirant — test a vocation among the Dominicans." },
+      { "text": "Scholar's Son — literate and drawn to theology." },
+      { "text": "Former Man-at-Arms — you have known steel and discipline." },
+      { "text": "Merchant's Apprentice — skilled with trade and coin." },
+      { "text": "Farmer's Son — grounded in land and labor." }
+    ]
+  },
+  {
+    "id": "mother_menu",
+    "prompt": "Your mother turns toward you:",
+    "options": [
+      {
+        "text": "Embrace her in silence.",
+        "response": "She holds you tightly. 'Do not lose what is good in you.'",
+        "virtueDelta": { "temperance": 1 }
+      },
+      {
+        "text": "Promise you will return soon.",
+        "response": "She nods but does not trust easy promises.",
+        "virtueDelta": { "justice": 1 }
+      },
+      {
+        "text": "Take your leave.",
+        "response": "The hearth pops once as you step away."
+      }
+    ]
+  },
+  {
+    "id": "father_menu",
+    "prompt": "Your father watches you across the table:",
+    "options": [
+      {
+        "text": "Ask for his final counsel.",
+        "response": "'Do not be ruled by anger. Learn who truly holds power.'",
+        "virtueDelta": { "prudence": 1 },
+        "nextMenu": "pouch_menu"
+      },
+      {
+        "text": "Assure him you are ready.",
+        "response": "'Then stand where you choose,' he says."
+      }
+    ]
+  },
+  {
+    "id": "pouch_menu",
+    "prompt": "He sets down a leather pouch:",
+    "options": [
+      {
+        "text": "Take the pouch.",
+        "response": "You accept 5 additional pennies.",
+        "coinDelta": 5
+      },
+      {
+        "text": "Refuse it.",
+        "response": "He leaves it on the table anyway. Pride has a cost.",
+        "virtueDelta": { "temperance": -1 }
+      }
+    ]
+  },
+  {
+    "id": "friar_menu",
+    "prompt": "The Franciscan greets you: 'Peace to you. You travel?'",
+    "options": [
+      {
+        "text": "Say you seek quiet.",
+        "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'",
+        "virtueDelta": { "temperance": 1, "justice": 1 },
+        "nextTimed": "catch_cart"
+      },
+      {
+        "text": "Thank him and return to the cart.",
+        "response": "You leave him by the church gate.",
+        "nextScene": "travel"
+      },
+      {
+        "text": "Challenge him about Dominicans.",
+        "response": "He smiles faintly. 'Sharpened minds still need softened hearts.'",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "gate_menu",
+    "prompt": "The elder Dominican comes to the gate:",
+    "options": [
+      {
+        "text": "Present the sealed letter.",
+        "response": "He reads the faded crest and opens the gate. 'The prior will see you.'",
+        "nextScene": "priory_courtyard"
+      },
+      {
+        "text": "Ask to offer service.",
+        "response": "He studies you, then admits you without ceremony.",
+        "virtueDelta": { "justice": 1 },
+        "nextScene": "priory_courtyard"
+      }
+    ]
+  }
+]
