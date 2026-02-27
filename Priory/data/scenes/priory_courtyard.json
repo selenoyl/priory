@@ -18,6 +18,9 @@
     "village petition": "script:goto_village_arc",
     "york letters": "script:goto_york_arc",
     "winter council": "script:goto_winter_arc",
-    "quest log": "script:questlog"
+    "quest log": "script:questlog",
+    "hanse letters": "menu:hanse_packet_menu",
+    "reich letters": "menu:reich_letters_menu",
+    "york clerk": "menu:york_clerk_menu"
   }
 }

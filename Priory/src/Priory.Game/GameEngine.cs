@@ -140,7 +140,7 @@ public sealed class GameEngine
         switch (parsed.Intent)
         {
             case Intent.Help:
-                lines.Add("Commands: look, go <place>, talk/speak <thing>, examine <thing>, inventory, status, quests, party, save, quit.");
+                lines.Add("Commands: look, go <place>, talk/speak <thing>, examine <thing>, inventory, status, quests, party, save, quit. (Harbor exchange: exchange table at Ravenscar.)");
                 break;
             case Intent.Look:
                 lines.Add(CurrentScene().Text);
@@ -462,6 +462,22 @@ public sealed class GameEngine
             case "questlog":
                 lines.Add(QuestLog());
                 return;
+            case "exchange_to_mark":
+                ExchangePenceToMark(lines);
+                return;
+            case "exchange_to_pence":
+                ExchangeMarkToPence(lines);
+                return;
+            case "start_hanse_arc":
+                SetWorldFlag("arc_hanse_letters");
+                StartQuest("hanse_letters_packet", lines);
+                lines.Add("A sealed Hanse packet pulls Saint Rose into coastal contracts and scrutiny.");
+                return;
+            case "start_germany_arc":
+                SetWorldFlag("arc_reich_letters");
+                StartQuest("reich_theology_letters", lines);
+                lines.Add("Letters from the Rhineland studia raise grave theological and pastoral questions.");
+                return;
         }
     }
 
@@ -478,7 +494,7 @@ public sealed class GameEngine
         foreach (var stock in shop.Stock)
         {
             if (!_story.Items.TryGetValue(stock.ItemId, out var item)) continue;
-            lines.Add($"  [{idx}] {item.Name} - {stock.Price} pennies ({item.Description})");
+            lines.Add($"  [{idx}] {item.Name} - {FormatSterling(stock.Price)} ({item.Description})");
             idx++;
         }
         lines.Add("Type the shop action again using its purchase menu to buy specific goods.");
@@ -1084,9 +1100,59 @@ public sealed class GameEngine
     }
 
     private string TimeLine() => $"Day {_state.Day}, {_state.Segment}";
-    private string InventoryLine() => _state.Inventory.Count == 0
-        ? $"{_state.PlayerName} | Coin: {_state.Coin} silver pennies. Inventory: (empty)"
-        : $"{_state.PlayerName} | Coin: {_state.Coin} silver pennies. Inventory: {string.Join(", ", _state.Inventory)}";
+    private string InventoryLine()
+    {
+        var sterling = FormatSterling(_state.Coin);
+        var marks = _state.Counters.GetValueOrDefault("hanse_mark_lubec");
+        var purse = marks > 0
+            ? $"{sterling} and {marks} Lübeck mark(s)"
+            : sterling;
+
+        return _state.Inventory.Count == 0
+            ? $"{_state.PlayerName} | Purse: {purse}. Inventory: (empty)"
+            : $"{_state.PlayerName} | Purse: {purse}. Inventory: {string.Join(", ", _state.Inventory)}";
+    }
+
+
+    private void ExchangePenceToMark(List<string> lines)
+    {
+        const int sterlingPencePerMark = 160;
+        if (_state.Coin < sterlingPencePerMark)
+        {
+            lines.Add("The factor shakes his head: one Lübeck mark requires 160 sterling pennies.");
+            return;
+        }
+
+        _state.Coin -= sterlingPencePerMark;
+        _state.Counters["hanse_mark_lubec"] = _state.Counters.GetValueOrDefault("hanse_mark_lubec") + 1;
+        lines.Add("You exchange 160d for 1 Lübeck mark at Ravenscar's Hanse table.");
+    }
+
+    private void ExchangeMarkToPence(List<string> lines)
+    {
+        const int sterlingPencePerMark = 150;
+        var marks = _state.Counters.GetValueOrDefault("hanse_mark_lubec");
+        if (marks <= 0)
+        {
+            lines.Add("You carry no Lübeck marks to redeem.");
+            return;
+        }
+
+        _state.Counters["hanse_mark_lubec"] = marks - 1;
+        _state.Coin += sterlingPencePerMark;
+        lines.Add("You redeem 1 Lübeck mark for 150d after tolls, weighing fees, and broker's cut.");
+    }
+
+    private static string FormatSterling(int pennies)
+    {
+        var pounds = pennies / 240;
+        var rem = pennies % 240;
+        var shillings = rem / 12;
+        var pence = rem % 12;
+        return pounds > 0
+            ? $"£{pounds} {shillings}s {pence}d ({pennies}d)"
+            : $"{shillings}s {pence}d ({pennies}d)";
+    }
 
     private string PrioryStatusLine() =>
         $"Priory - Food {_state.Priory["food"]}, Morale {_state.Priory["morale"]}, Piety {_state.Priory["piety"]}, Security {_state.Priory["security"]}, Relations {_state.Priory["relations"]}, Treasury {_state.Priory["treasury"]}";

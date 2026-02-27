@@ -39,6 +39,8 @@
 - optional party mode with shareable party codes, shared priory/world state, and cross-player lore remarks
 - quest metadata hooks for future synchronized multi-person quest flows
 - web server mode (`PRIORY_SERVER_MODE=true`) with session API + lightweight browser client
+- lore-accurate sterling purse display (pounds / shillings / pence) plus Hanse mark exchange at Ravenscar
+- Hanse Letters + Holy Roman Empire (Lübeck / Cologne) expansion arc with doctrinal disputation content
 
 ## Run locally (CLI)
 
@@ -75,6 +77,29 @@ Set a real secret in production:
 Saves persist in:
 - `Priory/saves/`
 
+
+### Default Unraid compose (ready to paste)
+
+```yaml
+version: "3.9"
+services:
+  priory-game:
+    build:
+      context: /mnt/user/appdata/priory/Priory
+      dockerfile: Dockerfile
+    image: priory-game:latest
+    container_name: priory-game
+    restart: unless-stopped
+    environment:
+      - PRIORY_SAVE_SECRET=SET_A_LONG_RANDOM_SECRET
+      - PRIORY_SERVER_MODE=true
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+    ports:
+      - "8088:8080"
+    volumes:
+      - /mnt/user/appdata/priory/saves:/app/saves
+```
+
 ## Unraid + Nginx Proxy Manager + Cloudflare (priory.raikes.us)
 
 1. **Unraid pathing**
@@ -83,14 +108,14 @@ Saves persist in:
 
 2. **Deploy compose stack in Unraid**
    - Use Unraid's Docker Compose Manager plugin.
-   - Create stack, paste `Priory/docker-compose.yml`, set secret and deploy.
+   - Create stack, paste `Priory/docker-compose.unraid.yml` (recommended) or adapt `Priory/docker-compose.yml`, set secret and deploy.
 
 3. **Nginx Proxy Manager**
    - Add Proxy Host:
      - Domain: `priory.raikes.us`
      - Scheme: `http`
      - Forward Hostname/IP: your Unraid host LAN IP (or Docker bridge target)
-     - Forward Port: `8088`
+     - Forward Port: `8088` (Priory container)
      - Enable Websockets support (safe default for future features)
    - Request SSL certificate in NPM and force SSL.
 
@@ -100,6 +125,7 @@ Saves persist in:
      - Content: your public IP
      - Proxy: enabled (orange cloud)
    - Ensure your router forwards 80/443 to the Nginx Proxy Manager host.
+   - You do **not** need to expose 8088 publicly on the router when proxying through NPM.
 
 5. **Important**
    - Keep `PRIORY_SAVE_SECRET` stable. Rotating it invalidates previously issued save and party codes.
