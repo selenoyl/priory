@@ -1,0 +1,81 @@
+[
+  {
+    "id": "catch_cart",
+    "prompt": "The cart begins to roll. You have moments.",
+    "seconds": 7,
+    "defaultIndex": 0,
+    "options": [
+      {
+        "text": "Run and climb aboard.",
+        "response": "You catch the rear rail and haul yourself up.",
+        "nextScene": "travel_road"
+      },
+      {
+        "text": "Let it go and remain in Blackpine.",
+        "response": "You stay in the square as the cart leaves. Another ride will cost you time.",
+        "nextScene": "square",
+        "counterDelta": { "missed_cart": 1 }
+      }
+    ]
+  },
+  {
+    "id": "road_ambush",
+    "prompt": "A shadow moves in the tree line. Steel flashes. Choose quickly.",
+    "seconds": 6,
+    "defaultIndex": 3,
+    "options": [
+      {
+        "text": "Stand and scan the trees.",
+        "response": "Your caution spots two attackers before they close.",
+        "virtueDelta": { "prudence": 1 },
+        "prioryDelta": { "security": 1 },
+        "nextScene": "priory_gate"
+      },
+      {
+        "text": "Ready your dagger low.",
+        "response": "You drive one attacker back at close range before the horse bolts past.",
+        "virtueDelta": { "fortitude": 1 },
+        "removeItems": ["Worn arming dagger"],
+        "nextScene": "priory_gate"
+      },
+      {
+        "text": "Shout for the driver to halt.",
+        "response": "Your warning checks panic; both of you survive the bend.",
+        "virtueDelta": { "justice": 1 },
+        "nextScene": "priory_gate"
+      },
+      {
+        "text": "Stay silent and watch.",
+        "response": "You wait, then seize the right moment to steady cart and horse.",
+        "virtueDelta": { "fortitude": 1, "temperance": 1 },
+        "nextScene": "priory_gate"
+      }
+    ]
+  },
+  {
+    "id": "forest_flashpoint",
+    "prompt": "A horn sounds deeper in the pines. Three figures move toward the road workers.",
+    "seconds": 5,
+    "defaultIndex": 0,
+    "options": [
+      {
+        "text": "Call workers back and form a defensive line.",
+        "response": "Your discipline prevents bloodshed and the raiders withdraw.",
+        "virtueDelta": { "fortitude": 1, "justice": 1 },
+        "prioryDelta": { "security": 2, "morale": 1 }
+      },
+      {
+        "text": "Pursue raiders into dense trees.",
+        "response": "You recover stolen tools but lose the trail in marsh ground.",
+        "virtueDelta": { "fortitude": 1 },
+        "prioryDelta": { "security": 1, "morale": -1 }
+      },
+      {
+        "text": "Signal retreat and preserve manpower.",
+        "response": "No one is hurt, but rumors of weakness spread.",
+        "virtueDelta": { "prudence": 1 },
+        "prioryDelta": { "security": -1, "morale": -1, "relations": 1 }
+      }
+    ]
+  }
+]

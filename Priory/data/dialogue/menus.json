@@ -1,0 +1,627 @@
+[
+  {
+    "id": "life_path",
+    "prompt": "Choose your life path:",
+    "options": [
+      { "text": "Lay Aspirant — test a vocation among the Dominicans." },
+      { "text": "Scholar's Son — literate and drawn to theology." },
+      { "text": "Former Man-at-Arms — you have known steel and discipline." },
+      { "text": "Merchant's Apprentice — skilled with trade and coin." },
+      { "text": "Farmer's Son — grounded in land and labor." }
+    ]
+  },
+  {
+    "id": "intro_lay_aspirant_menu",
+    "prompt": "Before leaving, you examine your motives:",
+    "options": [
+      {
+        "text": "Confess fear of false zeal.",
+        "response": "You admit your fear and choose patience over display.",
+        "virtueDelta": { "temperance": 1, "prudence": 1 }
+      },
+      {
+        "text": "Ask for a rule of life from day one.",
+        "response": "You commit to discipline, even when unseen.",
+        "virtueDelta": { "justice": 1, "fortitude": 1 }
+      }
+    ]
+  },
+  {
+    "id": "intro_scholar_menu",
+    "prompt": "Your books are packed. What burden do you carry?",
+    "options": [
+      {
+        "text": "Pride in your learning.",
+        "response": "You resolve to argue less and listen more.",
+        "virtueDelta": { "temperance": 1 }
+      },
+      {
+        "text": "Fear that study is useless to the poor.",
+        "response": "You vow to wed doctrine to mercy.",
+        "virtueDelta": { "justice": 1, "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "intro_arms_menu",
+    "prompt": "Steel memory follows you. What do you choose now?",
+    "options": [
+      {
+        "text": "Use force only as last defense.",
+        "response": "You set a hard boundary against old habits.",
+        "virtueDelta": { "temperance": 1, "justice": 1 }
+      },
+      {
+        "text": "Keep readiness without apology.",
+        "response": "You accept that danger is real, and so is duty.",
+        "virtueDelta": { "fortitude": 1 }
+      }
+    ]
+  },
+  {
+    "id": "intro_merchant_menu",
+    "prompt": "You can smell risk in any ledger. What governs you?",
+    "options": [
+      {
+        "text": "Profit as tool, never master.",
+        "response": "You frame coin as stewardship, not devotion.",
+        "virtueDelta": { "justice": 1, "temperance": 1 }
+      },
+      {
+        "text": "Stability first, sentiment second.",
+        "response": "You lean into hard prudence for hard times.",
+        "virtueDelta": { "prudence": 1, "fortitude": 1 }
+      }
+    ]
+  },
+  {
+    "id": "intro_farmer_menu",
+    "prompt": "Land taught you what words cannot. What lesson leads?",
+    "options": [
+      {
+        "text": "Feed people before winning arguments.",
+        "response": "You prioritize bread, then policy.",
+        "virtueDelta": { "justice": 1, "temperance": 1 }
+      },
+      {
+        "text": "Order first; chaos starves everyone.",
+        "response": "You choose structure, hoping mercy can live inside it.",
+        "virtueDelta": { "fortitude": 1, "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "mother_menu",
+    "prompt": "Your mother turns from the hearth:",
+    "options": [
+      {
+        "text": "Embrace her in silence.",
+        "response": "She holds you tightly. 'Do not lose what is good in you.'",
+        "virtueDelta": { "temperance": 1 }
+      },
+      {
+        "text": "Promise you will return soon.",
+        "response": "She nods, unconvinced but grateful you tried.",
+        "virtueDelta": { "justice": 1 }
+      },
+      {
+        "text": "Ask for her blessing.",
+        "response": "She traces the cross over you and whispers, 'Christ keep your mind clear.'",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "father_menu",
+    "prompt": "Your father studies you across the table:",
+    "options": [
+      {
+        "text": "Ask his final counsel.",
+        "response": "'Do not be ruled by anger. Learn where power truly sits.'",
+        "virtueDelta": { "prudence": 1 },
+        "nextMenu": "pouch_menu"
+      },
+      {
+        "text": "Tell him you are uncertain.",
+        "response": "'Uncertainty can still be honest,' he says.",
+        "virtueDelta": { "temperance": 1 }
+      },
+      {
+        "text": "Assure him you are ready.",
+        "response": "'Then stand where you choose,' he replies."
+      }
+    ]
+  },
+  {
+    "id": "pouch_menu",
+    "prompt": "He places a leather pouch by your hand:",
+    "options": [
+      {
+        "text": "Take the pouch.",
+        "response": "You accept 5 additional pennies.",
+        "coinDelta": 5
+      },
+      {
+        "text": "Refuse it.",
+        "response": "He leaves it there anyway. Pride is expensive.",
+        "virtueDelta": { "temperance": -1 }
+      }
+    ]
+  },
+  {
+    "id": "clerk_menu",
+    "prompt": "The parish clerk lowers his voice:",
+    "options": [
+      {
+        "text": "Offer a coin for the poor box.",
+        "response": "He records your gift and blesses your road.",
+        "coinDelta": -1,
+        "virtueDelta": { "justice": 1, "temperance": 1 }
+      },
+      {
+        "text": "Ask what troubles Blackpine most.",
+        "response": "'Debt, fear, and men who profit from both,' he says.",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "friar_menu",
+    "prompt": "The Franciscan greets you: 'Peace to you. You travel?'",
+    "options": [
+      {
+        "text": "Say you seek quiet.",
+        "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'",
+        "virtueDelta": { "temperance": 1, "justice": 1 },
+        "nextTimed": "catch_cart"
+      },
+      {
+        "text": "Ask him to pray for your road.",
+        "response": "He raises a hand and prays briefly for courage and restraint.",
+        "virtueDelta": { "justice": 1, "fortitude": 1 },
+        "nextTimed": "catch_cart"
+      },
+      {
+        "text": "Challenge him on Dominican severity.",
+        "response": "He smiles faintly. 'Sharpened minds still need softened hearts.'",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "market_dispute_menu",
+    "prompt": "A wool merchant and baker accuse each other of false weights:",
+    "options": [
+      {
+        "text": "Demand both re-weigh in public.",
+        "response": "Public weighing cools tempers and exposes a tampered stone.",
+        "virtueDelta": { "justice": 1 },
+        "prioryDelta": { "relations": 1 }
+      },
+      {
+        "text": "Broker a quick compromise.",
+        "response": "Trade resumes, though both parties feel half-cheated.",
+        "virtueDelta": { "temperance": 1 },
+        "prioryDelta": { "morale": 1 }
+      },
+      {
+        "text": "Walk away; this is not your office yet.",
+        "response": "You leave them to local authority and keep your distance.",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "gate_menu",
+    "prompt": "The elder Dominican comes to the gate:",
+    "options": [
+      {
+        "text": "Present the sealed letter.",
+        "response": "He reads the crest and opens the gate. 'The prior will see you.'",
+        "nextScene": "priory_courtyard"
+      },
+      {
+        "text": "Ask to offer service.",
+        "response": "He studies you, then admits you with reserve.",
+        "virtueDelta": { "justice": 1 },
+        "nextScene": "priory_courtyard"
+      }
+    ]
+  },
+  {
+    "id": "task_board_menu",
+    "prompt": "Saint Rose task board (repeatable):",
+    "options": [
+      {
+        "text": "Preach in Blackpine and roadside chapels.",
+        "script": "task:sermon",
+        "counterDelta": { "task_total": 1 }
+      },
+      {
+        "text": "Study and copy texts in the scriptorium.",
+        "script": "task:study",
+        "counterDelta": { "task_total": 1 }
+      },
+      {
+        "text": "Patrol roads and protect travelers.",
+        "script": "task:patrol",
+        "counterDelta": { "task_total": 1 }
+      },
+      {
+        "text": "Work fields, stores, and accounts.",
+        "script": "task:fields",
+        "counterDelta": { "task_total": 1 }
+      },
+      {
+        "text": "Run charity rounds among parishioners.",
+        "script": "task:charity",
+        "counterDelta": { "task_total": 1 }
+      },
+      {
+        "text": "Return without taking a task.",
+        "response": "You leave the board for now."
+      }
+    ]
+  },
+  {
+    "id": "chapel_prayer_menu",
+    "prompt": "At the chapel rail:",
+    "options": [
+      {
+        "text": "Pray for prudence in judgment.",
+        "response": "You ask for clear sight before clear speech.",
+        "virtueDelta": { "prudence": 1 },
+        "prioryDelta": { "piety": 1 }
+      },
+      {
+        "text": "Pray for fortitude under pressure.",
+        "response": "You ask for courage without hardness.",
+        "virtueDelta": { "fortitude": 1 },
+        "prioryDelta": { "piety": 1 }
+      },
+      {
+        "text": "Pray for mercy toward difficult people.",
+        "response": "You ask for patience when offended.",
+        "virtueDelta": { "temperance": 1, "justice": 1 },
+        "prioryDelta": { "piety": 1 }
+      }
+    ]
+  },
+  {
+    "id": "study_menu",
+    "prompt": "Scriptorium assignment:",
+    "options": [
+      {
+        "text": "Copy disputation notes from York.",
+        "script": "task:study"
+      },
+      {
+        "text": "Prepare a homily on just wages.",
+        "script": "task:study",
+        "virtueDelta": { "justice": 1 }
+      },
+      {
+        "text": "Catalog damaged manuscripts.",
+        "response": "You rescue texts from damp and neglect.",
+        "prioryDelta": { "piety": 1, "treasury": -1 }
+      }
+    ]
+  },
+  {
+    "id": "martin_menu",
+    "prompt": "Brother Martin asks what sort of Dominican you intend to become:",
+    "options": [
+      {
+        "text": "A preacher first.",
+        "response": "'Then your words must be lean and true,' he says.",
+        "virtueDelta": { "justice": 1 }
+      },
+      {
+        "text": "A scholar first.",
+        "response": "'Then learn to read souls as closely as texts.'",
+        "virtueDelta": { "prudence": 1 }
+      },
+      {
+        "text": "A guardian first.",
+        "response": "'Then guard without becoming what you resist.'",
+        "virtueDelta": { "fortitude": 1, "temperance": 1 }
+      }
+    ]
+  },
+  {
+    "id": "refectory_meal_menu",
+    "prompt": "At table, a dispute over rationing begins:",
+    "options": [
+      {
+        "text": "Back stricter rationing before winter.",
+        "response": "Stores improve, but resentment grows.",
+        "prioryDelta": { "food": 2, "morale": -1, "treasury": 1 },
+        "virtueDelta": { "prudence": 1 }
+      },
+      {
+        "text": "Favor broader charity despite risk.",
+        "response": "The village notices your generosity; stores tighten.",
+        "prioryDelta": { "relations": 2, "food": -1, "morale": 1 },
+        "virtueDelta": { "justice": 1 }
+      }
+    ]
+  },
+  {
+    "id": "steward_menu",
+    "prompt": "The steward asks where to direct scarce coin:",
+    "options": [
+      {
+        "text": "Repair mill axle and field ditches.",
+        "response": "A practical investment for hard seasons.",
+        "prioryDelta": { "food": 2, "security": 1, "treasury": -2 }
+      },
+      {
+        "text": "Fund alms and sickhouse supplies.",
+        "response": "Mercy now, uncertainty later.",
+        "prioryDelta": { "relations": 2, "morale": 1, "treasury": -2 }
+      },
+      {
+        "text": "Buy books and wax for study.",
+        "response": "Saint Rose's mind sharpens, though critics call it indulgence.",
+        "prioryDelta": { "piety": 2, "treasury": -2 },
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "fields_labor_menu",
+    "prompt": "Field labor priorities:",
+    "options": [
+      {
+        "text": "Drain lower strip before rain.",
+        "script": "task:fields",
+        "prioryDelta": { "food": 1 }
+      },
+      {
+        "text": "Audit grain stores and tally losses.",
+        "script": "task:fields",
+        "prioryDelta": { "treasury": 1, "security": 1 }
+      },
+      {
+        "text": "Negotiate grazing boundaries with villagers.",
+        "script": "task:fields",
+        "prioryDelta": { "relations": 1, "food": 1 }
+      }
+    ]
+  },
+  {
+    "id": "petition_menu",
+    "prompt": "Village petitioners line up:",
+    "options": [
+      {
+        "text": "Hear inheritance dispute between sisters.",
+        "response": "You broker a settlement with witnesses and written terms.",
+        "virtueDelta": { "justice": 1, "prudence": 1 },
+        "prioryDelta": { "relations": 1 }
+      },
+      {
+        "text": "Prioritize fever outbreak in two cottages.",
+        "script": "task:charity"
+      },
+      {
+        "text": "Investigate extortion claim by road guards.",
+        "script": "task:patrol",
+        "prioryDelta": { "security": 1 }
+      }
+    ]
+  },
+  {
+    "id": "mill_tally_menu",
+    "prompt": "Mill records conflict with grain sacks:",
+    "options": [
+      {
+        "text": "Launch full audit with public witnesses.",
+        "response": "Fraud is exposed; enemies are made.",
+        "virtueDelta": { "justice": 1 },
+        "prioryDelta": { "treasury": 2, "relations": -1, "security": 1 }
+      },
+      {
+        "text": "Settle quietly for restitution.",
+        "response": "Peace is preserved, though trust remains thin.",
+        "virtueDelta": { "temperance": 1 },
+        "prioryDelta": { "treasury": 1, "morale": 1 }
+      }
+    ]
+  },
+  {
+    "id": "inn_carters_menu",
+    "prompt": "Carters from York bring troubling talk:",
+    "options": [
+      {
+        "text": "Pay for detailed road intelligence.",
+        "response": "You buy names, routes, and likely trouble points.",
+        "coinDelta": -2,
+        "prioryDelta": { "security": 2 },
+        "virtueDelta": { "prudence": 1 }
+      },
+      {
+        "text": "Challenge a slanderous rumor publicly.",
+        "response": "You defend Saint Rose in front of the room.",
+        "prioryDelta": { "morale": 1, "relations": 1 },
+        "virtueDelta": { "fortitude": 1 }
+      },
+      {
+        "text": "Listen only, speak little.",
+        "response": "Your silence collects better truth than argument.",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "forest_patrol_menu",
+    "prompt": "Forest patrol choices:",
+    "options": [
+      {
+        "text": "Track raiders to their camp signs.",
+        "script": "task:patrol",
+        "prioryDelta": { "security": 1 }
+      },
+      {
+        "text": "Escort timber workers at dusk.",
+        "script": "task:patrol",
+        "prioryDelta": { "food": 1, "security": 1 }
+      },
+      {
+        "text": "Withdraw and report only.",
+        "response": "You avoid immediate risk but leave initiative to others.",
+        "virtueDelta": { "prudence": 1 }
+      }
+    ]
+  },
+  {
+    "id": "shrine_menu",
+    "prompt": "At the ruined shrine:",
+    "options": [
+      {
+        "text": "Restore it as a roadside prayer point.",
+        "response": "Travelers begin leaving votive wax and safer reports.",
+        "prioryDelta": { "piety": 2, "relations": 1, "treasury": -1 }
+      },
+      {
+        "text": "Use it as concealed watch position.",
+        "response": "Your scouts gain tactical advantage.",
+        "prioryDelta": { "security": 2 },
+        "virtueDelta": { "fortitude": 1 }
+      }
+    ]
+  },
+  {
+    "id": "watch_log_menu",
+    "prompt": "The watch log is sparse and inconsistent:",
+    "options": [
+      {
+        "text": "Standardize reports and shifts.",
+        "response": "Discipline improves and panic falls.",
+        "prioryDelta": { "security": 2, "morale": 1 },
+        "virtueDelta": { "prudence": 1 }
+      },
+      {
+        "text": "Assign brothers to rotate with villagers.",
+        "response": "Shared duty builds trust but strains manpower.",
+        "prioryDelta": { "relations": 2, "security": 1, "morale": -1 }
+      }
+    ]
+  },
+  {
+    "id": "village_crisis_menu",
+    "prompt": "Crisis council policy:",
+    "options": [
+      {
+        "text": "Impose strict grain oversight and guard patrols.",
+        "response": "Order returns quickly, though some call it heavy-handed.",
+        "prioryDelta": { "security": 3, "food": 2, "relations": -1 },
+        "virtueDelta": { "fortitude": 1 }
+      },
+      {
+        "text": "Offer debt relief tied to public oaths.",
+        "response": "Tensions cool; treasury pays the price.",
+        "prioryDelta": { "relations": 3, "morale": 2, "treasury": -3 },
+        "virtueDelta": { "justice": 1 }
+      },
+      {
+        "text": "Split policy: hard audit + targeted alms.",
+        "response": "You balance pressure and mercy with mixed but stable results.",
+        "prioryDelta": { "security": 2, "relations": 1, "morale": 1, "treasury": -1 },
+        "virtueDelta": { "prudence": 1, "temperance": 1 }
+      }
+    ]
+  },
+  {
+    "id": "york_letters_menu",
+    "prompt": "How do you answer York's demands?",
+    "options": [
+      {
+        "text": "Send a rigorous report with legal detail.",
+        "response": "York receives a strong brief; scrutiny increases anyway.",
+        "prioryDelta": { "security": 1, "piety": 1 },
+        "virtueDelta": { "prudence": 1 }
+      },
+      {
+        "text": "Send a pastoral report centered on village reality.",
+        "response": "Some in York are moved; others call it unsystematic.",
+        "prioryDelta": { "relations": 2, "morale": 1 },
+        "virtueDelta": { "justice": 1 }
+      },
+      {
+        "text": "Travel to York personally.",
+        "response": "You prepare for the road and city negotiations.",
+        "nextScene": "york_road"
+      }
+    ]
+  },
+  {
+    "id": "york_road_menu",
+    "prompt": "On the York road:",
+    "options": [
+      {
+        "text": "Travel with armed convoy.",
+        "response": "Safer travel, slower pace, higher cost.",
+        "coinDelta": -2,
+        "prioryDelta": { "security": 1 },
+        "nextScene": "york_outskirts"
+      },
+      {
+        "text": "Travel light and fast.",
+        "response": "You arrive quickly after tense miles.",
+        "virtueDelta": { "fortitude": 1 },
+        "nextScene": "york_outskirts"
+      },
+      {
+        "text": "Return to Saint Rose and send a delegate.",
+        "response": "You preserve local control at the cost of influence in York.",
+        "nextScene": "priory_courtyard"
+      }
+    ]
+  },
+  {
+    "id": "york_contacts_menu",
+    "prompt": "In York, which contact do you cultivate?",
+    "options": [
+      {
+        "text": "Dominican lector at the studium.",
+        "response": "You gain doctrinal support and stricter expectations.",
+        "prioryDelta": { "piety": 2, "security": 1 }
+      },
+      {
+        "text": "Merchant guild notary.",
+        "response": "You secure better trade terms for grain and wax.",
+        "prioryDelta": { "treasury": 3, "food": 1 },
+        "virtueDelta": { "prudence": 1 }
+      },
+      {
+        "text": "Hospital sisters near the gate quarter.",
+        "response": "You return with practical methods for charity and disease control.",
+        "prioryDelta": { "relations": 2, "morale": 2 },
+        "virtueDelta": { "justice": 1 }
+      }
+    ]
+  },
+  {
+    "id": "winter_council_menu",
+    "prompt": "Long-winter emergency policy:",
+    "options": [
+      {
+        "text": "Lock stores and ration hard.",
+        "response": "You preserve supplies, but resentment grows in the village.",
+        "prioryDelta": { "food": 3, "security": 2, "relations": -2, "morale": -1 }
+      },
+      {
+        "text": "Open stores with strict registry.",
+        "response": "You keep trust alive while carrying heavy administrative burden.",
+        "prioryDelta": { "food": -1, "relations": 3, "morale": 2, "security": 1 },
+        "virtueDelta": { "prudence": 1, "justice": 1 }
+      },
+      {
+        "text": "Preserve core stores and expand work-for-bread programs.",
+        "response": "The compromise is imperfect but sustainable.",
+        "prioryDelta": { "food": 1, "morale": 1, "relations": 1, "security": 1 },
+        "virtueDelta": { "temperance": 1 }
+      }
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "village_green",
+  "text": "Blackpine village green sits between mill road and inn lane. Petitioners seek help, judgment, and sometimes advantage.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "inn": "village_inn",
+    "mill": "village_mill",
+    "forest": "forest_edge"
+  },
+  "actions": {
+    "petitioners": "menu:petition_menu",
+    "rumors": "You hear of tax pressure, a missing cart, and new pamphlets in York."
+  }
+}

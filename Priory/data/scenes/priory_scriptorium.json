@@ -1,0 +1,11 @@
+{
+  "id": "priory_scriptorium",
+  "text": "At the scriptorium desks, ink and beeswax mingle. Margins carry debates in cramped Latin hands.",
+  "exits": {
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "study": "menu:study_menu",
+    "brother martin": "menu:martin_menu"
+  }
+}

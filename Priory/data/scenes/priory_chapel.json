@@ -1,0 +1,11 @@
+{
+  "id": "priory_chapel",
+  "text": "The chapel is warm with candle smoke. Psalms echo off stone. Silence here is never empty.",
+  "exits": {
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "pray": "menu:chapel_prayer_menu",
+    "altar": "The altar cloth is repaired in three places—careful work, not poverty without dignity."
+  }
+}

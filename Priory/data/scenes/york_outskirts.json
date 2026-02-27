@@ -1,0 +1,11 @@
+{
+  "id": "york_outskirts",
+  "text": "At York's outskirts, law, trade, and theology collide. You cannot solve the city, but you can return with clarity and allies.",
+  "exits": {
+    "road": "york_road",
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "contacts": "menu:york_contacts_menu"
+  }
+}

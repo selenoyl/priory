@@ -1,0 +1,13 @@
+{
+  "id": "house",
+  "text": "Your family house is small but orderly: hearth, table, worn beams, and the road calling. Your mother stands by the fire. Your father watches quietly.",
+  "exits": {
+    "outside": "lane"
+  },
+  "actions": {
+    "mother": "menu:mother_menu",
+    "father": "menu:father_menu",
+    "pack": "You shoulder your pack. The leather creaks softly.",
+    "letter": "The sealed letter bears a faded lion crest and the words: To Saint Rose Priory."
+  }
+}

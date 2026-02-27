@@ -1,0 +1,12 @@
+{
+  "id": "roadside_track",
+  "text": "A narrow track runs between priory wall and woodland edge. It leads toward the village and watch-post.",
+  "exits": {
+    "gate": "priory_gate",
+    "village": "village_green",
+    "watch": "watch_post"
+  },
+  "actions": {
+    "tracks": "Boot-marks and cart grooves overlap. Traffic is heavier than the priory likes to admit."
+  }
+}
