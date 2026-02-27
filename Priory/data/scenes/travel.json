@@ -1,7 +1,0 @@
-{
-  "id": "travel",
-  "text": "Leaving Blackpine, the road narrows between pines. The driver mutters: 'Uneasy road today.'",
-  "exits": {},
-  "actions": {},
-  "enterTimed": "road_ambush"
-}
