@@ -1,0 +1,42 @@
+{
+  "1_lay_aspirant": {
+    "name": "Lay Aspirant",
+    "description": "You go to test a vocation among the Dominicans.",
+    "virtueDelta": { "justice": 2, "temperance": 1 },
+    "coinMin": 2,
+    "coinMax": 6,
+    "starterItems": ["Psalter (worn)", "Small wooden rosary", "Plain tunic"]
+  },
+  "2_scholar_son": {
+    "name": "Scholar's Son",
+    "description": "Literate, modest Latin, drawn to study.",
+    "virtueDelta": { "prudence": 3, "temperance": 1 },
+    "coinMin": 4,
+    "coinMax": 8,
+    "starterItems": ["Ink-stained notebook", "Psalter (worn)"]
+  },
+  "3_former_man_at_arms": {
+    "name": "Former Man-at-Arms",
+    "description": "You have known steel and discipline.",
+    "virtueDelta": { "fortitude": 3, "prudence": 1, "temperance": -1 },
+    "coinMin": 5,
+    "coinMax": 9,
+    "starterItems": ["Worn arming dagger", "Patched wool cloak", "Small wooden rosary", "Sealed letter with faded crest"]
+  },
+  "4_merchant_apprentice": {
+    "name": "Merchant's Apprentice",
+    "description": "Trade and negotiation come naturally.",
+    "virtueDelta": { "temperance": 2, "prudence": 1 },
+    "coinMin": 8,
+    "coinMax": 14,
+    "starterItems": ["Ledger scraps", "Small scale weights"]
+  },
+  "5_farmer_son": {
+    "name": "Farmer's Son",
+    "description": "You know land, weather, and toil.",
+    "virtueDelta": { "fortitude": 1, "justice": 1 },
+    "coinMin": 3,
+    "coinMax": 7,
+    "starterItems": ["Work gloves", "Farm knife"]
+  }
+}
