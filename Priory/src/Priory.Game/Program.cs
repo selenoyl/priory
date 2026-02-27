@@ -26,12 +26,12 @@ if (!string.IsNullOrWhiteSpace(resumeCode))
     Console.WriteLine(message);
     if (!resumed)
     {
-        engine.StartNewGame();
+        SetupNewGame(engine);
     }
 }
 else
 {
-    engine.StartNewGame();
+    SetupNewGame(engine);
 }
 
 while (true)
@@ -63,5 +63,55 @@ while (true)
         {
             Console.WriteLine(line);
         }
+    }
+}
+
+static void SetupNewGame(GameEngine engine)
+{
+    var playerName = PromptRequired("Choose your character name: ");
+
+    Console.WriteLine("Choose mode:");
+    Console.WriteLine("  1) Solo journey");
+    Console.WriteLine("  2) Create party");
+    Console.WriteLine("  3) Join party");
+    Console.Write("Selection: ");
+
+    var mode = Console.ReadLine()?.Trim();
+    switch (mode)
+    {
+        case "2":
+            var partyCode = engine.CreateParty();
+            Console.WriteLine($"Party created. Share this code with a friend: {partyCode}");
+            break;
+        case "3":
+            Console.Write("Enter party code: ");
+            var joinCode = Console.ReadLine()?.Trim() ?? "";
+            if (!engine.JoinParty(joinCode, out var joinMessage))
+            {
+                Console.WriteLine(joinMessage);
+                Console.WriteLine("Continuing in solo mode.");
+                engine.UseSoloMode();
+            }
+            else
+            {
+                Console.WriteLine(joinMessage);
+            }
+            break;
+        default:
+            engine.UseSoloMode();
+            break;
+    }
+
+    engine.StartNewGame(playerName);
+}
+
+static string PromptRequired(string prompt)
+{
+    while (true)
+    {
+        Console.Write(prompt);
+        var value = Console.ReadLine()?.Trim();
+        if (!string.IsNullOrWhiteSpace(value)) return value;
+        Console.WriteLine("A name is required.");
     }
 }

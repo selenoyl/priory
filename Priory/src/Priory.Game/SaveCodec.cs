@@ -13,27 +13,40 @@ public sealed class SaveCodec
     }
 
     public string MakeCode(string saveId)
-    {
-        using var hmac = new HMACSHA256(_secret);
-        var sig = hmac.ComputeHash(Encoding.UTF8.GetBytes(saveId));
-        var shortSig = Convert.ToHexString(sig)[..8];
-        var raw = saveId + shortSig;
-        var groups = Enumerable.Range(0, (int)Math.Ceiling(raw.Length / 4d))
-            .Select(i => raw.Substring(i * 4, Math.Min(4, raw.Length - i * 4)));
-        return "BP-" + string.Join('-', groups);
-    }
+        => MakeSignedCode("BP", saveId, 10);
 
     public string VerifyCode(string code)
+        => VerifySignedCode("BP", code, 10);
+
+    public string MakePartyCode(string partyId)
+        => MakeSignedCode("PT", partyId, 12);
+
+    public string VerifyPartyCode(string code)
+        => VerifySignedCode("PT", code, 12);
+
+    private string MakeSignedCode(string prefix, string value, int expectedLength)
     {
-        var compact = code.Trim().ToUpperInvariant().Replace("BP-", "").Replace("-", "");
-        if (compact.Length < 18) throw new InvalidOperationException("Bad code");
-        var saveId = compact[..10];
-        var sig = compact[10..18];
+        if (value.Length != expectedLength) throw new InvalidOperationException("Unexpected id length");
         using var hmac = new HMACSHA256(_secret);
-        var expect = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(saveId)))[..8];
+        var sig = hmac.ComputeHash(Encoding.UTF8.GetBytes(value));
+        var shortSig = Convert.ToHexString(sig)[..8];
+        var raw = value + shortSig;
+        var groups = Enumerable.Range(0, (int)Math.Ceiling(raw.Length / 4d))
+            .Select(i => raw.Substring(i * 4, Math.Min(4, raw.Length - i * 4)));
+        return prefix + "-" + string.Join('-', groups);
+    }
+
+    private string VerifySignedCode(string prefix, string code, int expectedLength)
+    {
+        var compact = code.Trim().ToUpperInvariant().Replace(prefix + "-", "").Replace("-", "");
+        if (compact.Length < expectedLength + 8) throw new InvalidOperationException("Bad code");
+        var id = compact[..expectedLength];
+        var sig = compact[expectedLength..(expectedLength + 8)];
+        using var hmac = new HMACSHA256(_secret);
+        var expect = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(id)))[..8];
         if (!sig.Equals(expect, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Signature mismatch");
-        return saveId;
+        return id;
     }
 
     public string StateFingerprint(string stateJson)

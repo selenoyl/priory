@@ -36,6 +36,8 @@
 - quest log (active/completed)
 - item economy + scripted shops
 - signed save/resume codes (`PRIORY_SAVE_SECRET`)
+- optional party mode with shareable party codes, shared priory/world state, and cross-player lore remarks
+- quest metadata hooks for future synchronized multi-person quest flows
 
 ## Run locally
 
@@ -51,7 +53,10 @@ Useful commands in-game:
 - `inventory`
 - `status`
 - `quests`
+- `party`
 - `save`
+
+On a new game you will be prompted to set a character name and choose solo, create-party, or join-party mode.
 
 ## Docker
 

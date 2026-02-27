@@ -18,9 +18,11 @@ public sealed class GameEngine
     private readonly StoryData _story;
     private readonly string _saveRoot;
     private readonly SaveCodec _codec;
+    private readonly PartyRepository _partyRepo;
     private readonly Random _rng = new();
 
     private GameState _state = new();
+    private PartyState? _partyState;
     private TimedDef? _activeTimed;
     private List<int>? _activeTimedOptionIndexes;
 
@@ -31,16 +33,54 @@ public sealed class GameEngine
         _story = story;
         _saveRoot = saveRoot;
         _codec = codec;
+        _partyRepo = new PartyRepository(saveRoot, codec);
     }
 
-    public void StartNewGame()
+    public string? ActivePartyCode { get; private set; }
+
+    public bool IsPartyMode => _partyState is not null;
+
+    public void StartNewGame(string playerName)
     {
-        _state = new GameState();
+        _state = new GameState
+        {
+            PlayerName = string.IsNullOrWhiteSpace(playerName) ? "Pilgrim" : playerName.Trim()
+        };
+        AttachSharedState();
         IsEnded = false;
         _state.SceneId = "intro";
         _state.ActiveMenuId = "life_path";
+        RegisterPartyMember();
+        PersistParty();
+        Console.WriteLine($"Welcome, {_state.PlayerName}.");
+        if (IsPartyMode)
+            Console.WriteLine($"Party bound to Saint Rose with code: {ActivePartyCode}");
         Console.WriteLine(CurrentScene().Text);
         Console.WriteLine(RenderMenu(_story.Menus["life_path"]));
+    }
+
+    public string CreateParty()
+    {
+        var created = _partyRepo.CreateParty();
+        _partyState = created.Party;
+        ActivePartyCode = created.PartyCode;
+        return created.PartyCode;
+    }
+
+    public bool JoinParty(string partyCode, out string message)
+    {
+        if (!_partyRepo.TryLoadByCode(partyCode, out var party, out message) || party is null)
+            return false;
+
+        _partyState = party;
+        ActivePartyCode = partyCode.Trim();
+        return true;
+    }
+
+    public void UseSoloMode()
+    {
+        _partyState = null;
+        ActivePartyCode = null;
     }
 
     public bool TryResume(string code, out string message)
@@ -56,8 +96,21 @@ public sealed class GameEngine
             }
 
             _state = JsonSerializer.Deserialize<GameState>(File.ReadAllText(path)) ?? new GameState();
+            if (!string.IsNullOrWhiteSpace(_state.PartyId) && _partyRepo.TryLoadById(_state.PartyId, out var shared) && shared is not null)
+            {
+                _partyState = shared;
+                ActivePartyCode = _codec.MakePartyCode(shared.PartyId);
+                AttachSharedState();
+            }
+            else
+            {
+                _partyState = null;
+                ActivePartyCode = null;
+            }
+
+            RegisterPartyMember();
             IsEnded = false;
-            message = "Resumed saved journey.";
+            message = $"Resumed saved journey for {_state.PlayerName}.";
             Console.WriteLine(CurrentScene().Text);
             Console.WriteLine(ExitLine(CurrentScene()));
             Console.WriteLine(TimeLine());
@@ -74,6 +127,7 @@ public sealed class GameEngine
 
     public EngineOutput HandleInput(string raw)
     {
+        SyncPartyState();
         var lines = new List<string>();
         var parsed = Parser.Parse(raw);
 
@@ -86,11 +140,12 @@ public sealed class GameEngine
         switch (parsed.Intent)
         {
             case Intent.Help:
-                lines.Add("Commands: look, go <place>, talk/speak <thing>, examine <thing>, inventory, status, quests, save, quit.");
+                lines.Add("Commands: look, go <place>, talk/speak <thing>, examine <thing>, inventory, status, quests, party, save, quit.");
                 break;
             case Intent.Look:
                 lines.Add(CurrentScene().Text);
                 lines.Add(ExitLine(CurrentScene()));
+                AppendPartyLoreRumors(lines);
                 lines.Add(TimeLine());
                 break;
             case Intent.Inventory:
@@ -103,6 +158,9 @@ public sealed class GameEngine
                 break;
             case Intent.Save:
                 lines.Add(SaveNow());
+                break;
+            case Intent.Party:
+                lines.Add(PartyStatusLine());
                 break;
             case Intent.Quests:
                 lines.Add(QuestLog());
@@ -122,6 +180,7 @@ public sealed class GameEngine
                     lines.Add(QuestLog());
                     break;
                 }
+                AppendPartyLoreRumors(lines);
                 HandleAction(parsed.Target, lines);
                 break;
             default:
@@ -129,12 +188,14 @@ public sealed class GameEngine
                 break;
         }
 
+        PersistParty();
         var timedPrompt = MaybeActivateTimed(lines);
         return new(lines, timedPrompt);
     }
 
     public EngineOutput ResolveTimed(int selected)
     {
+        SyncPartyState();
         var lines = new List<string>();
         if (_activeTimed is null)
             return new(new List<string> { "No timed event is active." });
@@ -166,6 +227,7 @@ public sealed class GameEngine
         _state.ActiveTimedDeadline = null;
 
         AdvanceTime(lines, 1);
+        PersistParty();
         return new(lines, MaybeActivateTimed(lines));
     }
 
@@ -175,11 +237,16 @@ public sealed class GameEngine
         if (!_story.Menus.TryGetValue(menuId, out var menu))
         {
             _state.ActiveMenuId = null;
+            PersistParty();
             return new(new List<string> { "Menu missing; continuing." });
         }
 
         if (parsed.Intent == Intent.Save)
-            return new(new List<string> { SaveNow(), RenderMenu(menu) });
+        {
+            var output = new EngineOutput(new List<string> { SaveNow(), RenderMenu(menu) });
+            PersistParty();
+            return output;
+        }
 
         if (parsed.Intent != Intent.Numeric)
             return new(new List<string> { "Choose a number.", RenderMenu(menu) });
@@ -196,6 +263,7 @@ public sealed class GameEngine
         if (menu.Id == "life_path")
         {
             ApplyLifePath(available[index].i, lines);
+            PersistParty();
             return new(lines, MaybeActivateTimed(lines));
         }
 
@@ -231,6 +299,7 @@ public sealed class GameEngine
         _state.SceneId = "house";
         lines.Add(CurrentScene().Text);
         lines.Add(ExitLine(CurrentScene()));
+        AppendPartyLoreRumors(lines);
 
         if (!string.IsNullOrWhiteSpace(lp.IntroMenu))
         {
@@ -307,7 +376,10 @@ public sealed class GameEngine
 
         if (option.SetFlags is not null)
             foreach (var flag in option.SetFlags)
-                _state.Flags.Add(flag);
+            {
+                if (_state.Flags.Add(flag))
+                    RecordLoreEvent($"{_state.PlayerName} set events in motion: {LoreFriendlyFlag(flag)}");
+            }
 
         if (option.ClearFlags is not null)
             foreach (var flag in option.ClearFlags)
@@ -418,7 +490,7 @@ public sealed class GameEngine
 
         if (total >= 8 && !_state.Flags.Contains("arc_village"))
         {
-            _state.Flags.Add("arc_village");
+            SetWorldFlag("arc_village");
             StartQuest("village_petitions", lines);
             lines.Add("Word spreads through Blackpine: the priory's labors are changing village life. New disputes and petitions arrive.");
             return;
@@ -426,7 +498,7 @@ public sealed class GameEngine
 
         if (total >= 16 && !_state.Flags.Contains("arc_orders"))
         {
-            _state.Flags.Add("arc_orders");
+            SetWorldFlag("arc_orders");
             StartQuest("orders_concord", lines);
             lines.Add("Franciscans, Carmelite travelers, and local Benedictine agents each seek influence in Blackpine.");
             return;
@@ -434,7 +506,7 @@ public sealed class GameEngine
 
         if (total >= 24 && !_state.Flags.Contains("arc_york"))
         {
-            _state.Flags.Add("arc_york");
+            SetWorldFlag("arc_york");
             StartQuest("york_deputation", lines);
             lines.Add("A Dominican courier arrives from York with letters on doctrine, debt, and disorder. The stakes rise.");
             return;
@@ -442,7 +514,7 @@ public sealed class GameEngine
 
         if (total >= 32 && !_state.Flags.Contains("arc_longwinter"))
         {
-            _state.Flags.Add("arc_longwinter");
+            SetWorldFlag("arc_longwinter");
             StartQuest("winter_mercy", lines);
             lines.Add("A hard winter sets in. Supplies tighten, rumors multiply, and Saint Rose must decide what to protect first.");
             return;
@@ -450,7 +522,7 @@ public sealed class GameEngine
 
         if (total >= 40 && !_state.Flags.Contains("arc_final"))
         {
-            _state.Flags.Add("arc_final");
+            SetWorldFlag("arc_final");
             lines.Add("The first great rebuilding cycle is complete. The priory now faces consequences of everything you have chosen.");
             return;
         }
@@ -550,8 +622,18 @@ public sealed class GameEngine
     {
         if (!_story.Quests.TryGetValue(questId, out var q)) return;
         if (_state.CompletedQuests.Contains(questId) || _state.ActiveQuests.Contains(questId)) return;
+
+        var memberCount = _partyState?.Members.Count ?? 1;
+        if (q.MinPartySize > memberCount)
+        {
+            lines.Add($"[Quest Locked] {q.Title} requires at least {q.MinPartySize} companions in party.");
+            return;
+        }
+
         _state.ActiveQuests.Add(questId);
         lines.Add($"[Quest Started] {q.Title}: {q.Description}");
+        if (q.RequiresSynchronizedParty)
+            lines.Add("[Co-op Hook] This quest can later enforce synchronized real-time party participation.");
     }
 
     private void CompleteQuest(string questId, List<string> lines)
@@ -910,10 +992,101 @@ public sealed class GameEngine
         }
     }
 
+    private void AttachSharedState()
+    {
+        if (_partyState is null)
+        {
+            _state.PartyId = null;
+            return;
+        }
+
+        _state.PartyId = _partyState.PartyId;
+        _state.Priory = _partyState.Priory;
+        _state.Counters = _partyState.Counters;
+        _state.Flags = _partyState.Flags;
+        _state.ActiveQuests = _partyState.ActiveQuests;
+        _state.CompletedQuests = _partyState.CompletedQuests;
+    }
+
+    private void SyncPartyState()
+    {
+        if (_partyState is null || string.IsNullOrWhiteSpace(_state.PartyId)) return;
+        if (_partyRepo.TryLoadById(_state.PartyId, out var latest) && latest is not null)
+        {
+            _partyState = latest;
+            AttachSharedState();
+            RegisterPartyMember();
+        }
+    }
+
+    private void PersistParty()
+    {
+        if (_partyState is null) return;
+        RegisterPartyMember();
+        _partyRepo.Save(_partyState);
+    }
+
+    private void RegisterPartyMember()
+    {
+        if (_partyState is null) return;
+        _partyState.Members[_state.PlayerName] = new PartyMemberProfile
+        {
+            Name = _state.PlayerName,
+            LastSceneId = _state.SceneId,
+            LastSeenUtc = DateTimeOffset.UtcNow
+        };
+    }
+
+    private void SetWorldFlag(string flag)
+    {
+        if (_state.Flags.Add(flag))
+            RecordLoreEvent($"{_state.PlayerName} changed the course of Blackpine: {LoreFriendlyFlag(flag)}");
+    }
+
+    private void RecordLoreEvent(string summary)
+    {
+        if (_partyState is null) return;
+        _partyState.LoreEvents.Add(new LoreEvent
+        {
+            ActorName = _state.PlayerName,
+            Summary = summary,
+            OccurredAtUtc = DateTimeOffset.UtcNow
+        });
+
+        if (_partyState.LoreEvents.Count > 100)
+            _partyState.LoreEvents = _partyState.LoreEvents.TakeLast(100).ToList();
+    }
+
+    private void AppendPartyLoreRumors(List<string> lines)
+    {
+        if (_partyState is null) return;
+        var unseen = _partyState.LoreEvents
+            .Where(e => !e.ActorName.Equals(_state.PlayerName, StringComparison.OrdinalIgnoreCase))
+            .Where(e => !_state.SeenLoreEventIds.Contains(e.Id))
+            .Take(2)
+            .ToList();
+
+        foreach (var lore in unseen)
+        {
+            lines.Add($"A local quietly mentions that {lore.Summary}");
+            _state.SeenLoreEventIds.Add(lore.Id);
+        }
+    }
+
+    private string LoreFriendlyFlag(string flag)
+        => flag.Replace("_", " ");
+
+    private string PartyStatusLine()
+    {
+        if (_partyState is null) return "You travel alone. Use multiplayer setup on launch to create or join a party.";
+        var members = _partyState.Members.Keys.OrderBy(x => x).ToArray();
+        return $"Party active ({_partyState.PartyId}) with {members.Length} companion(s): {string.Join(", ", members)}";
+    }
+
     private string TimeLine() => $"Day {_state.Day}, {_state.Segment}";
     private string InventoryLine() => _state.Inventory.Count == 0
-        ? $"Coin: {_state.Coin} silver pennies. Inventory: (empty)"
-        : $"Coin: {_state.Coin} silver pennies. Inventory: {string.Join(", ", _state.Inventory)}";
+        ? $"{_state.PlayerName} | Coin: {_state.Coin} silver pennies. Inventory: (empty)"
+        : $"{_state.PlayerName} | Coin: {_state.Coin} silver pennies. Inventory: {string.Join(", ", _state.Inventory)}";
 
     private string PrioryStatusLine() =>
         $"Priory - Food {_state.Priory["food"]}, Morale {_state.Priory["morale"]}, Piety {_state.Priory["piety"]}, Security {_state.Priory["security"]}, Relations {_state.Priory["relations"]}, Treasury {_state.Priory["treasury"]}";
@@ -928,6 +1101,7 @@ public sealed class GameEngine
 
     private string SaveNow()
     {
+        PersistParty();
         var saveId = Convert.ToHexString(RandomNumberGenerator.GetBytes(5));
         var path = Path.Combine(_saveRoot, saveId + ".json");
         File.WriteAllText(path, JsonSerializer.Serialize(_state, new JsonSerializerOptions { WriteIndented = true }));

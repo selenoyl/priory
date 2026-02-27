@@ -14,6 +14,7 @@ public enum Intent
     Save,
     Quests,
     Quit,
+    Party,
     Numeric
 }
 
@@ -49,7 +50,9 @@ public static class Parser
         ["journal"] = Intent.Quests,
         ["quest"] = Intent.Quests,
         ["quit"] = Intent.Quit,
-        ["exit"] = Intent.Quit
+        ["exit"] = Intent.Quit,
+        ["party"] = Intent.Party,
+        ["companions"] = Intent.Party
     };
 
     public static ParsedInput Parse(string input)

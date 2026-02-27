@@ -11,6 +11,8 @@ public enum TimeSegment
 
 public sealed class GameState
 {
+    public string PlayerName { get; set; } = "Pilgrim";
+    public string? PartyId { get; set; }
     public string SceneId { get; set; } = "intro";
     public string? LifePath { get; set; }
     public int Coin { get; set; }
@@ -40,6 +42,43 @@ public sealed class GameState
     public string? ActiveMenuId { get; set; }
     public string? ActiveTimedId { get; set; }
     public DateTimeOffset? ActiveTimedDeadline { get; set; }
+    public HashSet<string> SeenLoreEventIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class PartyState
+{
+    public string PartyId { get; set; } = "";
+    public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public Dictionary<string, int> Priory { get; set; } = new()
+    {
+        ["food"] = 50,
+        ["morale"] = 50,
+        ["piety"] = 50,
+        ["security"] = 50,
+        ["relations"] = 50,
+        ["treasury"] = 30
+    };
+    public Dictionary<string, int> Counters { get; set; } = new();
+    public HashSet<string> Flags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> ActiveQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> CompletedQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<LoreEvent> LoreEvents { get; set; } = new();
+    public Dictionary<string, PartyMemberProfile> Members { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class LoreEvent
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string ActorName { get; set; } = "A companion";
+    public string Summary { get; set; } = "A choice changed Blackpine.";
+    public DateTimeOffset OccurredAtUtc { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class PartyMemberProfile
+{
+    public string Name { get; set; } = "Pilgrim";
+    public string LastSceneId { get; set; } = "intro";
+    public DateTimeOffset LastSeenUtc { get; set; } = DateTimeOffset.UtcNow;
 }
 
 public sealed class StoryData
@@ -119,6 +158,8 @@ public sealed class QuestDef
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
     public string? Category { get; set; }
+    public int MinPartySize { get; set; } = 1;
+    public bool RequiresSynchronizedParty { get; set; }
 }
 
 public sealed class ItemDef
