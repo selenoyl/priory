@@ -6,6 +6,8 @@
   },
   "actions": {
     "carters": "menu:inn_carters_menu",
-    "keeper": "The innkeeper trusts coin, then consistency, and only later piety."
+    "keeper": "The innkeeper trusts coin, then consistency, and only later piety.",
+    "dice": "script:minigame:tavern_dice",
+    "cards": "script:minigame:tavern_dice"
   }
 }

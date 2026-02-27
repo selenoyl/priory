@@ -7,6 +7,7 @@
   },
   "actions": {
     "factors": "menu:river_factors_menu",
-    "cargo": "menu:river_cargo_menu"
+    "cargo": "menu:river_cargo_menu",
+    "fishing": "script:minigame:fishing"
   }
 }

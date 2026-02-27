@@ -6,6 +6,7 @@
   },
   "actions": {
     "pray": "menu:chapel_prayer_menu",
-    "altar": "The altar cloth is repaired in three places—careful work, not poverty without dignity."
+    "altar": "The altar cloth is repaired in three places\u2014careful work, not poverty without dignity.",
+    "rosary": "script:minigame:rosary"
   }
 }

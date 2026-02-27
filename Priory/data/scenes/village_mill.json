@@ -7,6 +7,7 @@
   },
   "actions": {
     "tallies": "menu:mill_tally_menu",
-    "wheel": "The axle needs repair before next heavy rain."
+    "wheel": "The axle needs repair before next heavy rain.",
+    "fishing": "script:minigame:fishing"
   }
 }

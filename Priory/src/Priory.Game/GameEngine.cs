@@ -22,6 +22,7 @@ public sealed class GameEngine
 
     private GameState _state = new();
     private TimedDef? _activeTimed;
+    private List<int>? _activeTimedOptionIndexes;
 
     public bool IsEnded { get; private set; }
 
@@ -138,22 +139,29 @@ public sealed class GameEngine
         if (_activeTimed is null)
             return new(new List<string> { "No timed event is active." });
 
-        var index = selected - 1;
-        if (index < 0 || index >= _activeTimed.Options.Count)
+        var displayIndex = selected - 1;
+        int index;
+        if (_activeTimedOptionIndexes is null || displayIndex < 0 || displayIndex >= _activeTimedOptionIndexes.Count)
         {
             index = ChooseDefaultTimedIndex(_activeTimed);
             lines.Add("You hesitate. The moment chooses for you.");
+        }
+        else
+        {
+            index = _activeTimedOptionIndexes[displayIndex];
         }
 
         var option = _activeTimed.Options[index];
         if (!IsOptionAvailable(option, out var why))
         {
             lines.Add($"That path is unavailable: {why}");
-            option = _activeTimed.Options[ChooseDefaultTimedIndex(_activeTimed)];
+            index = ChooseDefaultTimedIndex(_activeTimed);
+            option = _activeTimed.Options[index];
         }
 
         ApplyOption(option, lines);
         _activeTimed = null;
+        _activeTimedOptionIndexes = null;
         _state.ActiveTimedId = null;
         _state.ActiveTimedDeadline = null;
 
@@ -353,6 +361,12 @@ public sealed class GameEngine
         if (script.StartsWith("shop:"))
         {
             OpenShop(script[5..], lines);
+            return;
+        }
+
+        if (script.StartsWith("minigame:"))
+        {
+            PlayMiniGame(script[9..], lines);
             return;
         }
 
@@ -571,6 +585,153 @@ public sealed class GameEngine
         return string.Join("\n", lines);
     }
 
+
+    private void PlayMiniGame(string name, List<string> lines)
+    {
+        switch (name)
+        {
+            case "tavern_dice":
+                PlayTavernDice(lines);
+                return;
+            case "rosary":
+                PrayRosary(lines);
+                return;
+            case "fishing":
+                GoFishing(lines);
+                return;
+            default:
+                lines.Add("That pastime is not available.");
+                return;
+        }
+    }
+
+    private void PlayTavernDice(List<string> lines)
+    {
+        if (_state.Coin <= 0)
+        {
+            lines.Add("You have no coin to wager at the table.");
+            return;
+        }
+
+        var wager = Math.Clamp(_rng.Next(1, 4), 1, _state.Coin);
+        var rounds = _rng.Next(2, 5);
+        var wins = 0;
+        var losses = 0;
+
+        lines.Add($"You sit for tavern dice: {rounds} rounds, {wager} pennies at risk each round.");
+
+        for (var r = 1; r <= rounds; r++)
+        {
+            var yourRoll = _rng.Next(1, 7) + _rng.Next(1, 7) + (_state.Virtues["temperance"] > 2 ? 1 : 0);
+            var houseRoll = _rng.Next(1, 7) + _rng.Next(1, 7);
+            if (yourRoll >= houseRoll)
+            {
+                wins++;
+                lines.Add($"Round {r}: {yourRoll} vs {houseRoll} — you take the pot.");
+            }
+            else
+            {
+                losses++;
+                lines.Add($"Round {r}: {yourRoll} vs {houseRoll} — the house takes it.");
+            }
+        }
+
+        var net = (wins - losses) * wager;
+        _state.Coin += net;
+
+        if (net > 0)
+        {
+            _state.Priory["morale"] = Math.Clamp(_state.Priory["morale"] + 1, 0, 100);
+            lines.Add($"You leave up {net} pennies and with a little local goodwill.");
+        }
+        else if (net < 0)
+        {
+            _state.Virtues["temperance"] = Math.Max(_state.Virtues["temperance"] - 1, -10);
+            lines.Add($"You lose {Math.Abs(net)} pennies. A costly lesson in appetite.");
+        }
+        else
+        {
+            lines.Add("You break even. Not triumph, not ruin.");
+        }
+
+        AdvanceTime(lines, 1);
+    }
+
+    private void PrayRosary(List<string> lines)
+    {
+        var mysteries = new[] { "Joyful", "Sorrowful", "Glorious" };
+        var chosen = mysteries[_rng.Next(mysteries.Length)];
+        var focus = 0;
+        lines.Add($"You pray a {chosen} Rosary with the friars.");
+
+        for (var decade = 1; decade <= 5; decade++)
+        {
+            var recollection = _rng.Next(1, 7) + Math.Max(0, _state.Virtues["prudence"]) + Math.Max(0, _state.Virtues["temperance"]);
+            var distraction = _rng.Next(1, 9) + (_state.Day > 20 ? 1 : 0);
+            if (recollection >= distraction)
+            {
+                focus++;
+                lines.Add($"Decade {decade}: recollection holds.");
+            }
+            else
+            {
+                lines.Add($"Decade {decade}: your mind wanders, then returns.");
+            }
+        }
+
+        _state.Priory["piety"] = Math.Clamp(_state.Priory["piety"] + 1 + (focus / 2), 0, 100);
+        _state.Priory["morale"] = Math.Clamp(_state.Priory["morale"] + (focus >= 3 ? 1 : 0), 0, 100);
+        _state.Virtues["temperance"] += 1;
+        if (focus >= 4) _state.Virtues["prudence"] += 1;
+
+        lines.Add(focus >= 4
+            ? "Prayer steadies your judgment for the day."
+            : "Prayer gives enough peace to continue faithfully.");
+
+        AdvanceTime(lines, 1);
+    }
+
+    private void GoFishing(List<string> lines)
+    {
+        var attempts = 3 + Math.Max(0, _state.Virtues["fortitude"]/3);
+        var catchCount = 0;
+        var fishNames = new[] { "trout", "perch", "pike", "grayling" };
+
+        if (_state.Inventory.Contains("Field Tool Set"))
+            attempts += 1;
+
+        lines.Add($"You fish the cold water for {attempts} attempts.");
+
+        for (var i = 0; i < attempts; i++)
+        {
+            var bite = _rng.Next(1, 11);
+            if (bite >= 6)
+            {
+                catchCount++;
+                lines.Add($"Attempt {i + 1}: you land a {fishNames[_rng.Next(fishNames.Length)]}.");
+            }
+            else
+            {
+                lines.Add($"Attempt {i + 1}: no strike.");
+            }
+        }
+
+        if (catchCount > 0)
+        {
+            var foodGain = Math.Min(4, catchCount);
+            _state.Priory["food"] = Math.Clamp(_state.Priory["food"] + foodGain, 0, 100);
+            _state.Coin += catchCount;
+            lines.Add($"You return with {catchCount} fish. Priory food +{foodGain}; coin +{catchCount} from surplus sale.");
+        }
+        else
+        {
+            lines.Add("You return empty-handed, but with clearer eyes.");
+            _state.Virtues["temperance"] += 1;
+        }
+
+        AdvanceTime(lines, 1);
+    }
+
     private string Pick(params string[] lines) => lines[_rng.Next(lines.Length)];
 
     private string RenderMenu(MenuDef menu)
@@ -675,15 +836,23 @@ public sealed class GameEngine
         _state.ActiveTimedDeadline = DateTimeOffset.UtcNow.AddSeconds(timed.Seconds);
         lines.Add(timed.Prompt);
 
-        var available = timed.Options.Where(o => IsOptionAvailable(o, out _)).ToList();
-        for (var i = 0; i < available.Count; i++)
-            lines.Add($"{i + 1}) {available[i].Text}");
+        _activeTimedOptionIndexes = timed.Options
+            .Select((o, i) => (o, i))
+            .Where(x => IsOptionAvailable(x.o, out _))
+            .Select(x => x.i)
+            .ToList();
 
-        if (available.Count == 0)
+        for (var i = 0; i < _activeTimedOptionIndexes.Count; i++)
+        {
+            var opt = timed.Options[_activeTimedOptionIndexes[i]];
+            lines.Add($"{i + 1}) {opt.Text}");
+        }
+
+        if (_activeTimedOptionIndexes.Count == 0)
             lines.Add("(No options available; default will apply.)");
 
         return new TimedPrompt(timed.Id, timed.Prompt, _state.ActiveTimedDeadline.Value, timed.Seconds,
-            available.Select(o => o.Text).ToArray());
+            _activeTimedOptionIndexes.Select(i => timed.Options[i].Text).ToArray());
     }
 
     private int ChooseDefaultTimedIndex(TimedDef timed)
