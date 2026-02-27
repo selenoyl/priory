@@ -1,0 +1,14 @@
+{
+  "id": "forest_edge",
+  "text": "Pines crowd the path. Light thins under branches. Tracks show both hunters and men who hunt men.",
+  "exits": {
+    "green": "village_green",
+    "deep": "forest_deep",
+    "watch": "watch_post",
+    "hermitage": "carmelite_hermitage",
+    "chapel": "pilgrim_road_chapel"
+  },
+  "actions": {
+    "patrol": "menu:forest_patrol_menu"
+  }
+}

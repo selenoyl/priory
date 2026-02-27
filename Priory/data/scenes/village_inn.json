@@ -1,0 +1,13 @@
+{
+  "id": "village_inn",
+  "text": "At the inn, ale and rumor move faster than reason. Carters from York bring news and trouble in equal measure.",
+  "exits": {
+    "green": "village_green"
+  },
+  "actions": {
+    "carters": "menu:inn_carters_menu",
+    "keeper": "The innkeeper trusts coin, then consistency, and only later piety.",
+    "dice": "script:minigame:tavern_dice",
+    "cards": "script:minigame:tavern_dice"
+  }
+}
