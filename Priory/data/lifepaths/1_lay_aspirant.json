@@ -1,0 +1,17 @@
+{
+  "name": "Lay Aspirant",
+  "description": "You go to test a vocation among the Dominicans.",
+  "virtueDelta": {
+    "justice": 2,
+    "temperance": 1
+  },
+  "coinMin": 2,
+  "coinMax": 6,
+  "starterItems": [
+    "Psalter (worn)",
+    "Small wooden rosary",
+    "Plain tunic"
+  ],
+  "introMenu": "intro_lay_aspirant_menu",
+  "id": "1_lay_aspirant"
+}

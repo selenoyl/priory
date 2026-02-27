@@ -1,0 +1,19 @@
+{
+  "id": "hospice_supply_menu",
+  "prompt": "Supply transfer to hospice:",
+  "options": [
+    {
+      "text": "Deliver healing herbs from your stock.",
+      "response": "The ward reports fewer complications.",
+      "removeItems": ["Healing Herbs"],
+      "prioryDelta": { "relations": 2, "morale": 1 }
+    },
+    {
+      "text": "Purchase emergency bundles from sisters.",
+      "response": "You secure immediate treatment capacity.",
+      "coinDelta": -3,
+      "addItems": ["Healing Herbs"],
+      "prioryDelta": { "morale": 1 }
+    }
+  ]
+}

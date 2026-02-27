@@ -1,0 +1,17 @@
+{
+  "id": "convent_abbess_menu",
+  "prompt": "The abbess asks for support with enclosure and education:",
+  "options": [
+    {
+      "text": "Assign protection for the convent road.",
+      "response": "Harassment incidents drop significantly.",
+      "prioryDelta": { "security": 2, "relations": 1 }
+    },
+    {
+      "text": "Share teaching materials and catechetical notes.",
+      "response": "Instruction quality rises in both houses.",
+      "prioryDelta": { "piety": 1, "relations": 2 },
+      "virtueDelta": { "prudence": 1 }
+    }
+  ]
+}

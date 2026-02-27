@@ -1,0 +1,11 @@
+{
+  "id": "forest_deep",
+  "text": "Deep forest is wet, cold, and too quiet. A ruined shrine leans near an old charcoal pit.",
+  "exits": {
+    "edge": "forest_edge"
+  },
+  "actions": {
+    "shrine": "menu:shrine_menu",
+    "tracks": "You find signs of organized movement: scouts, not wanderers."
+  }
+}
