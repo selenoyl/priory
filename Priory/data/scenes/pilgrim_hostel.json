@@ -1,0 +1,13 @@
+{
+  "id": "pilgrim_hostel",
+  "text": "A rough pilgrims' hostel rises by the road: shell badges, cracked feet, and weary confessions press against limited bread and straw.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "chapel": "pilgrim_road_chapel"
+  },
+  "actions": {
+    "pilgrim band": "menu:shells_pilgrim_band_menu",
+    "relic": "menu:shells_relic_question_menu",
+    "guest rule": "menu:shells_guest_rule_menu"
+  }
+}

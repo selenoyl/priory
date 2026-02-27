@@ -1,0 +1,18 @@
+{
+  "id": "guild_masters_menu",
+  "prompt": "Guild masters demand clarity on tithes and wage expectations:",
+  "options": [
+    {
+      "text": "Publish clear guidance on just wages and contracts.",
+      "response": "Disputes drop as standards become explicit.",
+      "prioryDelta": { "relations": 2, "security": 1 },
+      "virtueDelta": { "justice": 1, "prudence": 1 }
+    },
+    {
+      "text": "Allow local customs to prevail with minimal guidance.",
+      "response": "Peace holds for now, but inequities persist.",
+      "prioryDelta": { "morale": 1, "relations": 1 },
+      "virtueDelta": { "temperance": 1 }
+    }
+  ]
+}

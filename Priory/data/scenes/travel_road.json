@@ -1,0 +1,7 @@
+{
+  "id": "travel_road",
+  "text": "The cart leaves Blackpine. Pines lean over the road. The driver mutters that this stretch has grown dangerous.",
+  "exits": {},
+  "actions": {},
+  "enterTimed": "road_ambush"
+}
