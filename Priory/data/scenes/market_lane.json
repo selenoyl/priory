@@ -1,0 +1,12 @@
+{
+  "id": "market_lane",
+  "text": "The market lane is cramped and noisy. Traders argue over weights while children race between stalls.",
+  "exits": {
+    "square": "square"
+  },
+  "actions": {
+    "dispute": "menu:market_dispute_menu",
+    "stalls": "You note grain prices rising faster than wool prices. Winter could hurt.",
+    "cart": "scene:travel_road"
+  }
+}

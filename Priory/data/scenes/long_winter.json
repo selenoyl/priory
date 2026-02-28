@@ -1,0 +1,11 @@
+{
+  "id": "long_winter",
+  "text": "Winter bites hard. Supplies are thin, tempers shorter, and opportunists bolder. Saint Rose must decide what to preserve and what to surrender.",
+  "exits": {
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "council": "menu:winter_council_menu",
+    "final reckoning": "scene:chapter_end"
+  }
+}

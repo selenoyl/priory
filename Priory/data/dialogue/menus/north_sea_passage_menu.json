@@ -1,0 +1,18 @@
+{
+  "id": "north_sea_passage_menu",
+  "prompt": "The skipper asks whether Saint Rose travels to the Holy Roman Empire now or waits for calmer seas.",
+  "options": [
+    {
+      "text": "Sail now with Hanse convoy escorts.",
+      "response": "You board under convoy bells and make for Lübeck.",
+      "nextScene": "lubeck_kontor",
+      "startQuest": "reich_theology_letters",
+      "script": "start_germany_arc"
+    },
+    {
+      "text": "Delay and gather more testimony in Blackpine first.",
+      "response": "You remain in England to steady records before crossing.",
+      "nextScene": "ravenscar_quay"
+    }
+  ]
+}

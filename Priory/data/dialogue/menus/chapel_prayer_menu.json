@@ -1,0 +1,37 @@
+{
+  "id": "chapel_prayer_menu",
+  "prompt": "At the chapel rail:",
+  "options": [
+    {
+      "text": "Pray for prudence in judgment.",
+      "response": "You ask for clear sight before clear speech.",
+      "virtueDelta": {
+        "prudence": 1
+      },
+      "prioryDelta": {
+        "piety": 1
+      }
+    },
+    {
+      "text": "Pray for fortitude under pressure.",
+      "response": "You ask for courage without hardness.",
+      "virtueDelta": {
+        "fortitude": 1
+      },
+      "prioryDelta": {
+        "piety": 1
+      }
+    },
+    {
+      "text": "Pray for mercy toward difficult people.",
+      "response": "You ask for patience when offended.",
+      "virtueDelta": {
+        "temperance": 1,
+        "justice": 1
+      },
+      "prioryDelta": {
+        "piety": 1
+      }
+    }
+  ]
+}

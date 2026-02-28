@@ -1,0 +1,26 @@
+{
+  "id": "weights_measures_menu",
+  "prompt": "A wool lot fails the scale test. Guild men accuse peasants; peasants accuse false weights.",
+  "options": [
+    {
+      "text": "Side with guild scales and punish the peasants.",
+      "response": "Order is swift but trust in Saint Rose among the poor declines.",
+      "prioryDelta": { "treasury": 2, "relations": -3 },
+      "startQuest": "weights_measures_dispute"
+    },
+    {
+      "text": "Side with townsfolk and force guild restitution.",
+      "response": "Justice for the weak earns gratitude but angers powerful merchants.",
+      "prioryDelta": { "relations": 3, "security": -1 },
+      "virtueDelta": { "justice": 1 },
+      "startQuest": "weights_measures_dispute"
+    },
+    {
+      "text": "Order public reweighing and shared restitution.",
+      "response": "Neither side fully wins; both accept measured restitution under oath.",
+      "prioryDelta": { "relations": 1, "security": 1 },
+      "virtueDelta": { "prudence": 1, "justice": 1 },
+      "startQuest": "weights_measures_dispute"
+    }
+  ]
+}
