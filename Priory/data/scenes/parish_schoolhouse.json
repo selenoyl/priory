@@ -1,0 +1,12 @@
+{
+  "id": "parish_schoolhouse",
+  "text": "A modest room beside the parish wall serves as Blackpine's school: slates, psalms, and cold fingers learning letters.",
+  "exits": {
+    "church": "parish_church",
+    "green": "village_green"
+  },
+  "actions": {
+    "lesson": "menu:school_lesson_menu",
+    "funding": "menu:school_funding_menu"
+  }
+}

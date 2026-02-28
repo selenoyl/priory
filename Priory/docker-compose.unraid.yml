@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  priory-game:
+    build:
+      context: /mnt/user/appdata/priory/Priory
+      dockerfile: Dockerfile
+    image: priory-game:latest
+    container_name: priory-game
+    restart: unless-stopped
+    environment:
+      - PRIORY_SAVE_SECRET=SET_A_LONG_RANDOM_SECRET
+      - PRIORY_SERVER_MODE=true
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+    ports:
+      - "8088:8080"
+    volumes:
+      - /mnt/user/appdata/priory/saves:/app/saves

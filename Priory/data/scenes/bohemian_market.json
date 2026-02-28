@@ -1,0 +1,12 @@
+{
+  "id": "bohemian_market",
+  "text": "At market, talk of Prague controversies divides kin at bread stalls. Some ask for reform, others for suppression, few for patient truth.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "village": "village_green"
+  },
+  "actions": {
+    "visitor": "menu:bohemian_visitor_menu",
+    "bishop demand": "menu:bohemian_bishop_demand_menu"
+  }
+}

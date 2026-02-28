@@ -1,0 +1,11 @@
+{
+  "id": "avignon_chapterhouse",
+  "text": "In a hired chapter chamber near York road, wax seals from Avignon circles and noble houses sit beside priory ledgers. Every word may bind more than coin.",
+  "exits": {
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "patron": "menu:avignon_offer_menu",
+    "trial": "menu:avignon_quiet_trial_menu"
+  }
+}

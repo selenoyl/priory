@@ -1,0 +1,27 @@
+{
+  "id": "mother_menu",
+  "prompt": "Your mother turns from the hearth:",
+  "options": [
+    {
+      "text": "Embrace her in silence.",
+      "response": "She holds you tightly. 'Do not lose what is good in you.'",
+      "virtueDelta": {
+        "temperance": 1
+      }
+    },
+    {
+      "text": "Promise you will return soon.",
+      "response": "She nods, unconvinced but grateful you tried.",
+      "virtueDelta": {
+        "justice": 1
+      }
+    },
+    {
+      "text": "Ask for her blessing.",
+      "response": "She traces the cross over you and whispers, 'Christ keep your mind clear.'",
+      "virtueDelta": {
+        "prudence": 1
+      }
+    }
+  ]
+}
