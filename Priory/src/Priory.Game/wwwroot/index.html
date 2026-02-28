@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PRIORY</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: #111;
+      color: #eee;
+      display: grid;
+      place-items: center;
+      font-size: clamp(14px, 1vw + 10px, 18px);
+    }
+
+    .wrap {
+      width: min(96vw, 1100px);
+      min-height: min(96vh, 900px);
+      padding: clamp(12px, 1.8vw, 24px);
+      display: grid;
+      grid-template-rows: auto 1fr auto auto auto;
+      gap: 12px;
+      position: relative;
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.8rem, 2.2vw + 1rem, 3rem);
+      letter-spacing: 0.12em;
+    }
+
+    .log {
+      width: 100%;
+      min-height: 0;
+      height: 100%;
+      background: #1a1a1a;
+      color: #ddd;
+      border: 1px solid #333;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      white-space: pre-wrap;
+    }
+
+    .entry { line-height: 1.35; }
+    .entry.system { font-style: italic; color: #b7c2d0; }
+    .entry.system.tip { color: #9fc5a8; }
+    .entry.system.error { color: #e7a1a1; }
+    .entry.system.meta { color: #b6b0e6; }
+
+    input, select, button {
+      padding: 8px;
+      margin: 4px 0;
+      background: #1e1e1e;
+      color: #eee;
+      border: 1px solid #444;
+      min-height: 40px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    #cmd { flex: 1; min-width: 220px; }
+
+    .session-modal {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.72);
+      z-index: 10;
+    }
+
+    .session-panel {
+      width: min(92vw, 760px);
+      border: 1px solid #444;
+      background: #161616;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .session-panel h2 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.1rem, 1vw + 0.8rem, 1.7rem);
+      letter-spacing: 0.05em;
+    }
+
+    .session-modal.hidden { display: none; }
+
+    .session-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap: 8px;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 0.82em;
+      color: #bdbdbd;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+
+    .timed-panel {
+      border: 1px solid #5a4a2f;
+      background: #1f1a12;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .timed-panel.hidden { display: none; }
+    .timed-header { display:flex; justify-content: space-between; gap: 8px; color: #eddab0; }
+    .timed-options { display:flex; flex-wrap: wrap; gap: 8px; }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      color: #bdbdbd;
+      font-size: 0.9em;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="sessionModal" class="session-modal">
+    <div class="session-panel">
+      <h2>Go it alone — or gather your order.</h2>
+      <div style="color:#bdbdbd;font-size:0.9em">Use login/register for account play, or guest for quick entry.</div>
+      <div class="session-grid">
+        <div class="field">
+          <label for="name">Character Name</label>
+          <input id="name" placeholder="Character name" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Password (login/register only)" />
+        </div>
+        <div class="field">
+          <label for="authMode">Session Type</label>
+          <select id="authMode">
+            <option value="guest">guest</option>
+            <option value="login">login</option>
+            <option value="register">register</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mode">World Mode</label>
+          <select id="mode">
+            <option value="solo">solo</option>
+            <option value="create">create party</option>
+            <option value="join">join party</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="partyCode">Party Code (join only)</label>
+          <input id="partyCode" placeholder="Party code (for join)" />
+        </div>
+      </div>
+      <button onclick="startSession()">Begin Session</button>
+    </div>
+  </div>
+
+  <h1>PRIORY</h1>
+
+  <div id="log" class="log" aria-live="polite"></div>
+
+  <div id="timedPanel" class="timed-panel hidden">
+    <div class="timed-header">
+      <strong id="timedPrompt"></strong>
+      <span id="timedTimer">00</span>
+    </div>
+    <div id="timedOptions" class="timed-options"></div>
+  </div>
+
+  <div class="row">
+    <input id="cmd" placeholder="Type command..." autocomplete="off" />
+    <button id="sendBtn" onclick="sendCommand()">Send</button>
+  </div>
+
+  <div class="status">
+    <div id="currentUser">Current User: -</div>
+    <div id="currentPartyCode">Party Code: -</div>
+  </div>
+</div>
+
+<script>
+let sessionId = null;
+let activeTimedPrompt = null;
+let timedInterval = null;
+
+function classifyLine(line) {
+  if (!line) return 'system';
+  if (line.startsWith('ERROR:')) return 'system error';
+  if (line.startsWith('Tip:') || line.startsWith('Hint:')) return 'system tip';
+  if (line.startsWith('SAVE CODE:') || line.startsWith('Version:') || line.startsWith('From here you can travel') || line.startsWith('Travel options:')) return 'system meta';
+  if (line.startsWith('Go where?') || line.startsWith('Be specific.') || line.startsWith('Start a session first.') || line.startsWith('Choose a number.')) return 'system';
+  return 'narrative';
+}
+
+function append(lines) {
+  const log = document.getElementById('log');
+  for (const line of lines || []) {
+    const el = document.createElement('div');
+    el.className = `entry ${classifyLine(line)}`;
+    el.textContent = line;
+    log.appendChild(el);
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function focusCommandBox() {
+  const cmd = document.getElementById('cmd');
+  cmd.focus();
+  cmd.setSelectionRange(cmd.value.length, cmd.value.length);
+}
+
+function setSessionDetails(playerName, partyCode) {
+  document.getElementById('currentUser').textContent = `Current User: ${playerName || '-'}`;
+  document.getElementById('currentPartyCode').textContent = `Party Code: ${partyCode || '-'}`;
+}
+
+function setInputEnabled(enabled) {
+  document.getElementById('cmd').disabled = !enabled;
+  document.getElementById('sendBtn').disabled = !enabled;
+}
+
+function clearTimedPrompt() {
+  activeTimedPrompt = null;
+  if (timedInterval) {
+    clearInterval(timedInterval);
+    timedInterval = null;
+  }
+  document.getElementById('timedPanel').classList.add('hidden');
+  setInputEnabled(true);
+}
+
+async function resolveTimed(choice, auto = false) {
+  if (!sessionId || !activeTimedPrompt) return;
+  clearTimedPrompt();
+  if (auto) append(["Tip: time expired, so a default response was chosen."]);
+
+  const timedRes = await fetch(`/api/sessions/${sessionId}/timed`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ choice })
+  });
+  const timedData = await timedRes.json();
+  if (!timedRes.ok) { append([`ERROR: ${timedData.error || 'timed command failed'}`]); return; }
+
+  append(timedData.lines || []);
+  if (timedData.timedPrompt) startTimedPrompt(timedData.timedPrompt);
+  else focusCommandBox();
+}
+
+function startTimedPrompt(promptData) {
+  activeTimedPrompt = promptData;
+  setInputEnabled(false);
+
+  const panel = document.getElementById('timedPanel');
+  panel.classList.remove('hidden');
+
+  document.getElementById('timedPrompt').textContent = promptData.prompt;
+  const options = document.getElementById('timedOptions');
+  options.innerHTML = '';
+
+  (promptData.options || []).forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.textContent = `${idx + 1}) ${opt}`;
+    btn.onclick = () => resolveTimed(idx + 1, false);
+    options.appendChild(btn);
+  });
+
+  const deadline = new Date(promptData.deadline).getTime();
+  const timerEl = document.getElementById('timedTimer');
+  const tick = () => {
+    const remain = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    timerEl.textContent = `${remain}s`;
+    if (remain <= 0) resolveTimed(0, true);
+  };
+  tick();
+  timedInterval = setInterval(tick, 250);
+}
+
+async function startSession() {
+  const mode = document.getElementById('mode').value;
+  const authMode = document.getElementById('authMode').value;
+  const password = document.getElementById('password').value.trim();
+  const playerName = document.getElementById('name').value.trim();
+  const partyCode = document.getElementById('partyCode').value.trim();
+
+  const res = await fetch('/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, playerName, partyCode, authMode, username: playerName, password })
+  });
+
+  const data = await res.json();
+  if (!res.ok) { append([`ERROR: ${data.error || 'session start failed'}`]); return; }
+
+  sessionId = data.sessionId;
+  append(data.bootstrapLines);
+
+  const activePartyCode = data.partyCode || data.activePartyCode || (mode === 'join' ? partyCode : '');
+  setSessionDetails(data.username || playerName || 'Guest', activePartyCode);
+
+  document.getElementById('sessionModal').classList.add('hidden');
+  focusCommandBox();
+}
+
+async function sendCommand() {
+  if (!sessionId) { append(['Start a session first.']); return; }
+  if (activeTimedPrompt) { append(['Timed decision pending. Choose one option below.']); return; }
+
+  const input = document.getElementById('cmd').value;
+  if (!input.trim()) { return; }
+  document.getElementById('cmd').value = '';
+
+  const res = await fetch(`/api/sessions/${sessionId}/command`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input })
+  });
+
+  const data = await res.json();
+  if (!res.ok) { append([`ERROR: ${data.error || 'command failed'}`]); return; }
+  append(data.lines);
+
+  if (data.timedPrompt) {
+    startTimedPrompt(data.timedPrompt);
+    return;
+  }
+
+  focusCommandBox();
+}
+
+const cmdInput = document.getElementById('cmd');
+cmdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendCommand();
+  }
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT') && active.id !== 'cmd') {
+    return;
+  }
+
+  if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+    focusCommandBox();
+  }
+});
+
+setSessionDetails('', '');
+</script>
+</body>
+</html>

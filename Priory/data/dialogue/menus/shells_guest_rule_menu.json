@@ -1,0 +1,17 @@
+{
+  "id": "shells_guest_rule_menu",
+  "prompt": "Draft a rule for guests: practical, moral, and enforceable.",
+  "options": [
+    {
+      "text": "Strict curfew, confession encouraged, no token-selling in cloister.",
+      "response": "Order tightens and fraud recedes, though some pilgrims resent severity.",
+      "prioryDelta": { "security": 2, "relations": -1 }
+    },
+    {
+      "text": "Moderate rule with work-for-board and catechesis at dusk.",
+      "response": "Guests contribute labor and hear instruction; tensions ease.",
+      "virtueDelta": { "temperance": 1, "prudence": 1 },
+      "prioryDelta": { "relations": 2, "food": 1 }
+    }
+  ]
+}

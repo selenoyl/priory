@@ -1,0 +1,17 @@
+{
+  "id": "benedictine_steward_menu",
+  "prompt": "The Benedictine steward prefers precision to rhetoric:",
+  "options": [
+    {
+      "text": "Negotiate a measured grain exchange.",
+      "response": "Both houses avoid a ruinous bidding war.",
+      "prioryDelta": { "food": 2, "treasury": -1, "relations": 1 }
+    },
+    {
+      "text": "Press for concessions based on village hardship.",
+      "response": "You win terms but sour the relationship.",
+      "prioryDelta": { "food": 2, "relations": -1 },
+      "virtueDelta": { "fortitude": 1 }
+    }
+  ]
+}

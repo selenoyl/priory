@@ -1,0 +1,33 @@
+{
+  "id": "market_dispute_menu",
+  "prompt": "A wool merchant and baker accuse each other of false weights:",
+  "options": [
+    {
+      "text": "Demand both re-weigh in public.",
+      "response": "Public weighing cools tempers and exposes a tampered stone.",
+      "virtueDelta": {
+        "justice": 1
+      },
+      "prioryDelta": {
+        "relations": 1
+      }
+    },
+    {
+      "text": "Broker a quick compromise.",
+      "response": "Trade resumes, though both parties feel half-cheated.",
+      "virtueDelta": {
+        "temperance": 1
+      },
+      "prioryDelta": {
+        "morale": 1
+      }
+    },
+    {
+      "text": "Walk away; this is not your office yet.",
+      "response": "You leave them to local authority and keep your distance.",
+      "virtueDelta": {
+        "prudence": 1
+      }
+    }
+  ]
+}
