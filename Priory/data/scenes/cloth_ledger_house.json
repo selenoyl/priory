@@ -1,0 +1,13 @@
+{
+  "id": "cloth_ledger_house",
+  "text": "Guild stewards crowd a tally-house where wool bales, candle contracts, and widow petitions compete for the same shrinking reserve.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "guildhall": "guildhall"
+  },
+  "actions": {
+    "delegation": "menu:cloth_guild_delegation_menu",
+    "ledger war": "menu:cloth_ledger_war_menu",
+    "hospice corner": "menu:cloth_hospice_corner_menu"
+  }
+}

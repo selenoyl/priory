@@ -1,0 +1,13 @@
+{
+  "id": "sisters_hospice",
+  "text": "At the hospice of the Sisters of Saint Hilda, cots line the walls and every hand is busy with care.",
+  "exits": {
+    "green": "village_green",
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "prioress": "menu:hospice_prioress_menu",
+    "supplies": "menu:hospice_supply_menu",
+    "shop": "script:shop:hospice_supply_shop"
+  }
+}

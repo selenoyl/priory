@@ -1,0 +1,19 @@
+{
+  "id": "shells_relic_question_menu",
+  "prompt": "Rumor of a relic draws crowds and opportunists to Blackpine.",
+  "options": [
+    {
+      "text": "Publicly investigate and reject false claims.",
+      "response": "Crowds shrink, though some accuse you of killing hope.",
+      "virtueDelta": { "justice": 1, "prudence": 1 },
+      "prioryDelta": { "security": 1, "relations": -1 },
+      "completeQuest": "road_of_shells"
+    },
+    {
+      "text": "Allow quiet veneration while inquiry continues.",
+      "response": "Peace is maintained for now, but ambiguity remains dangerous.",
+      "prioryDelta": { "morale": 1, "security": -1 },
+      "completeQuest": "road_of_shells"
+    }
+  ]
+}
