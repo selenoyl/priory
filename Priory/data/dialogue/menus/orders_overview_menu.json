@@ -1,0 +1,30 @@
+{
+  "id": "orders_overview_menu",
+  "prompt": "Blackpine's religious houses and visitors request your attention:",
+  "options": [
+    {
+      "text": "Coordinate a joint relief rota with Franciscans.",
+      "response": "You draft shared duty schedules and reduce duplication.",
+      "startQuest": "franciscan_relief",
+      "prioryDelta": { "relations": 2, "morale": 1 }
+    },
+    {
+      "text": "Visit Carmelite hermitage to discuss chapel repairs.",
+      "response": "You open a channel with the Carmelites for contemplative support and practical aid.",
+      "startQuest": "carmelite_hermitage",
+      "nextScene": "carmelite_hermitage"
+    },
+    {
+      "text": "Meet Sisters of Saint Hilda about nursing capacity.",
+      "response": "The sisters share blunt figures: they need herbs, oil, and safe roads.",
+      "startQuest": "hospital_sisters",
+      "nextScene": "sisters_hospice"
+    },
+    {
+      "text": "Open talks with Benedictine grange on grain terms.",
+      "response": "A formal ledger meeting is scheduled.",
+      "startQuest": "benedictine_ledger",
+      "nextScene": "benedictine_grange"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "intro_scholar_menu",
+  "prompt": "Your books are packed. What burden do you carry?",
+  "options": [
+    {
+      "text": "Pride in your learning.",
+      "response": "You resolve to argue less and listen more.",
+      "virtueDelta": {
+        "temperance": 1
+      }
+    },
+    {
+      "text": "Fear that study is useless to the poor.",
+      "response": "You vow to wed doctrine to mercy.",
+      "virtueDelta": {
+        "justice": 1,
+        "prudence": 1
+      }
+    }
+  ]
+}

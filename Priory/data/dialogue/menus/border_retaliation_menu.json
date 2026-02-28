@@ -1,0 +1,18 @@
+{
+  "id": "border_retaliation_menu",
+  "prompt": "Villagers demand retaliation for raids. Anger can become injustice quickly.",
+  "options": [
+    {
+      "text": "Preach restraint and lawful petition to authorities.",
+      "response": "Fury cools enough to avoid reprisal killings.",
+      "virtueDelta": { "prudence": 1, "justice": 1 },
+      "prioryDelta": { "security": 1, "relations": 1 }
+    },
+    {
+      "text": "Permit armed pursuit under strict limits.",
+      "response": "Some goods return, but blood-feud risk rises.",
+      "virtueDelta": { "fortitude": 1 },
+      "prioryDelta": { "security": 2, "relations": -2 }
+    }
+  ]
+}

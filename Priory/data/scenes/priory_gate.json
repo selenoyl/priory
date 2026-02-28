@@ -1,0 +1,13 @@
+{
+  "id": "priory_gate",
+  "text": "Saint Rose Priory stands quiet and austere: low stone walls, chapel roof, and two Dominican friars moving in measured silence.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "road": "roadside_track"
+  },
+  "actions": {
+    "friars": "menu:gate_menu",
+    "bell": "menu:gate_menu",
+    "gate": "menu:gate_menu"
+  }
+}

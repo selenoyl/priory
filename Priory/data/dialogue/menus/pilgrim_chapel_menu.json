@@ -1,0 +1,17 @@
+{
+  "id": "pilgrim_chapel_menu",
+  "prompt": "Pilgrims request aid and counsel:",
+  "options": [
+    {
+      "text": "Hear confessions and give road counsel.",
+      "response": "Travelers leave steadier and less fearful.",
+      "prioryDelta": { "piety": 1, "relations": 1 },
+      "virtueDelta": { "justice": 1 }
+    },
+    {
+      "text": "Organize escorted departure at dawn.",
+      "response": "A safer convoy reaches Blackpine without incident.",
+      "prioryDelta": { "security": 1, "relations": 1 }
+    }
+  ]
+}
