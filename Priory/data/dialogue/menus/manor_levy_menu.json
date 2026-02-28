@@ -1,0 +1,17 @@
+{
+  "id": "manor_levy_menu",
+  "prompt": "How do you protect villagers from cascading levy burdens?",
+  "options": [
+    {
+      "text": "Establish temporary priory relief fund.",
+      "response": "Fewer families lose tools or seed rights.",
+      "prioryDelta": { "relations": 3, "treasury": -2, "morale": 1 }
+    },
+    {
+      "text": "Insist on labor-for-levy alternatives.",
+      "response": "Hard labor terms are accepted in place of seizure.",
+      "prioryDelta": { "food": 1, "relations": 1, "security": 1 },
+      "virtueDelta": { "justice": 1 }
+    }
+  ]
+}

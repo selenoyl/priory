@@ -1,0 +1,13 @@
+{
+  "id": "watch_post",
+  "text": "A crude watch-post of timber overlooks the road bend where ambushes begin. Smoke from Blackpine rises in the distance.",
+  "exits": {
+    "road": "roadside_track",
+    "forest": "forest_edge"
+  },
+  "actions": {
+    "logbook": "menu:watch_log_menu",
+    "patrol": "script:task:patrol",
+    "alert": "timed:forest_flashpoint"
+  }
+}
