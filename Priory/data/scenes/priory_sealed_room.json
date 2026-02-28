@@ -1,0 +1,13 @@
+{
+  "id": "priory_sealed_room",
+  "text": "A side chamber is sealed: hidden correspondence, questionable coin, and frightened silence now threaten the priory from within.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "dormitory": "priory_dormitory"
+  },
+  "actions": {
+    "discovery": "menu:sealed_room_discovery_menu",
+    "investigation": "menu:sealed_room_investigation_menu",
+    "resolution": "menu:sealed_room_resolution_menu"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "guild_charter_menu",
+  "prompt": "A charter clause could fund the parish school:",
+  "options": [
+    {
+      "text": "Negotiate fixed annual guild contribution.",
+      "response": "The charter gains school funding language.",
+      "prioryDelta": { "treasury": 2, "relations": 1 },
+      "completeQuest": "parish_school"
+    },
+    {
+      "text": "Seek voluntary pledges instead.",
+      "response": "Pledges vary, but goodwill grows.",
+      "prioryDelta": { "relations": 2, "treasury": 1 }
+    }
+  ]
+}

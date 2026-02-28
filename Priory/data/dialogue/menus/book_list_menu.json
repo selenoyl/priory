@@ -1,0 +1,19 @@
+{
+  "id": "book_list_menu",
+  "prompt": "A Hanse manifest includes theology titles and one controversial gloss likely to draw scrutiny in York.",
+  "options": [
+    {
+      "text": "Declare the controversial gloss and request review before use.",
+      "response": "Transparency costs speed but keeps trust with lawful authority.",
+      "virtueDelta": { "justice": 1, "prudence": 1 },
+      "startQuest": "york_clerk_inquiry"
+    },
+    {
+      "text": "Seal the gloss in restricted chest pending Dominican review.",
+      "response": "You neither circulate nor destroy it; Martin prepares a careful refutation.",
+      "virtueDelta": { "prudence": 2 },
+      "setFlags": ["restricted_gloss_chest"],
+      "startQuest": "york_clerk_inquiry"
+    }
+  ]
+}
