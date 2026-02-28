@@ -21,15 +21,17 @@
       color: #eee;
       display: grid;
       place-items: center;
+      overflow: hidden;
       font-size: clamp(14px, 1vw + 10px, 18px);
     }
 
     .wrap {
       width: min(96vw, 1120px);
-      min-height: min(96vh, 900px);
+      height: min(96vh, 900px);
+      min-height: 0;
       padding: clamp(12px, 1.8vw, 24px);
       display: grid;
-      grid-template-rows: auto 1fr auto auto auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto auto;
       gap: 12px;
       position: relative;
     }
