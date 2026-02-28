@@ -1,0 +1,20 @@
+{
+  "id": "river_cargo_menu",
+  "prompt": "Cargo opportunity from York dock:",
+  "options": [
+    {
+      "text": "Purchase mixed practical cargo (tools, wax, grain).",
+      "response": "A practical cargo reaches Saint Catherine in good order.",
+      "coinDelta": -5,
+      "addItems": ["Iron Nails", "Wax Candles", "Barley Sack"],
+      "prioryDelta": { "food": 1, "piety": 1, "security": 1 }
+    },
+    {
+      "text": "Purchase only manuscript supplies.",
+      "response": "The scriptorium gains capacity while fields wait.",
+      "coinDelta": -3,
+      "addItems": ["Parchment Bundle", "Ink Vial"],
+      "prioryDelta": { "piety": 2 }
+    }
+  ]
+}

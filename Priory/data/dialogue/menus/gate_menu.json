@@ -1,0 +1,19 @@
+{
+  "id": "gate_menu",
+  "prompt": "The elder Dominican comes to the gate:",
+  "options": [
+    {
+      "text": "Present the sealed letter.",
+      "response": "He reads the crest and opens the gate. 'The prior will see you.'",
+      "nextScene": "priory_courtyard"
+    },
+    {
+      "text": "Ask to offer service.",
+      "response": "He studies you, then admits you with reserve.",
+      "virtueDelta": {
+        "justice": 1
+      },
+      "nextScene": "priory_courtyard"
+    }
+  ]
+}
