@@ -1,0 +1,12 @@
+{
+  "id": "university_hall",
+  "text": "In York's study hall, friars and clerks dispute theology, law, and governance until candles fail.",
+  "exits": {
+    "outskirts": "york_outskirts",
+    "road": "york_road"
+  },
+  "actions": {
+    "disputation": "menu:university_disputation_menu",
+    "lectors": "menu:university_lector_menu"
+  }
+}

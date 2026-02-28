@@ -1,0 +1,17 @@
+{
+  "name": "Scholar's Son",
+  "description": "Literate, modest Latin, drawn to study.",
+  "virtueDelta": {
+    "prudence": 3,
+    "temperance": 1
+  },
+  "coinMin": 4,
+  "coinMax": 8,
+  "starterItems": [
+    "Ink-stained notebook",
+    "Psalter (worn)",
+    "Charcoal and stylus"
+  ],
+  "introMenu": "intro_scholar_menu",
+  "id": "2_scholar_son"
+}

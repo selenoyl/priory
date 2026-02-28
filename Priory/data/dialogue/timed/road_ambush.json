@@ -1,0 +1,47 @@
+{
+  "id": "road_ambush",
+  "prompt": "A shadow moves in the tree line. Steel flashes. Choose quickly.",
+  "seconds": 6,
+  "defaultIndex": 3,
+  "options": [
+    {
+      "text": "Stand and scan the trees.",
+      "response": "Your caution spots two attackers before they close.",
+      "virtueDelta": {
+        "prudence": 1
+      },
+      "prioryDelta": {
+        "security": 1
+      },
+      "nextScene": "priory_gate"
+    },
+    {
+      "text": "Ready your dagger low.",
+      "response": "You drive one attacker back at close range before the horse bolts past.",
+      "virtueDelta": {
+        "fortitude": 1
+      },
+      "removeItems": [
+        "Worn arming dagger"
+      ],
+      "nextScene": "priory_gate"
+    },
+    {
+      "text": "Shout for the driver to halt.",
+      "response": "Your warning checks panic; both of you survive the bend.",
+      "virtueDelta": {
+        "justice": 1
+      },
+      "nextScene": "priory_gate"
+    },
+    {
+      "text": "Stay silent and watch.",
+      "response": "You wait, then seize the right moment to steady cart and horse.",
+      "virtueDelta": {
+        "fortitude": 1,
+        "temperance": 1
+      },
+      "nextScene": "priory_gate"
+    }
+  ]
+}
