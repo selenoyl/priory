@@ -1255,12 +1255,15 @@ public sealed class GameEngine
         _state.SceneId = next;
         lines.Add(CurrentScene().Text);
         lines.Add(ExitLine(CurrentScene()));
-        AddContextTip(lines);
 
         if (CurrentScene().EnterMenu is { } menu)
         {
             _state.ActiveMenuId = menu;
             lines.Add(RenderMenu(_story.Menus[menu]));
+        }
+        else
+        {
+            AddContextTip(lines);
         }
 
         if (CurrentScene().EnterTimed is { } timed)
@@ -1333,7 +1336,20 @@ public sealed class GameEngine
             _state.SceneId = result[6..];
             lines.Add(CurrentScene().Text);
             lines.Add(ExitLine(CurrentScene()));
-            AddContextTip(lines);
+
+            if (CurrentScene().EnterMenu is { } sceneMenuId)
+            {
+                _state.ActiveMenuId = sceneMenuId;
+                lines.Add(RenderMenu(_story.Menus[sceneMenuId]));
+            }
+            else
+            {
+                AddContextTip(lines);
+            }
+
+            if (CurrentScene().EnterTimed is { } sceneTimedId)
+                _state.ActiveTimedId = sceneTimedId;
+
             AdvanceTime(lines, 1);
             return;
         }
