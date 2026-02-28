@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PRIORY</title>
   <style>
-    :root {
-      color-scheme: dark;
-    }
-
+    :root { color-scheme: dark; }
     * { box-sizing: border-box; }
 
     body {
@@ -27,8 +24,9 @@
       min-height: min(96vh, 900px);
       padding: clamp(12px, 1.8vw, 24px);
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto 1fr auto auto;
       gap: 12px;
+      position: relative;
     }
 
     h1 {
@@ -36,12 +34,6 @@
       text-align: center;
       font-size: clamp(1.8rem, 2.2vw + 1rem, 3rem);
       letter-spacing: 0.12em;
-    }
-
-    p {
-      margin: 0;
-      text-align: center;
-      color: #cfcfcf;
     }
 
     textarea {
@@ -75,29 +67,73 @@
       flex: 1;
       min-width: 220px;
     }
+
+    .session-modal {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.72);
+      z-index: 10;
+    }
+
+    .session-panel {
+      width: min(92vw, 580px);
+      border: 1px solid #444;
+      background: #161616;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .session-panel h2 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.1rem, 1vw + 0.8rem, 1.7rem);
+      letter-spacing: 0.05em;
+    }
+
+    .session-modal.hidden { display: none; }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      color: #bdbdbd;
+      font-size: 0.9em;
+      margin-top: auto;
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>PRIORY</h1>
-  <p>Web gateway for remote play (solo or party).</p>
-
-  <div class="row">
-    <select id="mode">
-      <option value="solo">solo</option>
-      <option value="create">create party</option>
-      <option value="join">join party</option>
-    </select>
-    <input id="name" placeholder="Player name" />
-    <input id="partyCode" placeholder="Party code (for join)" />
-    <button onclick="startSession()">Start</button>
+  <div id="sessionModal" class="session-modal">
+    <div class="session-panel">
+      <h2>Go it alone — or gather your order.</h2>
+      <div class="row">
+        <select id="mode">
+          <option value="solo">solo</option>
+          <option value="create">create party</option>
+          <option value="join">join party</option>
+        </select>
+        <input id="name" placeholder="Username" />
+        <input id="partyCode" placeholder="Party code (for join)" />
+      </div>
+      <button onclick="startSession()">Begin Session</button>
+    </div>
   </div>
+
+  <h1>PRIORY</h1>
 
   <textarea id="log" readonly></textarea>
 
   <div class="row">
     <input id="cmd" placeholder="Type command..." autocomplete="off" />
     <button onclick="sendCommand()">Send</button>
+  </div>
+
+  <div class="status">
+    <div id="currentUser">Current User: -</div>
+    <div id="currentPartyCode">Party Code: -</div>
   </div>
 </div>
 
@@ -116,10 +152,15 @@ function focusCommandBox() {
   cmd.setSelectionRange(cmd.value.length, cmd.value.length);
 }
 
+function setSessionDetails(playerName, partyCode) {
+  document.getElementById('currentUser').textContent = `Current User: ${playerName || '-'}`;
+  document.getElementById('currentPartyCode').textContent = `Party Code: ${partyCode || '-'}`;
+}
+
 async function startSession() {
   const mode = document.getElementById('mode').value;
-  const playerName = document.getElementById('name').value;
-  const partyCode = document.getElementById('partyCode').value;
+  const playerName = document.getElementById('name').value.trim();
+  const partyCode = document.getElementById('partyCode').value.trim();
 
   const res = await fetch('/api/sessions', {
     method: 'POST',
@@ -132,7 +173,11 @@ async function startSession() {
 
   sessionId = data.sessionId;
   append(data.bootstrapLines);
-  if (data.partyCode) append([`Share this party code: ${data.partyCode}`]);
+
+  const activePartyCode = data.partyCode || data.activePartyCode || (mode === 'join' ? partyCode : '');
+  setSessionDetails(playerName, activePartyCode);
+
+  document.getElementById('sessionModal').classList.add('hidden');
   focusCommandBox();
 }
 
@@ -153,7 +198,7 @@ async function sendCommand() {
   append(data.lines);
 
   if (data.timedPrompt) {
-    const choice = prompt(data.timedPrompt.prompt + '\n' + data.timedPrompt.options.map((x, i) => `${i+1}) ${x}`).join('\n'));
+    const choice = prompt(data.timedPrompt.prompt + '\n' + data.timedPrompt.options.map((x, i) => `${i + 1}) ${x}`).join('\n'));
     if (!choice) return;
     const timedRes = await fetch(`/api/sessions/${sessionId}/timed`, {
       method: 'POST',
@@ -188,7 +233,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-focusCommandBox();
+setSessionDetails('', '');
 </script>
 </body>
 </html>
