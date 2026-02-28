@@ -145,7 +145,7 @@ public sealed class GameEngine
         {
             case Intent.Help:
                 lines.Add("How input works: start with a verb, then optionally a target. Examples: 'look', 'go priory gate', 'talk steward', 'examine ledger', 'take wax candles'.");
-                lines.Add("Common actions: look, go <place>, talk/speak <person>, examine <thing>, take <item>, inventory, status, quests, party, save, quit.");
+                lines.Add("Common actions: look, go <place>, talk/speak <person>, examine <thing>, take <item>, inventory, status, quests, party, save, version, quit.");
                 lines.Add("Tip: number choices (1, 2, 3...) select menu/timed options when they are shown.");
                 break;
             case Intent.Look:
@@ -168,6 +168,9 @@ public sealed class GameEngine
                 break;
             case Intent.Party:
                 lines.Add(PartyStatusLine());
+                break;
+            case Intent.Version:
+                lines.Add(VersionLine());
                 break;
             case Intent.Quests:
                 lines.Add(QuestLog());
@@ -201,6 +204,12 @@ public sealed class GameEngine
         return new(lines, timedPrompt);
     }
 
+    private static string VersionLine()
+    {
+        var buildId = Environment.GetEnvironmentVariable("PRIORY_BUILD_ID") ?? "dev";
+        return $"Version: {buildId}";
+    }
+
     private void AddContextTip(List<string> lines)
     {
         var scene = CurrentScene();
@@ -213,7 +222,7 @@ public sealed class GameEngine
 
     private void MaybeAddPeriodicTip(List<string> lines, Intent intent)
     {
-        if (intent is Intent.Help or Intent.Save or Intent.Quit or Intent.Unknown)
+        if (intent is Intent.Help or Intent.Save or Intent.Quit or Intent.Version or Intent.Unknown)
             return;
 
         var turns = _state.Counters.GetValueOrDefault("turn_count") + 1;

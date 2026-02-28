@@ -15,6 +15,7 @@ public enum Intent
     Quests,
     Quit,
     Party,
+    Version,
     Numeric
 }
 
@@ -52,7 +53,9 @@ public static class Parser
         ["quit"] = Intent.Quit,
         ["exit"] = Intent.Quit,
         ["party"] = Intent.Party,
-        ["companions"] = Intent.Party
+        ["companions"] = Intent.Party,
+        ["version"] = Intent.Version,
+        ["ver"] = Intent.Version
     };
 
     public static ParsedInput Parse(string input)
