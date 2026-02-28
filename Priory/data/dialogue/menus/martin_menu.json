@@ -1,0 +1,28 @@
+{
+  "id": "martin_menu",
+  "prompt": "Brother Martin asks what sort of Dominican you intend to become:",
+  "options": [
+    {
+      "text": "A preacher first.",
+      "response": "'Then your words must be lean and true,' he says.",
+      "virtueDelta": {
+        "justice": 1
+      }
+    },
+    {
+      "text": "A scholar first.",
+      "response": "'Then learn to read souls as closely as texts.'",
+      "virtueDelta": {
+        "prudence": 1
+      }
+    },
+    {
+      "text": "A guardian first.",
+      "response": "'Then guard without becoming what you resist.'",
+      "virtueDelta": {
+        "fortitude": 1,
+        "temperance": 1
+      }
+    }
+  ]
+}

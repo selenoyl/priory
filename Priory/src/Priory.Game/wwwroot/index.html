@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Priory: Blackpine</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #111; color: #eee; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
+    textarea { width: 100%; min-height: 380px; background: #1a1a1a; color: #ddd; border: 1px solid #333; padding: 12px; }
+    input, select, button { padding: 8px; margin: 4px 0; background: #1e1e1e; color: #eee; border: 1px solid #444; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Priory: Blackpine</h1>
+  <p>Web gateway for remote play (solo or party).</p>
+
+  <div class="row">
+    <select id="mode">
+      <option value="solo">solo</option>
+      <option value="create">create party</option>
+      <option value="join">join party</option>
+    </select>
+    <input id="name" placeholder="Player name" />
+    <input id="partyCode" placeholder="Party code (for join)" />
+    <button onclick="startSession()">Start</button>
+  </div>
+
+  <textarea id="log" readonly></textarea>
+
+  <div class="row">
+    <input id="cmd" placeholder="Type command..." style="flex:1" />
+    <button onclick="sendCommand()">Send</button>
+  </div>
+</div>
+
+<script>
+let sessionId = null;
+
+function append(lines) {
+  const log = document.getElementById('log');
+  for (const line of lines || []) log.value += line + "\n";
+  log.scrollTop = log.scrollHeight;
+}
+
+async function startSession() {
+  const mode = document.getElementById('mode').value;
+  const playerName = document.getElementById('name').value;
+  const partyCode = document.getElementById('partyCode').value;
+
+  const res = await fetch('/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, playerName, partyCode })
+  });
+
+  const data = await res.json();
+  if (!res.ok) { append([`ERROR: ${data.error || 'session start failed'}`]); return; }
+
+  sessionId = data.sessionId;
+  append(data.bootstrapLines);
+  if (data.partyCode) append([`Share this party code: ${data.partyCode}`]);
+}
+
+async function sendCommand() {
+  if (!sessionId) { append(['Start a session first.']); return; }
+  const input = document.getElementById('cmd').value;
+  document.getElementById('cmd').value = '';
+
+  const res = await fetch(`/api/sessions/${sessionId}/command`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input })
+  });
+
+  const data = await res.json();
+  if (!res.ok) { append([`ERROR: ${data.error || 'command failed'}`]); return; }
+  append(data.lines);
+
+  if (data.timedPrompt) {
+    const choice = prompt(data.timedPrompt.prompt + '\n' + data.timedPrompt.options.map((x, i) => `${i+1}) ${x}`).join('\n'));
+    if (!choice) return;
+    const timedRes = await fetch(`/api/sessions/${sessionId}/timed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice: Number(choice) })
+    });
+    const timedData = await timedRes.json();
+    append(timedData.lines || []);
+  }
+}
+
+document.getElementById('cmd').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendCommand();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "id": "rumor_not_started_menu",
+  "prompt": "A rumor spreads that Saint Rose takes 'foreign coin' to buy influence. Response must be immediate.",
+  "options": [
+    {
+      "text": "Publish ledgers and invite York clerk review.",
+      "response": "You open the books. Painful, but rumor loses force.",
+      "virtueDelta": { "justice": 1, "fortitude": 1 },
+      "startQuest": "york_clerk_inquiry"
+    },
+    {
+      "text": "Issue a short denial and tighten internal records.",
+      "response": "The denial calms some; others suspect concealment.",
+      "prioryDelta": { "security": 1, "relations": -1 },
+      "setFlags": ["rumor_denial_only"],
+      "startQuest": "york_clerk_inquiry"
+    },
+    {
+      "text": "Ask Franciscan brothers to publicly witness your alms work.",
+      "response": "A Franciscan warning cuts through slander: good ends require clean means.",
+      "prioryDelta": { "relations": 2, "piety": 1 },
+      "startQuest": "alms_or_ink"
+    }
+  ]
+}
