@@ -1,0 +1,33 @@
+{
+  "id": "york_clerk_menu",
+  "prompt": "A York clerk arrives with ledgers: 'Who promised what, what was received, and who benefited?'",
+  "options": [
+    {
+      "text": "Offer full transparency and accept imposed reforms.",
+      "response": "The inquiry is severe but fair; reforms bite, trust begins to recover.",
+      "prioryDelta": { "security": 2, "treasury": -1, "relations": 1 },
+      "completeQuest": "york_clerk_inquiry",
+      "setFlags": ["york_full_transparency"]
+    },
+    {
+      "text": "Give diplomatic half-truths to preserve peace.",
+      "response": "Crisis passes for now, yet leverage remains in the clerk's satchel.",
+      "prioryDelta": { "security": 1, "relations": -1 },
+      "setFlags": ["york_half_truth"]
+    },
+    {
+      "text": "Defend priory autonomy and refuse broad disclosure.",
+      "response": "You protect local authority, but York's confidence hardens against Saint Catherine.",
+      "prioryDelta": { "security": 1, "relations": -2, "treasury": -1 },
+      "virtueDelta": { "fortitude": 1 },
+      "setFlags": ["york_defensive_stance"]
+    },
+    {
+      "text": "Keep silence under obedience and submit records only to bishop's court.",
+      "response": "Dignity is preserved, but suspicion lingers until formal review concludes.",
+      "virtueDelta": { "temperance": 1, "prudence": 1 },
+      "prioryDelta": { "relations": -1 },
+      "setFlags": ["york_obedient_silence"]
+    }
+  ]
+}

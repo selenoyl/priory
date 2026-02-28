@@ -1,0 +1,11 @@
+{
+  "id": "york_letters",
+  "text": "Letters from York arrive under Dominican seal: warnings of debt pressure, theological agitation, and demands for reports from rural houses like Saint Catherine.",
+  "exits": {
+    "courtyard": "priory_courtyard",
+    "road": "york_road"
+  },
+  "actions": {
+    "letters": "menu:york_letters_menu"
+  }
+}

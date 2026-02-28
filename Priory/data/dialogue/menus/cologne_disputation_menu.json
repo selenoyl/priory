@@ -1,0 +1,20 @@
+{
+  "id": "cologne_disputation_menu",
+  "prompt": "At Cologne's studium a disputation asks whether perceived abuses justify rejection of ecclesial authority.",
+  "options": [
+    {
+      "text": "Reject corruption yet defend sacramental authority and conciliar reform.",
+      "response": "Your argument wins sober assent: vice must be corrected, but holy orders and sacramental life cannot be discarded.",
+      "virtueDelta": { "prudence": 1, "justice": 1 },
+      "completeQuest": "cologne_disputation",
+      "setFlags": ["reich_disputation_won"]
+    },
+    {
+      "text": "Emphasize pastoral penance and catechesis among laity and clergy alike.",
+      "response": "You turn debate toward confession, catechesis, and disciplined preaching rather than slogans.",
+      "virtueDelta": { "temperance": 1, "prudence": 1 },
+      "prioryDelta": { "relations": 1, "piety": 1 },
+      "completeQuest": "cologne_disputation"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "bohemian_visitor_menu",
+  "prompt": "A learned traveler reports controversies from Prague. What should be repeated, corrected, or withheld?",
+  "options": [
+    {
+      "text": "Preach measured warning: error is real, panic is also error.",
+      "response": "You cool the market without denying danger.",
+      "virtueDelta": { "prudence": 2 },
+      "prioryDelta": { "relations": 1 },
+      "startQuest": "bohemian_spark"
+    },
+    {
+      "text": "Demand swift correction and ban public disputation.",
+      "response": "Order returns quickly, though some hearts harden in resentment.",
+      "virtueDelta": { "justice": 1 },
+      "prioryDelta": { "security": 2, "relations": -2 },
+      "startQuest": "bohemian_spark"
+    },
+    {
+      "text": "Host catechetical instruction with Dominican supervision.",
+      "response": "Instruction takes longer but deepens roots better than slogans.",
+      "virtueDelta": { "prudence": 1, "temperance": 1 },
+      "prioryDelta": { "piety": 2 },
+      "startQuest": "bohemian_spark"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "school_funding_menu",
+  "prompt": "School funding decision:",
+  "options": [
+    {
+      "text": "Fund from priory treasury.",
+      "response": "School remains open through winter.",
+      "prioryDelta": { "treasury": -2, "relations": 2, "morale": 1 },
+      "completeQuest": "parish_school"
+    },
+    {
+      "text": "Raise guild donations with matching alms.",
+      "response": "Funding is slower but broad-based.",
+      "prioryDelta": { "relations": 2, "treasury": -1, "security": 1 },
+      "nextScene": "guildhall"
+    }
+  ]
+}
