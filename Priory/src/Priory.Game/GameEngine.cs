@@ -86,13 +86,36 @@ public sealed class GameEngine
     }
 
     public bool JoinParty(string partyCode, out string message)
+        => JoinParty(partyCode, _state.PlayerName, out message);
+
+    public bool JoinParty(string partyCode, string? prospectivePlayerName, out string message)
     {
         if (!_partyRepo.TryLoadByCode(partyCode, out var party, out message) || party is null)
             return false;
 
+        var playerName = string.IsNullOrWhiteSpace(prospectivePlayerName) ? _state.PlayerName : prospectivePlayerName.Trim();
+        if (party.Members.Count >= 6 && !party.Members.ContainsKey(playerName))
+        {
+            message = "That party is full (limit 6 members).";
+            return false;
+        }
+
         _partyState = party;
-        ActivePartyCode = partyCode.Trim();
+        ActivePartyCode = _codec.MakePartyCode(party.PartyId);
         return true;
+    }
+
+    public PartyOverview? GetPartyOverview()
+    {
+        if (_partyState is null) return null;
+
+        var members = _partyState.Members.Values
+            .OrderBy(x => x.Name)
+            .Select(m => new PartyMemberOverview(m.Name, m.LastSceneId, m.LastSeenUtc,
+                Math.Max(0, (int)Math.Round((DateTimeOffset.UtcNow - m.LastSeenUtc).TotalSeconds))))
+            .ToList();
+
+        return new PartyOverview(_codec.MakePartyCode(_partyState.PartyId), members);
     }
 
     public void UseSoloMode()
@@ -1210,6 +1233,8 @@ public sealed class GameEngine
     private void RegisterPartyMember()
     {
         if (_partyState is null) return;
+        if (_partyState.Members.Count >= 6 && !_partyState.Members.ContainsKey(_state.PlayerName)) return;
+
         _partyState.Members[_state.PlayerName] = new PartyMemberProfile
         {
             Name = _state.PlayerName,
@@ -1261,7 +1286,7 @@ public sealed class GameEngine
     {
         if (_partyState is null) return "You travel alone. Use multiplayer setup on launch to create or join a party.";
         var members = _partyState.Members.Keys.OrderBy(x => x).ToArray();
-        return $"Party active ({_partyState.PartyId}) with {members.Length} companion(s): {string.Join(", ", members)}";
+        return $"Party {(_codec.MakePartyCode(_partyState.PartyId))} | Members ({members.Length}/6): {string.Join(", ", members)}";
     }
 
     private string TimeLine() => $"Day {_state.Day}, {_state.Segment}";
@@ -1393,3 +1418,6 @@ public sealed class GameEngine
         return $"SAVE CODE: {code} | FP: {fingerprint}";
     }
 }
+
+public sealed record PartyMemberOverview(string Name, string LastSceneId, DateTimeOffset LastSeenUtc, int SecondsSinceSeen);
+public sealed record PartyOverview(string PartyCode, List<PartyMemberOverview> Members);

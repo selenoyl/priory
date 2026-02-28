@@ -19,10 +19,20 @@ public sealed class SaveCodec
         => VerifySignedCode("BP", code, 10);
 
     public string MakePartyCode(string partyId)
-        => MakeSignedCode("PT", partyId, 12);
+    {
+        var digits = partyId.Trim();
+        if (digits.Length != 6 || !digits.All(char.IsDigit))
+            throw new InvalidOperationException("Party id must be 6 digits");
+        return $"{digits[..3]}-{digits[3..]}";
+    }
 
     public string VerifyPartyCode(string code)
-        => VerifySignedCode("PT", code, 12);
+    {
+        var digits = code.Trim().Replace("-", "");
+        if (digits.Length != 6 || !digits.All(char.IsDigit))
+            throw new InvalidOperationException("Party code must match 123-456 format");
+        return digits;
+    }
 
     private string MakeSignedCode(string prefix, string value, int expectedLength)
     {

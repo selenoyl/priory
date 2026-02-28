@@ -17,7 +17,13 @@ public sealed class PartyRepository
 
     public (PartyState Party, string PartyCode) CreateParty()
     {
-        var partyId = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(6));
+        string partyId;
+        do
+        {
+            partyId = Random.Shared.Next(0, 1_000_000).ToString("D6");
+        }
+        while (File.Exists(Path.Combine(_partyRoot, partyId + ".json")));
+
         var party = new PartyState { PartyId = partyId };
         Save(party);
         return (party, _codec.MakePartyCode(partyId));
