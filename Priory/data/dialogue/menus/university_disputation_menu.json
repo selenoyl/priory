@@ -1,0 +1,18 @@
+{
+  "id": "university_disputation_menu",
+  "prompt": "A York disputation turns on charity, authority, and reform pressures:",
+  "options": [
+    {
+      "text": "Defend Dominican pastoral-intellectual balance.",
+      "response": "You gain respect from both stricter and broader camps.",
+      "prioryDelta": { "piety": 2, "relations": 1 },
+      "virtueDelta": { "prudence": 1, "justice": 1 }
+    },
+    {
+      "text": "Press hard for doctrinal clarity above all else.",
+      "response": "Your clarity is admired; your tone is debated.",
+      "prioryDelta": { "piety": 2, "morale": -1 },
+      "virtueDelta": { "fortitude": 1 }
+    }
+  ]
+}

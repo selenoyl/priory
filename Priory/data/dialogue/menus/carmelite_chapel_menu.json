@@ -1,0 +1,18 @@
+{
+  "id": "carmelite_chapel_menu",
+  "prompt": "Inside the hermitage chapel:",
+  "options": [
+    {
+      "text": "Keep a silent hour of prayer.",
+      "response": "Silence strips away your impatience.",
+      "virtueDelta": { "temperance": 1, "prudence": 1 },
+      "prioryDelta": { "piety": 1 }
+    },
+    {
+      "text": "Discuss Dominican and Carmelite charisms respectfully.",
+      "response": "Mutual understanding grows without collapsing differences.",
+      "virtueDelta": { "justice": 1 },
+      "prioryDelta": { "relations": 1 }
+    }
+  ]
+}

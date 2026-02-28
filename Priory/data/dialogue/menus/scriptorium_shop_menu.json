@@ -1,0 +1,9 @@
+{
+  "id": "scriptorium_shop_menu",
+  "prompt": "Scriptorium supply allocations:",
+  "options": [
+    { "text": "Acquire Parchment Bundle (4)", "coinDelta": -4, "addItems": ["Parchment Bundle"], "response": "You allocate parchment for records.", "prioryDelta": { "piety": 1 } },
+    { "text": "Acquire Ink Vial (2)", "coinDelta": -2, "addItems": ["Ink Vial"], "response": "You secure writing ink." },
+    { "text": "Acquire Wax Candles (2)", "coinDelta": -2, "addItems": ["Wax Candles"], "response": "You secure extra study candles." }
+  ]
+}

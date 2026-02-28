@@ -1,0 +1,12 @@
+{
+  "id": "priory_chapel",
+  "text": "The chapel smells of beeswax and damp stone. Antiphons rise over cracked plaster, and even unfinished walls feel held by prayer and labor.",
+  "exits": {
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "pray": "menu:chapel_prayer_menu",
+    "altar": "The altar cloth is repaired in three places\u2014careful work, not poverty without dignity.",
+    "rosary": "script:minigame:rosary"
+  }
+}
