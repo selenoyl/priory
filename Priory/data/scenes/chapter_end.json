@@ -1,0 +1,9 @@
+{
+  "id": "chapter_end",
+  "text": "Your first long cycle at Saint Catherine closes. The priory has been shaped by your choices, and a larger struggle now waits beyond Blackpine.",
+  "exits": {},
+  "actions": {
+    "reckon": "script:resolve_endgame"
+  },
+  "endChapter": false
+}

@@ -1,0 +1,12 @@
+{
+  "id": "lane",
+  "text": "Cold Yorkshire air meets you in the lane. A cart waits, horse breathing fog. Blackpine square opens beyond.",
+  "exits": {
+    "cart": "square",
+    "square": "square",
+    "church": "parish_church"
+  },
+  "actions": {
+    "driver": "The driver shrugs. 'Saint Catherine? Then climb up. I leave with or without you.'"
+  }
+}
