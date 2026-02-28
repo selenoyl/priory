@@ -1,0 +1,12 @@
+{
+  "id": "hospital_ward",
+  "text": "York's hospital ward is crowded but disciplined. Sisters and brothers triage needs with relentless calm.",
+  "exits": {
+    "outskirts": "york_outskirts",
+    "courtyard": "priory_courtyard"
+  },
+  "actions": {
+    "ward": "menu:hospital_ward_menu",
+    "supplies": "menu:hospital_supply_run_menu"
+  }
+}

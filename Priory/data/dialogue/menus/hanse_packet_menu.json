@@ -1,0 +1,39 @@
+{
+  "id": "hanse_packet_menu",
+  "prompt": "The Hanse factor presents a sealed packet and favorable terms for stone, wax, rope, and iron. How will Saint Rose proceed?",
+  "options": [
+    {
+      "text": "Accept openly before chapter and townsfolk.",
+      "response": "You insist that aid must stand in daylight if it is to serve charity.",
+      "prioryDelta": { "treasury": 4, "relations": 2, "security": -1 },
+      "setFlags": ["hanse_open_accept"],
+      "startQuest": "hanse_letters_packet",
+      "script": "start_hanse_arc"
+    },
+    {
+      "text": "Accept quietly through private ledgers.",
+      "response": "The packet is entered in a side book. Repairs quicken, but rumor gains a shadow.",
+      "prioryDelta": { "treasury": 5, "security": 1, "relations": -2 },
+      "setFlags": ["hanse_quiet_accept"],
+      "startQuest": "hanse_letters_packet",
+      "script": "start_hanse_arc"
+    },
+    {
+      "text": "Refuse the terms and continue by local means.",
+      "response": "You refuse dependence. Work slows and hardship sharpens, but your conscience is plain.",
+      "prioryDelta": { "morale": -1, "piety": 2, "treasury": -2 },
+      "setFlags": ["hanse_refused"],
+      "startQuest": "hanse_letters_packet",
+      "script": "start_hanse_arc"
+    },
+    {
+      "text": "Send Brother Martin to scrutinize every clause first.",
+      "response": "Martin demands exact wording and witness marks before Saint Rose signs anything.",
+      "virtueDelta": { "prudence": 2, "temperance": 1 },
+      "prioryDelta": { "treasury": 2 },
+      "setFlags": ["hanse_reviewed_by_martin"],
+      "startQuest": "hanse_letters_packet",
+      "script": "start_hanse_arc"
+    }
+  ]
+}

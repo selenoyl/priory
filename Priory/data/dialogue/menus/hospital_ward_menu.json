@@ -1,0 +1,17 @@
+{
+  "id": "hospital_ward_menu",
+  "prompt": "In the York ward, triage priorities are stark:",
+  "options": [
+    {
+      "text": "Fund sanitation and bedding first.",
+      "response": "Infection rates begin to drop.",
+      "prioryDelta": { "morale": 2, "relations": 2, "treasury": -2 },
+      "completeQuest": "hospital_sisters"
+    },
+    {
+      "text": "Fund medicine procurement first.",
+      "response": "Critical cases improve quickly, but ward strain remains.",
+      "prioryDelta": { "morale": 1, "relations": 1, "treasury": -2 }
+    }
+  ]
+}
