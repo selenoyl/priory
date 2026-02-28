@@ -1,0 +1,27 @@
+{
+  "id": "avignon_quiet_trial_menu",
+  "prompt": "A friar is accused of impropriety. Truth is uncertain; scandal is certain if mishandled.",
+  "options": [
+    {
+      "text": "Open inquiry with witnesses and public penance if proven.",
+      "response": "Painful clarity steadies the house; justice is seen and remembered.",
+      "virtueDelta": { "justice": 2, "fortitude": 1 },
+      "prioryDelta": { "security": 2, "morale": -1 },
+      "completeQuest": "avignon_echoes"
+    },
+    {
+      "text": "Handle internally to avoid broader scandal.",
+      "response": "Short-term peace holds, but whispers continue at the edges of trust.",
+      "prioryDelta": { "morale": 1, "relations": -2 },
+      "setFlags": ["avignon_internal_only"],
+      "completeQuest": "avignon_echoes"
+    },
+    {
+      "text": "Suspend the friar and request York review.",
+      "response": "Authority is honored, though local autonomy is bruised.",
+      "virtueDelta": { "temperance": 1, "prudence": 1 },
+      "prioryDelta": { "security": 1, "relations": -1 },
+      "completeQuest": "avignon_echoes"
+    }
+  ]
+}
