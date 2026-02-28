@@ -23,7 +23,7 @@ RunCli(story, saveRoot, saveCodec);
 static void RunCli(StoryData story, string saveRoot, SaveCodec saveCodec)
 {
     Console.OutputEncoding = System.Text.Encoding.UTF8;
-    Console.WriteLine("PRIORY: Blackpine");
+    Console.WriteLine("PRIORY");
     Console.WriteLine("Yorkshire, 1403");
     Console.WriteLine("Type 'help' for commands. Type 'save' anytime.\n");
 

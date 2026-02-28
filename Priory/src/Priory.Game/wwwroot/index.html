@@ -3,18 +3,83 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Priory: Blackpine</title>
+  <title>PRIORY</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; background: #111; color: #eee; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
-    textarea { width: 100%; min-height: 380px; background: #1a1a1a; color: #ddd; border: 1px solid #333; padding: 12px; }
-    input, select, button { padding: 8px; margin: 4px 0; background: #1e1e1e; color: #eee; border: 1px solid #444; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    :root {
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: #111;
+      color: #eee;
+      display: grid;
+      place-items: center;
+      font-size: clamp(14px, 1vw + 10px, 18px);
+    }
+
+    .wrap {
+      width: min(96vw, 1100px);
+      min-height: min(96vh, 900px);
+      padding: clamp(12px, 1.8vw, 24px);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.8rem, 2.2vw + 1rem, 3rem);
+      letter-spacing: 0.12em;
+    }
+
+    p {
+      margin: 0;
+      text-align: center;
+      color: #cfcfcf;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 0;
+      height: 100%;
+      background: #1a1a1a;
+      color: #ddd;
+      border: 1px solid #333;
+      padding: 12px;
+      resize: none;
+    }
+
+    input, select, button {
+      padding: 8px;
+      margin: 4px 0;
+      background: #1e1e1e;
+      color: #eee;
+      border: 1px solid #444;
+      min-height: 40px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    #cmd {
+      flex: 1;
+      min-width: 220px;
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Priory: Blackpine</h1>
+  <h1>PRIORY</h1>
   <p>Web gateway for remote play (solo or party).</p>
 
   <div class="row">
@@ -31,7 +96,7 @@
   <textarea id="log" readonly></textarea>
 
   <div class="row">
-    <input id="cmd" placeholder="Type command..." style="flex:1" />
+    <input id="cmd" placeholder="Type command..." autocomplete="off" />
     <button onclick="sendCommand()">Send</button>
   </div>
 </div>
@@ -43,6 +108,12 @@ function append(lines) {
   const log = document.getElementById('log');
   for (const line of lines || []) log.value += line + "\n";
   log.scrollTop = log.scrollHeight;
+}
+
+function focusCommandBox() {
+  const cmd = document.getElementById('cmd');
+  cmd.focus();
+  cmd.setSelectionRange(cmd.value.length, cmd.value.length);
 }
 
 async function startSession() {
@@ -62,11 +133,13 @@ async function startSession() {
   sessionId = data.sessionId;
   append(data.bootstrapLines);
   if (data.partyCode) append([`Share this party code: ${data.partyCode}`]);
+  focusCommandBox();
 }
 
 async function sendCommand() {
   if (!sessionId) { append(['Start a session first.']); return; }
   const input = document.getElementById('cmd').value;
+  if (!input.trim()) { return; }
   document.getElementById('cmd').value = '';
 
   const res = await fetch(`/api/sessions/${sessionId}/command`, {
@@ -90,11 +163,32 @@ async function sendCommand() {
     const timedData = await timedRes.json();
     append(timedData.lines || []);
   }
+
+  focusCommandBox();
 }
 
-document.getElementById('cmd').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') sendCommand();
+const cmdInput = document.getElementById('cmd');
+cmdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendCommand();
+  }
 });
+
+window.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT') && active.id !== 'cmd') {
+    return;
+  }
+
+  if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+    focusCommandBox();
+  }
+});
+
+focusCommandBox();
 </script>
 </body>
 </html>

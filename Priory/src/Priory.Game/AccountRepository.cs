@@ -53,7 +53,7 @@ public sealed class AccountRepository
             SaveUnsafe(accounts);
         }
 
-        message = "Account registered.";
+        message = "Account registered. Friendly reminder: this system is for game access only, so please use credentials you do not reuse on everyday services.";
         return true;
     }
 
