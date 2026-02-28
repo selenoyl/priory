@@ -1,0 +1,13 @@
+{
+  "id": "village_mill",
+  "text": "The mill wheel groans over dark water. Debts, grain tallies, and accusations cluster here like crows.",
+  "exits": {
+    "green": "village_green",
+    "fields": "priory_fields"
+  },
+  "actions": {
+    "tallies": "menu:mill_tally_menu",
+    "wheel": "The axle needs repair before next heavy rain.",
+    "fishing": "script:minigame:fishing"
+  }
+}

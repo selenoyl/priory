@@ -1,0 +1,13 @@
+{
+  "id": "parish_church",
+  "text": "Inside St. Wilfrid's, candlelight breathes across old stone. You can kneel, return to the lane, or speak with the parish clerk.",
+  "exits": {
+    "lane": "lane",
+    "square": "square",
+    "school": "parish_schoolhouse"
+  },
+  "actions": {
+    "altar": "You kneel and pray without spectacle. A difficult peace settles in you.",
+    "clerk": "menu:clerk_menu"
+  }
+}
