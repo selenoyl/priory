@@ -1,0 +1,15 @@
+{
+  "id": "ravenscar_quay",
+  "text": "Ravenscar Quay reeks of wet rope, fish brine, and pine tar. Hanse factors stand by scales and seal-cases while priests and clerks watch every ledger line.",
+  "exits": {
+    "village": "village_green",
+    "passage": "north_sea_passage"
+  },
+  "actions": {
+    "dock window": "menu:dock_window_menu",
+    "accusation": "menu:dock_accusation_menu",
+    "exchange table": "menu:currency_exchange_menu",
+    "hanse packet": "menu:hanse_packet_menu",
+    "safe conduct": "menu:safe_conduct_menu"
+  }
+}

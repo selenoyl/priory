@@ -1,0 +1,22 @@
+{
+  "id": "clerk_menu",
+  "prompt": "The parish clerk lowers his voice:",
+  "options": [
+    {
+      "text": "Offer a coin for the poor box.",
+      "response": "He records your gift and blesses your road.",
+      "coinDelta": -1,
+      "virtueDelta": {
+        "justice": 1,
+        "temperance": 1
+      }
+    },
+    {
+      "text": "Ask what troubles Blackpine most.",
+      "response": "'Debt, fear, and men who profit from both,' he says.",
+      "virtueDelta": {
+        "prudence": 1
+      }
+    }
+  ]
+}

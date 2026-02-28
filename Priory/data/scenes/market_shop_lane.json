@@ -1,0 +1,12 @@
+{
+  "id": "market_shop_lane",
+  "text": "Rows of stalls: wax, nails, grain, cloth, and merchant chatter about risk and weather.",
+  "exits": {
+    "square": "square",
+    "market": "market_lane"
+  },
+  "actions": {
+    "shop": "menu:market_shop_menu",
+    "browse": "script:shop:blackpine_market_shop"
+  }
+}
