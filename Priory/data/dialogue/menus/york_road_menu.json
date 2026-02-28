@@ -1,0 +1,28 @@
+{
+  "id": "york_road_menu",
+  "prompt": "On the York road:",
+  "options": [
+    {
+      "text": "Travel with armed convoy.",
+      "response": "Safer travel, slower pace, higher cost.",
+      "coinDelta": -2,
+      "prioryDelta": {
+        "security": 1
+      },
+      "nextScene": "york_outskirts"
+    },
+    {
+      "text": "Travel light and fast.",
+      "response": "You arrive quickly after tense miles.",
+      "virtueDelta": {
+        "fortitude": 1
+      },
+      "nextScene": "york_outskirts"
+    },
+    {
+      "text": "Return to Saint Catherine and send a delegate.",
+      "response": "You preserve local control at the cost of influence in York.",
+      "nextScene": "priory_courtyard"
+    }
+  ]
+}

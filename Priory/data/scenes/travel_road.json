@@ -1,0 +1,12 @@
+{
+  "id": "travel_road",
+  "text": "The cart creaks out of Blackpine beneath leaning pines. The driver keeps one eye on the road and one on the tree line.",
+  "exits": {
+    "leave cart": "roadside_track"
+  },
+  "actions": {
+    "driver": "'Stay low and keep watch,' the driver mutters. 'If steel flashes, shout first and strike second.'",
+    "tree line": "timed:road_ambush",
+    "cargo": "Barrels and sacks are tied down hard. You brace a hand on the side rail."
+  }
+}
