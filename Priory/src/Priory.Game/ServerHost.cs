@@ -53,6 +53,7 @@ public static class ServerHost
             string? partyCode = null;
             var authMode = (request.AuthMode ?? "guest").Trim().ToLowerInvariant();
             var requestedUsername = string.IsNullOrWhiteSpace(request.Username) ? null : request.Username.Trim();
+            var normalizedPlayerName = NormalizePlayerName(request.PlayerName);
 
             var mode = (request.Mode ?? "solo").Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(request.ResumeCode) && mode == "join" && string.IsNullOrWhiteSpace(request.PartyCode))
@@ -83,7 +84,7 @@ public static class ServerHost
                         break;
                 }
 
-                if (string.IsNullOrWhiteSpace(request.PlayerName))
+                if (normalizedPlayerName is null)
                     return Results.BadRequest(new { error = "playerName is required for new games" });
 
                 if (authMode is "login" or "register")
@@ -93,7 +94,7 @@ public static class ServerHost
 
                     if (authMode == "register")
                     {
-                        if (!accountRepo.Register(requestedUsername, request.Password, request.PlayerName, out var registerMessage))
+                        if (!accountRepo.Register(requestedUsername, request.Password, normalizedPlayerName, out var registerMessage))
                             return Results.BadRequest(new { error = registerMessage });
                         bootstrapLines.Add(registerMessage);
                     }
@@ -116,7 +117,7 @@ public static class ServerHost
                 }
 
                 if (engine.GetPlayerOverview().PlayerName == "Pilgrim" && engine.GetPlayerOverview().LifePath is null)
-                    bootstrapLines.AddRange(CaptureConsoleLines(() => engine.StartNewGame(request.PlayerName, ParseSex(request.Sex))));
+                    bootstrapLines.AddRange(CaptureConsoleLines(() => engine.StartNewGame(normalizedPlayerName, ParseSex(request.Sex))));
             }
 
             var sessionId = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12));
@@ -144,23 +145,27 @@ public static class ServerHost
 
             if (string.Equals(input.Trim(), "save", StringComparison.OrdinalIgnoreCase))
             {
+                var codeLine = lines.FirstOrDefault(x => x.StartsWith("SAVE CODE:", StringComparison.OrdinalIgnoreCase));
                 if (!string.IsNullOrWhiteSpace(session.Username) && (session.AuthMode is "login" or "register"))
                 {
-                    var codeLine = lines.FirstOrDefault(x => x.StartsWith("SAVE CODE:", StringComparison.OrdinalIgnoreCase));
                     if (codeLine is not null)
                     {
                         var code = codeLine.Split('|', 2)[0].Replace("SAVE CODE:", "", StringComparison.OrdinalIgnoreCase).Trim();
                         accountRepo.UpdateLastSaveCode(session.Username, code);
-                        lines = new List<string> { "Progress saved to your account." };
+                        lines = [
+                            .. lines,
+                            "Progress saved to your account.",
+                            "You can also keep the SAVE CODE above as an offline backup."
+                        ];
                     }
                 }
                 else
                 {
-                    lines = new List<string>
-                    {
+                    lines = [
+                        .. lines,
                         "Guest sessions are temporary and are not linked to an account.",
-                        "To keep progress, return to startup and register/login with a password."
-                    };
+                        "Keep your SAVE CODE to resume later, or register/login to auto-link future saves."
+                    ];
                 }
             }
 
@@ -218,6 +223,15 @@ public static class ServerHost
             "female" or "f" => PlayerSex.Female,
             _ => PlayerSex.Male
         };
+    }
+
+    private static string? NormalizePlayerName(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        var cleaned = raw.Trim();
+        return cleaned.Length > 40 ? cleaned[..40] : cleaned;
     }
 
     private static List<string> CaptureConsoleLines(Action action)
