@@ -1,0 +1,27 @@
+{
+  "id": "reich_letters_menu",
+  "prompt": "Reports from the Reich describe calls for stricter reform, criticism of clerical vice, and confused attacks on indulgence practice. How do you answer?",
+  "options": [
+    {
+      "text": "Answer with Augustine on grace and the need for interior conversion.",
+      "response": "You cite Augustine: reform begins by grace healing the will, not by private revolt against sacrament and Church.",
+      "virtueDelta": { "prudence": 1 },
+      "prioryDelta": { "piety": 1 },
+      "startQuest": "cologne_disputation"
+    },
+    {
+      "text": "Answer with Thomas Aquinas on penance, authority, and ordered charity.",
+      "response": "You invoke Thomas: truth requires right order—penance, sacramental discipline, and justice joined to mercy.",
+      "virtueDelta": { "justice": 1, "prudence": 1 },
+      "prioryDelta": { "piety": 2 },
+      "startQuest": "cologne_disputation"
+    },
+    {
+      "text": "Answer with Catherine of Siena: bold reform in obedience, not schism.",
+      "response": "You cite Catherine's letters: rebuke corruption fiercely, yet remain in filial obedience to the Church.",
+      "virtueDelta": { "fortitude": 1, "temperance": 1 },
+      "prioryDelta": { "morale": 1, "piety": 1 },
+      "startQuest": "cologne_disputation"
+    }
+  ]
+}
