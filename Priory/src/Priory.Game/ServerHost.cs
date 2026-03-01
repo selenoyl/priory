@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using System.Collections.Concurrent;
 using System.Text;
 
@@ -36,6 +37,29 @@ public static class ServerHost
                 ctx.Context.Response.Headers.Expires = "0";
             }
         });
+
+        var musicRoots = new[]
+        {
+            Path.Combine(app.Environment.ContentRootPath, "wwwroot", "music"),
+            Path.Combine(app.Environment.ContentRootPath, "data", "music")
+        }
+        .Where(Directory.Exists)
+        .ToArray();
+
+        foreach (var root in musicRoots)
+        {
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(root),
+                RequestPath = "/music",
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+                    ctx.Context.Response.Headers.Pragma = "no-cache";
+                    ctx.Context.Response.Headers.Expires = "0";
+                }
+            });
+        }
 
         var sessions = new ConcurrentDictionary<string, SessionState>(StringComparer.OrdinalIgnoreCase);
         var accountRepo = new AccountRepository(saveRoot);

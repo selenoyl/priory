@@ -923,14 +923,14 @@ const DEFAULT_MUSIC_VOLUME = 0.08;
 const MUSIC_STORAGE_KEY = 'priory_music_volume';
 const MUSIC_BASE_PATH = '/music';
 const MUSIC_TRACKS = {
-  menu: `${MUSIC_BASE_PATH}/menu.mp3`,
-  town: `${MUSIC_BASE_PATH}/towns.mp3`,
-  forest: `${MUSIC_BASE_PATH}/forest.mp3`,
-  adventure: `${MUSIC_BASE_PATH}/adventure.mp3`,
-  adventure2: `${MUSIC_BASE_PATH}/adventure2.mp3`,
-  church: `${MUSIC_BASE_PATH}/church%20music%20default.mp3`,
-  churchFast: `${MUSIC_BASE_PATH}/church%20music%20sped%20up.mp3`,
-  building: `${MUSIC_BASE_PATH}/inside%20buildings%20(that%20arent%20churches).mp3`
+  menu: ['menu.mp3'],
+  town: ['towns.mp3', 'town.mp3'],
+  forest: ['forest.mp3'],
+  adventure: ['adventure.mp3'],
+  adventure2: ['adventure2.mp3'],
+  church: ['church music default.mp3', 'church_music_default.mp3'],
+  churchFast: ['church music sped up.mp3', 'church_music_sped_up.mp3'],
+  building: ['inside buildings (that arent churches).mp3', 'inside_buildings.mp3']
 };
 
 const SCENE_MUSIC_RULES = [
@@ -1009,7 +1009,9 @@ function inferMusicTrackKey(textBlob) {
 }
 
 function resolveTrackSrc(trackKey) {
-  return MUSIC_TRACKS[trackKey] || MUSIC_TRACKS.adventure;
+  const candidates = MUSIC_TRACKS[trackKey] || MUSIC_TRACKS.adventure;
+  const names = Array.isArray(candidates) ? candidates : [candidates];
+  return names.map((name) => `${MUSIC_BASE_PATH}/${encodeURIComponent(name).replace(/%2F/g, '/')}`);
 }
 
 function ensureMusicAudio() {
@@ -1022,6 +1024,12 @@ function ensureMusicAudio() {
     audio.currentTime = 0;
     audio.play().catch(() => {});
   });
+  audio.addEventListener('error', () => {
+    if (audio.src) {
+      musicState.missingTracks.add(audio.src);
+      playMusicTrack(musicState.currentTrackKey || 'menu');
+    }
+  });
   musicState.audio = audio;
   return audio;
 }
@@ -1033,17 +1041,16 @@ function tryPlayAudio(audio) {
 }
 
 function playMusicTrack(trackKey) {
-  const src = resolveTrackSrc(trackKey);
-  if (!src) return;
+  const srcCandidates = resolveTrackSrc(trackKey).filter((src) => !musicState.missingTracks.has(src));
+  if (srcCandidates.length === 0) return;
 
   const audio = ensureMusicAudio();
-  if (musicState.currentSrc === src && !audio.paused) return;
-  if (musicState.missingTracks.has(src)) return;
+  if (srcCandidates.includes(musicState.currentSrc) && !audio.paused) return;
 
   musicState.currentTrackKey = trackKey;
-  musicState.currentSrc = src;
-  audio.src = src;
-  tryPlayAudio(audio).catch?.(() => {});
+  musicState.currentSrc = srcCandidates[0];
+  audio.src = musicState.currentSrc;
+  tryPlayAudio(audio);
 }
 
 function syncMusicFromNarrative(lines, userInput = '') {
