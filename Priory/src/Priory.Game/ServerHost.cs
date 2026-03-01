@@ -53,6 +53,7 @@ public static class ServerHost
             string? partyCode = null;
             var authMode = (request.AuthMode ?? "guest").Trim().ToLowerInvariant();
             var requestedUsername = string.IsNullOrWhiteSpace(request.Username) ? null : request.Username.Trim();
+            var authenticatedUsername = requestedUsername;
 
             var mode = (request.Mode ?? "solo").Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(request.ResumeCode) && mode == "join" && string.IsNullOrWhiteSpace(request.PartyCode))
@@ -95,15 +96,17 @@ public static class ServerHost
                     {
                         if (!accountRepo.Register(requestedUsername, request.Password, request.PlayerName, out var registerMessage))
                             return Results.BadRequest(new { error = registerMessage });
+                        authenticatedUsername = requestedUsername?.Trim().ToLowerInvariant();
                         bootstrapLines.Add(registerMessage);
                     }
                     else
                     {
                         if (!accountRepo.TryAuthenticate(requestedUsername, request.Password, out var account, out var authMessage))
                             return Results.BadRequest(new { error = authMessage });
+                        authenticatedUsername = account?.Username ?? requestedUsername?.Trim().ToLowerInvariant();
                         bootstrapLines.Add($"Welcome back, {account?.DisplayName ?? requestedUsername}.");
 
-                        if (accountRepo.TryGetAccount(requestedUsername, out var existing) && !string.IsNullOrWhiteSpace(existing?.LastSaveCode))
+                        if (accountRepo.TryGetAccount(authenticatedUsername ?? requestedUsername ?? string.Empty, out var existing) && !string.IsNullOrWhiteSpace(existing?.LastSaveCode))
                         {
                             var resumed = engine.TryResume(existing.LastSaveCode!, out var autoResumeMessage);
                             if (resumed)
@@ -120,7 +123,7 @@ public static class ServerHost
             }
 
             var sessionId = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12));
-            sessions[sessionId] = new SessionState(engine, requestedUsername, authMode);
+            sessions[sessionId] = new SessionState(engine, authenticatedUsername, authMode);
 
             return Results.Ok(new
             {
@@ -129,7 +132,7 @@ public static class ServerHost
                 partyCode,
                 isPartyMode = engine.IsPartyMode,
                 activePartyCode = engine.ActivePartyCode,
-                username = requestedUsername
+                username = authenticatedUsername
             });
         });
 

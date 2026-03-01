@@ -862,7 +862,7 @@
       </div>
       <input id="musicVolume" type="range" min="0" max="0.25" step="0.01" value="0.08" aria-label="Background music volume" />
       <div id="musicVolumeLabel" class="audio-note">8% (subtle)</div>
-      <div class="audio-note">Background music starts after you begin a session.</div>
+      <div id="audioStatusNote" class="audio-note">Background music starts after you begin a session.</div>
     </div>
 
     <div id="menuPopover" class="menu-popover" role="dialog" aria-label="Menu">
@@ -947,7 +947,10 @@ const musicState = {
   started: false,
   currentTrackKey: 'menu',
   missingTracks: new Set(),
-  pendingTrackKey: null
+  pendingTrackKey: null,
+  sourceMode: 'none',
+  audioContext: null,
+  ambientNodes: []
 };
 
 function normalizeVolume(rawValue) {
@@ -976,12 +979,41 @@ function updateMusicVolumeLabel(volume) {
   label.textContent = `${Math.round(volume * 100)}%${volume <= 0.08 ? ' (subtle)' : ''}`;
 }
 
+function updateAudioStatusNote(message) {
+  const note = document.getElementById('audioStatusNote');
+  if (note) note.textContent = message;
+}
+
+function syncAudioStatusNote() {
+  if (!musicState.started) {
+    updateAudioStatusNote('Background music starts after you begin a session.');
+    return;
+  }
+
+  if (musicState.sourceMode === 'ambient') {
+    updateAudioStatusNote('Using built-in ambient music (audio files unavailable).');
+    return;
+  }
+
+  updateAudioStatusNote('Background music is active for this session.');
+}
+
 function applyMusicVolume(volume) {
   const normalized = normalizeVolume(volume);
   localStorage.setItem(MUSIC_STORAGE_KEY, normalized.toString());
   if (musicState.audio) {
     musicState.audio.volume = normalized;
   }
+
+  if (musicState.audioContext) {
+    const ambientVolume = normalized * 0.4;
+    for (const node of musicState.ambientNodes) {
+      if (node.gainNode) {
+        node.gainNode.gain.value = ambientVolume;
+      }
+    }
+  }
+
   updateMusicVolumeLabel(normalized);
   setMusicButtonGlyph(normalized);
 }
@@ -995,6 +1027,7 @@ function toggleAudioPopover() {
   pop.classList.toggle('show');
   if (pop.classList.contains('show')) {
     closeMenuPopover();
+    syncAudioStatusNote();
   }
 }
 
@@ -1026,6 +1059,62 @@ function ensureMusicAudio() {
   return audio;
 }
 
+function stopAmbientMusic() {
+  for (const node of musicState.ambientNodes) {
+    node.osc?.stop?.();
+    node.osc?.disconnect?.();
+    node.gainNode?.disconnect?.();
+  }
+  musicState.ambientNodes = [];
+}
+
+function startAmbientMusic(trackKey) {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+
+  if (!musicState.audioContext) {
+    musicState.audioContext = new AudioCtx();
+  }
+
+  const ctx = musicState.audioContext;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+
+  stopAmbientMusic();
+
+  const baseFrequency = {
+    menu: 196,
+    town: 220,
+    forest: 174.61,
+    adventure: 246.94,
+    adventure2: 261.63,
+    church: 164.81,
+    churchFast: 174.61,
+    building: 207.65
+  }[trackKey] || 220;
+
+  const volume = getSavedMusicVolume() * 0.4;
+  const intervals = [1, 1.5, 2];
+  intervals.forEach((mult, idx) => {
+    const osc = ctx.createOscillator();
+    osc.type = idx === 0 ? 'sine' : 'triangle';
+    osc.frequency.value = baseFrequency * mult;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = volume / (idx + 1);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    osc.start();
+
+    musicState.ambientNodes.push({ osc, gainNode });
+  });
+
+  musicState.sourceMode = 'ambient';
+  syncAudioStatusNote();
+}
+
 function tryPlayAudio(audio) {
   return audio.play().catch(() => {
     // Browser autoplay policy: wait for a real click/keydown.
@@ -1037,13 +1126,30 @@ function playMusicTrack(trackKey) {
   if (!src) return;
 
   const audio = ensureMusicAudio();
-  if (musicState.currentSrc === src && !audio.paused) return;
-  if (musicState.missingTracks.has(src)) return;
+  if (musicState.currentSrc === src && !audio.paused && musicState.sourceMode === 'files') return;
 
   musicState.currentTrackKey = trackKey;
   musicState.currentSrc = src;
+
+  if (musicState.missingTracks.has(src)) {
+    startAmbientMusic(trackKey);
+    return;
+  }
+
+  stopAmbientMusic();
+  musicState.sourceMode = 'files';
   audio.src = src;
-  tryPlayAudio(audio).catch?.(() => {});
+  audio.oncanplay = () => {
+    musicState.sourceMode = 'files';
+    syncAudioStatusNote();
+  };
+  audio.onerror = () => {
+    musicState.missingTracks.add(src);
+    startAmbientMusic(trackKey);
+  };
+
+  tryPlayAudio(audio);
+  syncAudioStatusNote();
 }
 
 function syncMusicFromNarrative(lines, userInput = '') {
@@ -1063,6 +1169,10 @@ function registerMusicUnlockHandlers() {
     if (audio.paused) {
       tryPlayAudio(audio);
     }
+    if (musicState.audioContext && musicState.audioContext.state === 'suspended') {
+      musicState.audioContext.resume().catch(() => {});
+    }
+    syncAudioStatusNote();
   };
 
   window.addEventListener('click', unlock, { passive: true });
@@ -1081,6 +1191,7 @@ function initMusicControls() {
 
   registerMusicUnlockHandlers();
   playMusicTrack('menu');
+  syncAudioStatusNote();
 }
 
 function selectedRadio(name) {
@@ -1344,6 +1455,7 @@ async function resolveTimed(choice, auto = false) {
   if (!timedRes.ok) { append([`ERROR: ${timedData.error || 'timed command failed'}`]); return; }
 
   append(timedData.lines || []);
+  await refreshInventoryIfOpen();
   if (timedData.timedPrompt) startTimedPrompt(timedData.timedPrompt);
   else focusCommandBox();
 }
@@ -1437,6 +1549,7 @@ async function startSession() {
   musicState.started = true;
   musicState.pendingTrackKey = inferMusicTrackKey((data.bootstrapLines || []).join(' '));
   syncMusicFromNarrative(data.bootstrapLines || []);
+  syncAudioStatusNote();
   focusCommandBox();
 }
 
@@ -1475,6 +1588,26 @@ function renderInventory(overview) {
       el.textContent = `${idx + 1}. ${item}`;
       list.appendChild(el);
     });
+  }
+}
+
+
+async function refreshInventoryIfOpen() {
+  const modal = document.getElementById('inventoryModal');
+  if (!modal.classList.contains('show') || !sessionId) return;
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/overview`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'overview unavailable');
+    renderInventory({
+      playerName: data.playerName,
+      lifePath: data.lifePath,
+      inventory: data.inventory || [],
+      coin: data.coin ?? 0
+    });
+  } catch {
+    // Keep the current panel contents if refresh fails.
   }
 }
 
@@ -1533,6 +1666,7 @@ async function endSessionAndReturnToStart() {
   musicState.started = false;
   musicState.pendingTrackKey = 'menu';
   playMusicTrack('menu');
+  syncAudioStatusNote();
 
   setInputEnabled(false);
   document.getElementById('cmd').value = '';
@@ -1579,6 +1713,7 @@ async function sendCommand() {
   const data = await res.json();
   if (!res.ok) { append([`ERROR: ${data.error || 'command failed'}`]); return; }
   append(data.lines);
+  await refreshInventoryIfOpen();
   if (musicState.started) {
     syncMusicFromNarrative(data.lines, input);
   }

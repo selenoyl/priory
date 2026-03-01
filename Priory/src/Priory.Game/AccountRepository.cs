@@ -63,7 +63,8 @@ public sealed class AccountRepository
         lock (_sync)
         {
             var accounts = LoadUnsafe();
-            if (!accounts.TryGetValue(normalized, out account))
+            account = ResolveAccount(accounts, normalized);
+            if (account is null)
             {
                 message = "Unknown username.";
                 return false;
@@ -90,7 +91,8 @@ public sealed class AccountRepository
         lock (_sync)
         {
             var accounts = LoadUnsafe();
-            return accounts.TryGetValue(normalized, out account);
+            account = ResolveAccount(accounts, normalized);
+            return account is not null;
         }
     }
 
@@ -118,6 +120,15 @@ public sealed class AccountRepository
             account.LastSeenUtc = DateTimeOffset.UtcNow;
             SaveUnsafe(accounts);
         }
+    }
+
+
+    private static AccountRecord? ResolveAccount(Dictionary<string, AccountRecord> accounts, string normalized)
+    {
+        if (accounts.TryGetValue(normalized, out var direct))
+            return direct;
+
+        return accounts.Values.FirstOrDefault(a => Normalize(a.DisplayName) == normalized);
     }
 
     private Dictionary<string, AccountRecord> LoadUnsafe()

@@ -1397,6 +1397,9 @@ public sealed class GameEngine
 
     private void ProcessVisitorsAndDonations(List<string> lines)
     {
+        if (!IsHostingDonationScene(_state.SceneId))
+            return;
+
         var rb = _state.Rebuild;
         var rep = ComputeReputationScore();
         var visitorFlow = Math.Max(0, rb.Stats.GetValueOrDefault("hospitality") + rb.Stats.GetValueOrDefault("sanctity") + rep / 2);
@@ -1418,6 +1421,26 @@ public sealed class GameEngine
             rb.DonationsTotal += donation;
             lines.Add($"Hosting yields {donation}d in gifts and patron support.");
         }
+    }
+
+
+    private static bool IsHostingDonationScene(string? sceneId)
+    {
+        if (string.IsNullOrWhiteSpace(sceneId))
+            return false;
+
+        var scene = sceneId.Trim().ToLowerInvariant();
+        if (scene.StartsWith("priory_", StringComparison.Ordinal))
+            return true;
+
+        return scene is "parish_church"
+            or "pilgrim_hostel"
+            or "sisters_hospice"
+            or "hospital_ward"
+            or "franciscan_friary"
+            or "women_convent"
+            or "carmelite_hermitage"
+            or "avignon_chapterhouse";
     }
 
     private void ProcessConstructionComplications(List<string> lines)
@@ -2786,23 +2809,14 @@ public sealed class GameEngine
     private Dictionary<string, string> AvailableActions(SceneDef scene)
     {
         var actions = new Dictionary<string, string>(scene.Actions, StringComparer.OrdinalIgnoreCase);
-        if (_state.Flags.Contains("event:cart_departed"))
+        if (_state.Flags.Contains("event:cart_departed") && !string.Equals(scene.Id, "travel_road", StringComparison.OrdinalIgnoreCase))
         {
-            const string cartDepartTurnCounter = "cart_departed_turn";
-            var currentTurn = _state.Counters.GetValueOrDefault("turn_count");
-            if (!_state.Counters.ContainsKey(cartDepartTurnCounter))
-                _state.Counters[cartDepartTurnCounter] = currentTurn;
-
-            var turnsSinceDeparture = currentTurn - _state.Counters.GetValueOrDefault(cartDepartTurnCounter);
-            if (turnsSinceDeparture >= 3)
-            {
-                var unavailable = actions
-                    .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
-                    .Select(kv => kv.Key)
-                    .ToList();
-                foreach (var key in unavailable)
-                    actions.Remove(key);
-            }
+            var unavailable = actions
+                .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
+                .Select(kv => kv.Key)
+                .ToList();
+            foreach (var key in unavailable)
+                actions.Remove(key);
         }
         return actions;
     }

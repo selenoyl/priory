@@ -4,12 +4,11 @@
   "options": [
     {
       "text": "Say you seek quiet.",
-      "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'",
+      "response": "'Quiet is not silence,' he answers. 'May God guard your steps.' The cart still waits in the square if you are not ready yet.",
       "virtueDelta": {
         "temperance": 1,
         "justice": 1
       },
-      "nextTimed": "catch_cart",
       "requireNotFlags": [
         "event:friar_intro_done"
       ],
@@ -19,12 +18,11 @@
     },
     {
       "text": "Ask him to pray for your road.",
-      "response": "He raises a hand and prays briefly for courage and restraint.",
+      "response": "He raises a hand and prays briefly for courage and restraint. The cart still waits in the square if you are not ready yet.",
       "virtueDelta": {
         "justice": 1,
         "fortitude": 1
       },
-      "nextTimed": "catch_cart",
       "requireNotFlags": [
         "event:friar_intro_done"
       ],
