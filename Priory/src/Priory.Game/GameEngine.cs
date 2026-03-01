@@ -470,7 +470,7 @@ public sealed class GameEngine
         _state.LifePath = lp.Name;
 
         foreach (var kv in lp.VirtueDelta)
-            _state.Virtues[kv.Key] = _state.Virtues.GetValueOrDefault(kv.Key) + kv.Value;
+            AddVirtue(kv.Key, kv.Value);
 
         var lifePathVirtueSummary = FormatVirtueChanges(lp.VirtueDelta);
 
@@ -640,7 +640,7 @@ public sealed class GameEngine
             else
             {
                 foreach (var delta in option.VirtueDelta)
-                    _state.Virtues[delta.Key] = _state.Virtues.GetValueOrDefault(delta.Key) + delta.Value;
+                    AddVirtue(delta.Key, delta.Value)
 
                 var virtueSummary = FormatVirtueChanges(option.VirtueDelta);
                 if (!string.IsNullOrWhiteSpace(virtueSummary))
@@ -959,7 +959,8 @@ public sealed class GameEngine
             case "study":
                 _state.Counters["task_study"] = _state.Counters.GetValueOrDefault("task_study") + 1;
                 _state.Counters["task_total"] = _state.Counters.GetValueOrDefault("task_total") + 1;
-                _state.Virtues["prudence"] += 1;
+                AddVirtue("hope", 1);
+                AddVirtue("humility", 1);
                 _state.Priory["piety"] = Math.Clamp(_state.Priory["piety"] + 1, 0, 100);
                 lines.Add(Pick(
                     "You copy disputed texts with Dominican annotations and sharpen your judgment.",
@@ -970,7 +971,7 @@ public sealed class GameEngine
                 _state.Counters["task_patrol"] = _state.Counters.GetValueOrDefault("task_patrol") + 1;
                 _state.Counters["task_total"] = _state.Counters.GetValueOrDefault("task_total") + 1;
                 _state.Priory["security"] = Math.Clamp(_state.Priory["security"] + 2, 0, 100);
-                _state.Virtues["fortitude"] += 1;
+                AddVirtue("fortitude", 1);
                 lines.Add(Pick(
                     "You walk the forest road at vespers. Trouble recedes before discipline.",
                     "At the mill bend, you prevent a fight before knives clear sheaths.",
@@ -1088,7 +1089,7 @@ public sealed class GameEngine
 
         for (var r = 1; r <= rounds; r++)
         {
-            var yourRoll = _rng.Next(1, 7) + _rng.Next(1, 7) + (_state.Virtues["temperance"] > 2 ? 1 : 0);
+            var yourRoll = _rng.Next(1, 7) + _rng.Next(1, 7) + (Virtue("temperance") > 2 ? 1 : 0);
             var houseRoll = _rng.Next(1, 7) + _rng.Next(1, 7);
             if (yourRoll >= houseRoll)
             {
@@ -1112,7 +1113,7 @@ public sealed class GameEngine
         }
         else if (net < 0)
         {
-            _state.Virtues["temperance"] = Math.Max(_state.Virtues["temperance"] - 1, -10);
+            _state.Virtues["temperance"] = Math.Max(Virtue("temperance") - 1, -10);
             lines.Add($"You lose {Math.Abs(net)} pennies. A costly lesson in appetite.");
         }
         else
@@ -1132,7 +1133,7 @@ public sealed class GameEngine
 
         for (var decade = 1; decade <= 5; decade++)
         {
-            var recollection = _rng.Next(1, 7) + Math.Max(0, _state.Virtues["prudence"]) + Math.Max(0, _state.Virtues["temperance"]);
+            var recollection = _rng.Next(1, 7) + Math.Max(0, Virtue("faith")) + Math.Max(0, Virtue("temperance"));
             var distraction = _rng.Next(1, 9) + (_state.Day > 20 ? 1 : 0);
             if (recollection >= distraction)
             {
@@ -1147,8 +1148,9 @@ public sealed class GameEngine
 
         _state.Priory["piety"] = Math.Clamp(_state.Priory["piety"] + 1 + (focus / 2), 0, 100);
         _state.Priory["morale"] = Math.Clamp(_state.Priory["morale"] + (focus >= 3 ? 1 : 0), 0, 100);
-        _state.Virtues["temperance"] += 1;
-        if (focus >= 4) _state.Virtues["prudence"] += 1;
+        AddVirtue("temperance", 1);
+        AddVirtue("faith", 1);
+        if (focus >= 4) AddVirtue("hope", 1);
 
         lines.Add(focus >= 4
             ? "Prayer steadies your judgment for the day."
@@ -1159,7 +1161,7 @@ public sealed class GameEngine
 
     private void GoFishing(List<string> lines)
     {
-        var attempts = 3 + Math.Max(0, _state.Virtues["fortitude"]/3);
+        var attempts = 3 + Math.Max(0, Virtue("fortitude")/3);
         var catchCount = 0;
         var fishNames = new[] { "trout", "perch", "pike", "grayling" };
 
@@ -1192,7 +1194,7 @@ public sealed class GameEngine
         else
         {
             lines.Add("You return empty-handed, but with clearer eyes.");
-            _state.Virtues["temperance"] += 1;
+            AddVirtue("temperance", 1);
         }
 
         AdvanceTime(lines, 1);
@@ -1200,11 +1202,35 @@ public sealed class GameEngine
 
     private string Pick(params string[] lines) => lines[_rng.Next(lines.Length)];
 
+    private static string CanonicalVirtueKey(string key)
+    {
+        var normalized = (key ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "prudence" => "humility",
+            "justice" => "charity",
+            _ => normalized
+        };
+    }
+
+    private int Virtue(string key)
+        => _state.Virtues.GetValueOrDefault(CanonicalVirtueKey(key));
+
+    private void AddVirtue(string key, int delta)
+    {
+        var canonical = CanonicalVirtueKey(key);
+        if (string.IsNullOrWhiteSpace(canonical) || delta == 0) return;
+        _state.Virtues[canonical] = _state.Virtues.GetValueOrDefault(canonical) + delta;
+    }
+
     private string FormatVirtueChanges(IReadOnlyDictionary<string, int> deltas)
     {
         var parts = deltas
             .Where(kv => kv.Value != 0)
-            .Select(kv => $"{kv.Key} {(kv.Value > 0 ? "+" : "")}{kv.Value}")
+            .Select(kv => (key: CanonicalVirtueKey(kv.Key), kv.Value))
+            .Where(kv => !string.IsNullOrWhiteSpace(kv.key))
+            .Select(kv => $"{kv.key} {(kv.Value > 0 ? "+" : "")}{kv.Value}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         return parts.Count == 0 ? string.Empty : string.Join(", ", parts);
@@ -1221,10 +1247,12 @@ public sealed class GameEngine
     {
         var spec = new (string Key, string Label, string ColorDot)[]
         {
-            ("prudence", "Prudence", "🔵"),
             ("fortitude", "Fortitude", "🔴"),
             ("temperance", "Temperance", "🟢"),
-            ("justice", "Justice", "🟡")
+            ("faith", "Faith", "🟣"),
+            ("hope", "Hope", "🔵"),
+            ("charity", "Charity", "🟡"),
+            ("humility", "Humility", "⚪")
         };
 
         const int maxBars = 10;
@@ -1501,14 +1529,14 @@ public sealed class GameEngine
                     return;
                 }
 
-                var score = _rng.Next(1, 21) + _state.Virtues.GetValueOrDefault("justice") + _state.Virtues.GetValueOrDefault("prudence");
+                var score = _rng.Next(1, 21) + Virtue("charity") + Virtue("humility");
                 if (score >= 18)
                 {
                     lines.Add("You reconcile the alms ledger against offerings and uncover skimmed coin before scandal can spread.");
                     _state.Coin += 4;
                     _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 3, 0, 100);
-                    _state.Virtues["justice"] = _state.Virtues.GetValueOrDefault("justice") + 1;
-                    lines.Add("Success: +4 coin, relations improved, and your eye for justice sharpens.");
+                    AddVirtue("charity", 1);
+                    lines.Add("Success: +4 coin, relations improved, and your charity and steadiness sharpen.");
                 }
                 else
                 {
@@ -1522,7 +1550,7 @@ public sealed class GameEngine
             }
             case "watch_patrol_scout":
             {
-                var score = _rng.Next(1, 21) + _state.Virtues.GetValueOrDefault("fortitude") + _state.Virtues.GetValueOrDefault("prudence");
+                var score = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("hope");
                 if (score >= 20)
                 {
                     lines.Add("You read the treeline before dusk and spot movement early enough to warn the road wardens.");
@@ -1579,10 +1607,12 @@ public sealed class GameEngine
             .ToList();
         if (available.Count == 0) return timed.DefaultIndex;
 
-        var fort = _state.Virtues.GetValueOrDefault("fortitude");
-        var pru = _state.Virtues.GetValueOrDefault("prudence");
-        var tem = _state.Virtues.GetValueOrDefault("temperance");
-        var jus = _state.Virtues.GetValueOrDefault("justice");
+        var fort = Virtue("fortitude");
+        var hum = Virtue("humility");
+        var tem = Virtue("temperance");
+        var cha = Virtue("charity");
+        var faith = Virtue("faith");
+        var hope = Virtue("hope");
 
         var best = available[Math.Clamp(timed.DefaultIndex, 0, available.Count - 1)].i;
         var bestScore = int.MinValue;
@@ -1590,10 +1620,12 @@ public sealed class GameEngine
         {
             var t = opt.Text.ToLowerInvariant();
             var score = 0;
-            if (t.Contains("watch") || t.Contains("scan")) score += 2 * pru;
-            if (t.Contains("warn") || t.Contains("call")) score += 2 * jus;
+            if (t.Contains("watch") || t.Contains("scan")) score += 2 * hope;
+            if (t.Contains("warn") || t.Contains("call")) score += 2 * cha;
             if (t.Contains("seize") || t.Contains("grab") || t.Contains("ready")) score += 2 * fort;
             if (t.Contains("jump") || t.Contains("throw") || t.Contains("kick")) score += fort - tem;
+            if (t.Contains("pray") || t.Contains("steady")) score += faith + hope;
+            if (t.Contains("yield") || t.Contains("admit")) score += hum;
             if (score > bestScore)
             {
                 bestScore = score;
@@ -1623,6 +1655,37 @@ public sealed class GameEngine
         {
             _state.Flags.Add($"week_{_state.Day}");
             lines.Add("A week passes in Blackpine. News, grievances, and hopes gather at Saint Catherine.");
+
+            var fort = Virtue("fortitude");
+            var hum = Virtue("humility");
+            var tem = Virtue("temperance");
+            var cha = Virtue("charity");
+            var fai = Virtue("faith");
+            var hop = Virtue("hope");
+
+            if (cha >= 4 && tem <= 0)
+            {
+                _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 1, 0, 100);
+                lines.Add("Your generosity outpaced reserves this week. Treasury -1 (Charity vs Temperance).");
+            }
+
+            if (fort >= 4 && hum <= 0)
+            {
+                _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") - 1, 0, 100);
+                lines.Add("Your firmness was respected by some and resented by others. Relations -1 (Fortitude vs Humility).");
+            }
+
+            if (hop >= 3)
+            {
+                _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+                lines.Add("Hope keeps the house from despair. Morale +1.");
+            }
+
+            if (fai >= 3)
+            {
+                _state.Priory["piety"] = Math.Clamp(_state.Priory.GetValueOrDefault("piety") + 1, 0, 100);
+                lines.Add("Shared prayer steadies the priory in uncertainty. Piety +1.");
+            }
         }
     }
 

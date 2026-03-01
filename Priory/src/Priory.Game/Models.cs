@@ -29,10 +29,12 @@ public sealed class GameState
     public TimeSegment Segment { get; set; } = TimeSegment.Prime;
     public Dictionary<string, int> Virtues { get; set; } = new()
     {
-        ["prudence"] = 0,
         ["fortitude"] = 0,
         ["temperance"] = 0,
-        ["justice"] = 0
+        ["faith"] = 0,
+        ["hope"] = 0,
+        ["charity"] = 0,
+        ["humility"] = 0
     };
     public Dictionary<string, int> Priory { get; set; } = new()
     {
