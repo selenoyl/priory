@@ -4,32 +4,32 @@
   "options": [
     {
       "text": "Say you seek quiet.",
-      "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'",
+      "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'\n\nBehind you, the carter raises his voice: 'First call! Cart leaves soon for Saint Catherine.'",
       "virtueDelta": {
         "temperance": 1,
         "justice": 1
       },
-      "nextTimed": "catch_cart",
       "requireNotFlags": [
         "event:friar_intro_done"
       ],
       "setFlags": [
-        "event:friar_intro_done"
+        "event:friar_intro_done",
+        "event:cart_warning_one"
       ]
     },
     {
       "text": "Ask him to pray for your road.",
-      "response": "He raises a hand and prays briefly for courage and restraint.",
+      "response": "He raises a hand and prays briefly for courage and restraint.\n\nFrom the cart, the driver calls: 'First warning! Leaving shortly, with or without passengers.'",
       "virtueDelta": {
         "justice": 1,
         "fortitude": 1
       },
-      "nextTimed": "catch_cart",
       "requireNotFlags": [
         "event:friar_intro_done"
       ],
       "setFlags": [
-        "event:friar_intro_done"
+        "event:friar_intro_done",
+        "event:cart_warning_one"
       ]
     },
     {
@@ -51,10 +51,26 @@
     },
     {
       "text": "Ask if he has any further counsel for the road.",
-      "response": "'Keep your promises, and keep short accounts with God,' he says. 'Blackpine watches what men do more than what they claim.'",
+      "response": "'Keep your promises, and keep short accounts with God,' he says. 'Blackpine watches what men do more than what they claim.'\n\nThe carter snaps the reins in warning: 'Second call! We depart in moments, with or without you.'",
       "requireFlags": [
-        "event:friar_intro_done"
+        "event:friar_intro_done",
+        "event:cart_warning_one"
+      ],
+      "requireNotFlags": [
+        "event:cart_warning_two"
+      ],
+      "setFlags": [
+        "event:cart_warning_two"
       ]
+    },
+    {
+      "text": "Nod to the friar and turn toward the cart.",
+      "response": "The friar gives a final blessing as the cart jolts into motion.",
+      "requireFlags": [
+        "event:friar_intro_done",
+        "event:cart_warning_two"
+      ],
+      "nextTimed": "catch_cart"
     }
   ]
 }

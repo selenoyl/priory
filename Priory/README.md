@@ -87,3 +87,23 @@ docker compose build --no-cache
 docker compose up -d --force-recreate
 ```
 
+### Auto-update via GitHub image pulls (no manual file upload)
+
+If you want **stack updates to pull latest code from GitHub automatically**, use the GHCR image flow:
+
+1. Push changes to `main`.
+2. GitHub Actions publishes a new image to `ghcr.io/<owner>/priory-game:latest` via `.github/workflows/publish-ghcr.yml`.
+3. Deploy with the image-based compose file and pull policy:
+
+```bash
+cd Priory
+export PRIORY_IMAGE=ghcr.io/<your-github-owner>/priory-game:latest
+docker compose -f docker-compose.github.yml pull
+docker compose -f docker-compose.github.yml up -d
+```
+
+For Unraid paths, use `docker-compose.github.unraid.yml` instead.
+
+This removes the manual upload loop: updating the stack now fetches the newest GitHub-built container image.
+
+
