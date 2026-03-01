@@ -1,0 +1,14 @@
+{
+  "id": "virtue_docket_menu",
+  "prompt": "Regional Virtue Docket: choose a case file to review and activate.",
+  "options": [
+    {
+      "text": "Open docket pages (1-10)",
+      "nextMenu": "virtue_docket_page_1"
+    },
+    {
+      "text": "Close docket",
+      "response": "You close the docket for now."
+    }
+  ]
+}

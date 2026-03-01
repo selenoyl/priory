@@ -1,0 +1,68 @@
+{
+  "id": "virtue_docket_page_6",
+  "prompt": "Regional Virtue Docket \u2014 Page 6/8",
+  "options": [
+    {
+      "text": "Open case #52: Request to Leave",
+      "response": "Quest logged: Request to Leave (Priory). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_52_request_to_leave"
+    },
+    {
+      "text": "Open case #53: The Lavish Feast",
+      "response": "Quest logged: The Lavish Feast (Priory refectory). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_53_lavish_feast"
+    },
+    {
+      "text": "Open case #54: Pilgrim Dies at the Gate",
+      "response": "Quest logged: Pilgrim Dies at the Gate (Priory gatehouse). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_54_pilgrim_dies_gate"
+    },
+    {
+      "text": "Open case #55: Praise and Prestige",
+      "response": "Quest logged: Praise and Prestige (Stonemarket). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_55_praise_and_prestige"
+    },
+    {
+      "text": "Open case #56: Noble Child Seeks the Habit",
+      "response": "Quest logged: Noble Child Seeks the Habit (Manor / priory). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_56_noble_child_habit"
+    },
+    {
+      "text": "Open case #57: Fire in the Scriptorium",
+      "response": "Quest logged: Fire in the Scriptorium (Priory). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_57_fire_scriptorium"
+    },
+    {
+      "text": "Open case #58: Winter Isolation",
+      "response": "Quest logged: Winter Isolation (Frostmere roads). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_58_winter_isolation"
+    },
+    {
+      "text": "Open case #59: False Accusation",
+      "response": "Quest logged: False Accusation (Stonemarket). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_59_false_accusation"
+    },
+    {
+      "text": "Open case #60: Refugees at the Gate",
+      "response": "Quest logged: Refugees at the Gate (Priory gatehouse). Virtue focus: Charity. Tension to watch: Charity vs Temperance.",
+      "startQuest": "virtue_arc_60_refugees_at_gate"
+    },
+    {
+      "text": "Open case #61: Heresy in Frostmere",
+      "response": "Quest logged: Heresy in Frostmere (Frostmere). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_61_heresy_in_frostmere"
+    },
+    {
+      "text": "Previous page",
+      "nextMenu": "virtue_docket_page_5"
+    },
+    {
+      "text": "Next page",
+      "nextMenu": "virtue_docket_page_7"
+    },
+    {
+      "text": "Back to regional docket",
+      "nextMenu": "virtue_docket_menu"
+    }
+  ]
+}

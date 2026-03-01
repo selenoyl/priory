@@ -26,6 +26,7 @@
     "cloth delegation": "script:goto_cloth_arc",
     "road of shells": "script:goto_shells_arc",
     "border ash": "script:goto_border_arc",
-    "sealed room": "script:goto_sealed_room_arc"
+    "sealed room": "script:goto_sealed_room_arc",
+    "regional docket": "menu:virtue_docket_menu"
   }
 }

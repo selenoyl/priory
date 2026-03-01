@@ -1,0 +1,68 @@
+{
+  "id": "virtue_docket_page_4",
+  "prompt": "Regional Virtue Docket \u2014 Page 4/8",
+  "options": [
+    {
+      "text": "Open case #31: The Weeping Crucifix",
+      "response": "Quest logged: The Weeping Crucifix (Parish chapel). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_31_weeping_crucifix"
+    },
+    {
+      "text": "Open case #32: Lights Over the Barrow",
+      "response": "Quest logged: Lights Over the Barrow (Old Barrow). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_32_lights_over_barrow"
+    },
+    {
+      "text": "Open case #33: The Hermit\u2019s Prophecy",
+      "response": "Quest logged: The Hermit\u2019s Prophecy (Frostmere lake). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_33_hermits_prophecy"
+    },
+    {
+      "text": "Open case #34: Dreams of Angels",
+      "response": "Quest logged: Dreams of Angels (Oak Hollow). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_34_dreams_of_angels"
+    },
+    {
+      "text": "Open case #35: Storm Spares the Chapel",
+      "response": "Quest logged: Storm Spares the Chapel (Village edge). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_35_storm_spares_chapel"
+    },
+    {
+      "text": "Open case #36: Bell in the Night",
+      "response": "Quest logged: Bell in the Night (Priory bell tower). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_36_bell_in_night"
+    },
+    {
+      "text": "Open case #38: The Sudden Recovery",
+      "response": "Quest logged: The Sudden Recovery (Frostmere). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_38_sudden_recovery"
+    },
+    {
+      "text": "Open case #39: The Relic\u2019s Healing Claims",
+      "response": "Quest logged: The Relic\u2019s Healing Claims (Stonemarket chapel). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_39_relic_healing_claims"
+    },
+    {
+      "text": "Open case #40: Disturbed Graves",
+      "response": "Quest logged: Disturbed Graves (Old cemetery). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_40_disturbed_graves"
+    },
+    {
+      "text": "Open case #41: A Novice Loses Faith",
+      "response": "Quest logged: A Novice Loses Faith (Priory). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_41_novice_loses_faith"
+    },
+    {
+      "text": "Previous page",
+      "nextMenu": "virtue_docket_page_3"
+    },
+    {
+      "text": "Next page",
+      "nextMenu": "virtue_docket_page_5"
+    },
+    {
+      "text": "Back to regional docket",
+      "nextMenu": "virtue_docket_menu"
+    }
+  ]
+}
