@@ -1032,8 +1032,7 @@ function pushMusicDebug(message) {
 function renderMusicDebugLog() {
   const panel = document.getElementById('musicDebugPanel');
   if (!panel) return;
-  panel.textContent = musicState.debugLog.join('
-');
+  panel.textContent = musicState.debugLog.join('\n');
   panel.scrollTop = panel.scrollHeight;
 }
 
@@ -1147,6 +1146,15 @@ function resolveTrackSrc(trackKey) {
   return names.map(buildTrackUrl);
 }
 
+function normalizeTrackSrc(src) {
+  if (!src) return '';
+  try {
+    return new URL(src, window.location.origin).href;
+  } catch {
+    return src;
+  }
+}
+
 function ensureMusicAudio() {
   if (musicState.audio) return musicState.audio;
   const audio = new Audio();
@@ -1162,13 +1170,25 @@ function ensureMusicAudio() {
   });
   audio.addEventListener('error', () => {
     const candidates = resolveTrackSrc(musicState.currentTrackKey || 'menu');
+    const normalizedCandidates = candidates.map(normalizeTrackSrc);
+    const current = normalizeTrackSrc(audio.currentSrc || audio.src || musicState.currentSrc);
+
     pushMusicDebug(`audio error on ${audio.src || '(none)'}`);
-    const next = candidates.find((src) => src !== audio.src);
-    if (!next) {
+
+    const nextIndex = normalizedCandidates.findIndex((src) => src !== current);
+    if (nextIndex < 0) {
       pushMusicDebug('no fallback candidate available after audio error');
       setMusicStatusNote('Selected track failed to load. Check /music filenames.');
       return;
     }
+
+    const next = candidates[nextIndex];
+    if (!next || normalizeTrackSrc(next) === current) {
+      pushMusicDebug('fallback source resolves to the same URL; stopping retries');
+      setMusicStatusNote('Selected track failed to load. Check /music filenames.');
+      return;
+    }
+
     pushMusicDebug(`trying fallback source: ${next}`);
     audio.src = next;
     musicState.currentSrc = next;
@@ -1193,7 +1213,9 @@ function playMusicTrack(trackKey) {
   }
 
   const audio = ensureMusicAudio();
-  if (srcCandidates.includes(musicState.currentSrc) && !audio.paused) return;
+  const normalizedCurrent = normalizeTrackSrc(musicState.currentSrc);
+  const candidateMatchesCurrent = srcCandidates.some((src) => normalizeTrackSrc(src) === normalizedCurrent);
+  if (candidateMatchesCurrent && !audio.paused) return;
 
   pushMusicDebug(`play request key=${trackKey} candidates=${srcCandidates.length}`);
   musicState.currentTrackKey = trackKey;
