@@ -394,7 +394,7 @@ public sealed class GameEngine
         }
 
         var option = _activeTimed.Options[index];
-        if (!IsOptionAvailable(option, out var why))
+        if (!IsOptionAvailable(option, out var why, _activeTimed is null ? null : $"timed:{_activeTimed.Id}:{index}"))
         {
             lines.Add($"That path is unavailable: {why}");
             index = ChooseDefaultTimedIndex(_activeTimed);
@@ -434,7 +434,7 @@ public sealed class GameEngine
 
         var available = menu.Options
             .Select((o, i) => (o, i))
-            .Where(x => IsOptionAvailable(x.o, out _))
+            .Where(x => IsOptionAvailable(x.o, out _, $"menu:{menu.Id}:{x.i}"))
             .ToList();
 
         var index = parsed.Number - 1;
@@ -503,9 +503,66 @@ public sealed class GameEngine
         StartQuest("main_rebuild_priory", lines);
     }
 
-    private bool IsOptionAvailable(MenuOptionDef option, out string reason)
+
+    private static string BuildMenuChoiceFlag(string menuId, string optionText)
+        => $"menu_choice_taken:{NormalizePhrase(menuId).Replace(' ', '_')}:{NormalizePhrase(optionText).Replace(' ', '_')}";
+
+    private bool IsRepeatableMenu(string menuId)
+    {
+        if (string.IsNullOrWhiteSpace(menuId)) return false;
+        var id = menuId.ToLowerInvariant();
+        return id.Contains("shop") || id.Contains("task_board") || id.Contains("pouch") || id.Contains("book_list") || id.Contains("watch_log");
+    }
+
+    private bool IsConsequentialDecision(string menuId, MenuOptionDef option)
+    {
+        if (IsRepeatableMenu(menuId)) return false;
+        if (option.Script?.StartsWith("task:") == true) return false;
+        if (option.Script?.StartsWith("shop:") == true) return false;
+        if (option.Script?.StartsWith("minigame:") == true) return false;
+
+        return option.PrioryDelta is { Count: > 0 }
+               || option.VirtueDelta is { Count: > 0 }
+               || option.SetFlags is { Count: > 0 }
+               || option.ClearFlags is { Count: > 0 }
+               || option.CounterDelta is { Count: > 0 }
+               || !string.IsNullOrWhiteSpace(option.StartQuest)
+               || !string.IsNullOrWhiteSpace(option.CompleteQuest)
+               || !string.IsNullOrWhiteSpace(option.NextScene)
+               || !string.IsNullOrWhiteSpace(option.NextMenu)
+               || !string.IsNullOrWhiteSpace(option.NextTimed);
+    }
+
+    private string? BuildMenuChoiceReminder(string menuId)
+    {
+        var prefix = $"menu_choice_taken:{NormalizePhrase(menuId).Replace(' ', '_')}:";
+        var found = _state.Flags
+            .FirstOrDefault(f => f.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(found)) return null;
+
+        var choiceSlug = found[prefix.Length..].Replace('_', ' ');
+        if (string.IsNullOrWhiteSpace(choiceSlug)) return null;
+        return $"You already made this decision earlier ({choiceSlug}). That commitment still stands.";
+    }
+
+    private bool IsOptionAvailable(MenuOptionDef option, out string reason, string? sourceContext = null)
     {
         reason = "";
+
+        if (!string.IsNullOrWhiteSpace(sourceContext) && sourceContext.StartsWith("menu:", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = sourceContext.Split(':', 3);
+            if (parts.Length >= 2)
+            {
+                var menuId = parts[1];
+                if (IsConsequentialDecision(menuId, option) && _state.Flags.Contains(BuildMenuChoiceFlag(menuId, option.Text)))
+                {
+                    reason = "already chosen";
+                    return false;
+                }
+            }
+        }
+
         if (option.RequireFlags is { Count: > 0 })
         {
             foreach (var flag in option.RequireFlags)
@@ -629,6 +686,17 @@ public sealed class GameEngine
 
         if (!string.IsNullOrWhiteSpace(option.CompleteQuest))
             CompleteQuest(option.CompleteQuest, lines);
+
+        if (!string.IsNullOrWhiteSpace(sourceContext) && sourceContext.StartsWith("menu:", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = sourceContext.Split(':', 3);
+            if (parts.Length >= 2)
+            {
+                var menuId = parts[1];
+                if (IsConsequentialDecision(menuId, option))
+                    _state.Flags.Add(BuildMenuChoiceFlag(menuId, option.Text));
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(option.Script))
             RunScript(option.Script, lines);
@@ -1257,6 +1325,10 @@ public sealed class GameEngine
         if (!string.IsNullOrWhiteSpace(context))
             lines.Add(context);
 
+        var reminder = BuildMenuChoiceReminder(menuId);
+        if (!string.IsNullOrWhiteSpace(reminder))
+            lines.Add(reminder);
+
         lines.Add(RenderMenu(menu));
     }
 
@@ -1292,7 +1364,7 @@ public sealed class GameEngine
     {
         var sb = new StringBuilder();
         sb.AppendLine(menu.Prompt);
-        var available = menu.Options.Where(o => IsOptionAvailable(o, out _)).ToList();
+        var available = menu.Options.Select((o, i) => (o, i)).Where(x => IsOptionAvailable(x.o, out _, $"menu:{menu.Id}:{x.i}")).Select(x => x.o).ToList();
         for (var i = 0; i < available.Count; i++)
         {
             var optionText = available[i].Text;
@@ -1756,7 +1828,7 @@ public sealed class GameEngine
         if (string.IsNullOrWhiteSpace(target)) return false;
 
         var normalized = NormalizePhrase(target);
-        return normalized is "outside" or "out" or "building" or "room" or "church" or "chapel" or "inn" or "hall" or "shop" or "friary" or "convent" or "school" or "house";
+        return normalized is "outside" or "out" or "exit" or "street";
     }
 
     private bool TryMoveOutside(List<string> lines)

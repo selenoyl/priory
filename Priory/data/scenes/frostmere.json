@@ -1,0 +1,14 @@
+{
+  "id": "frostmere",
+  "text": "Frostmere lies by a cold lake under a hard sky. Nets dry on posts, sheep bells ring faintly, and winter seems to arrive a season early.",
+  "exits": {
+    "blackpine": "square",
+    "stonemarket road": "stonemarket",
+    "forest track": "forest_edge"
+  },
+  "actions": {
+    "lake": "Thin ice rims the water; fishers whisper that catches fail when rumors grow loud.",
+    "hermit trail": "A narrow path circles toward a weathered hut above the shore.",
+    "winter stores": "menu:winter_council_menu"
+  }
+}
