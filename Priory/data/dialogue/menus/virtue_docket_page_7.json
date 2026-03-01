@@ -5,52 +5,52 @@
     {
       "text": "Open case #62: Merchant Ascendancy",
       "response": "Quest logged: Merchant Ascendancy (Stonemarket). Virtue focus: Humility.",
-      "startQuest": "virtue_arc_62_merchant_ascendancy"
+      "startQuest": "virtue_arc_merchant_ascendancy"
     },
     {
       "text": "Open case #63: Old Customs Return",
       "response": "Quest logged: Old Customs Return (Oak Hollow). Virtue focus: Faith.",
-      "startQuest": "virtue_arc_63_old_customs_return"
+      "startQuest": "virtue_arc_old_customs_return"
     },
     {
       "text": "Open case #64: An Attempted Assassination",
       "response": "Quest logged: An Attempted Assassination (Road near Stonemarket). Virtue focus: Fortitude.",
-      "startQuest": "virtue_arc_64_attempted_assassination"
+      "startQuest": "virtue_arc_attempted_assassination"
     },
     {
       "text": "Open case #65: The Regional Council",
       "response": "Quest logged: The Regional Council (Cathedral city). Virtue focus: Humility.",
-      "startQuest": "virtue_arc_65_regional_council"
+      "startQuest": "virtue_arc_regional_council"
     },
     {
       "text": "Open case #66: The Disillusioned Veteran",
       "response": "Quest logged: The Disillusioned Veteran (Blackpine tavern). Virtue focus: Hope.",
-      "startQuest": "virtue_arc_66_disillusioned_veteran"
+      "startQuest": "virtue_arc_disillusioned_veteran"
     },
     {
       "text": "Open case #67: Plague Scare",
       "response": "Quest logged: Plague Scare (Stonemarket). Virtue focus: Faith.",
-      "startQuest": "virtue_arc_67_plague_scare"
+      "startQuest": "virtue_arc_plague_scare"
     },
     {
       "text": "Open case #68: The Zeal Split",
       "response": "Quest logged: The Zeal Split (Priory). Virtue focus: Temperance.",
-      "startQuest": "virtue_arc_68_zeal_split"
+      "startQuest": "virtue_arc_zeal_split"
     },
     {
       "text": "Open case #69: The Young Reformer",
       "response": "Quest logged: The Young Reformer (Regional). Virtue focus: Humility.",
-      "startQuest": "virtue_arc_69_young_reformer"
+      "startQuest": "virtue_arc_young_reformer"
     },
     {
       "text": "Open case #70: The Long Drought",
       "response": "Quest logged: The Long Drought (Region-wide). Virtue focus: Hope.",
-      "startQuest": "virtue_arc_70_long_drought"
+      "startQuest": "virtue_arc_long_drought"
     },
     {
       "text": "Open case #71: Grain Riots",
       "response": "Quest logged: Grain Riots (Stonemarket). Virtue focus: Charity.",
-      "startQuest": "virtue_arc_71_grain_riots"
+      "startQuest": "virtue_arc_grain_riots"
     },
     {
       "text": "Previous page",
