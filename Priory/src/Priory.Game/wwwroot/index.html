@@ -78,10 +78,20 @@
     .splash-stage.show { opacity: 1; }
 
     .splash-card {
+      --splash-symbol-band: 198px;
       text-align: center;
       display: grid;
-      gap: 10px;
+      grid-template-rows: var(--splash-symbol-band) auto;
       justify-items: center;
+      align-items: start;
+    }
+
+    .splash-mark-slot {
+      width: 100%;
+      height: var(--splash-symbol-band);
+      display: grid;
+      justify-items: center;
+      align-items: start;
     }
 
     .raikes-logo-wrap {
@@ -90,6 +100,7 @@
       display: grid;
       place-items: center;
       filter: drop-shadow(0 0 26px color-mix(in srgb, var(--neon) 44%, transparent));
+      transform: translateY(-20px);
     }
 
     .raikes-logo-mark {
@@ -122,6 +133,7 @@
       width: 74px;
       height: 74px;
       filter: drop-shadow(0 0 8px color-mix(in srgb, var(--neon) 50%, transparent));
+      transform: translateY(42px) scale(2.25);
     }
 
     .crossmark .vert,
@@ -132,7 +144,7 @@
     }
 
     .crossmark .vert { width: 14px; height: 68px; left: 30px; top: 3px; }
-    .crossmark .horiz { width: 58px; height: 14px; left: 8px; top: 30px; }
+    .crossmark .horiz { width: 52px; height: 14px; left: 11px; top: 20px; }
 
 
     @keyframes chatNeonPulse {
@@ -439,13 +451,13 @@
 
     .menu-popover {
       position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
+      inset: 0;
+      margin: auto;
+      width: min(92vw, 340px);
+      height: fit-content;
       border: 1px solid color-mix(in srgb, var(--neon) 30%, #3f3f3f 70%);
       background: #151515;
       padding: 12px;
-      min-width: min(92vw, 340px);
       display: none;
       z-index: 24;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px color-mix(in srgb, var(--neon) 14%, transparent);
@@ -506,6 +518,53 @@
       gap: 10px;
       font-size: 0.92em;
       color: #c7c7c7;
+    }
+
+    .audio-popover {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      min-width: min(92vw, 320px);
+      border: 1px solid color-mix(in srgb, var(--neon) 25%, #444 75%);
+      background: #151515;
+      padding: 10px;
+      display: none;
+      z-index: 25;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+
+    .audio-popover.show {
+      display: grid;
+      gap: 8px;
+    }
+
+    .audio-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #bfbfbf;
+      font-size: 0.82em;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    #musicBtn {
+      min-width: 40px;
+      width: 40px;
+      padding: 0;
+      font-size: 1.05em;
+      line-height: 1;
+    }
+
+    #musicVolume {
+      width: 100%;
+      accent-color: var(--neon);
+    }
+
+    .audio-note {
+      color: #bdbdbd;
+      font-size: 0.82em;
     }
 
     .inventory-modal {
@@ -652,8 +711,10 @@
   <div id="introSplash" class="intro-splash">
     <div id="introStageDominican" class="splash-stage show">
       <div class="splash-card">
-        <div class="crossmark" aria-hidden="true" style="transform: translateY(-20px) scale(2.25); margin: 0 0 18px;">
-          <div class="vert"></div><div class="horiz"></div>
+        <div class="splash-mark-slot" aria-hidden="true">
+          <div class="crossmark">
+            <div class="vert"></div><div class="horiz"></div>
+          </div>
         </div>
         <div class="splash-motto">LAUDARE, BENEDICERE, PRAEDICARE.</div>
       </div>
@@ -661,10 +722,12 @@
 
     <div id="introStageRaikes" class="splash-stage">
       <div class="splash-card">
-        <div class="raikes-logo-wrap" aria-hidden="true">
-          <div class="raikes-logo-mark"></div>
+        <div class="splash-mark-slot" aria-hidden="true">
+          <div class="raikes-logo-wrap">
+            <div class="raikes-logo-mark"></div>
+          </div>
         </div>
-        <div class="splash-motto">POWERED BY RAIKES IT SERVICES</div>
+        <div class="splash-motto">CREATED BY RYAN RAIKES.</div>
       </div>
     </div>
   </div>
@@ -790,6 +853,17 @@
     <button id="sendBtn" onclick="sendCommand()">Send</button>
     <button id="inventoryBtn" onclick="openInventory()">Inventory</button>
     <button id="menuBtn" onclick="toggleMenuPopover()">Menu</button>
+    <button id="musicBtn" onclick="toggleAudioPopover()" aria-label="Music settings" title="Music settings">🔊</button>
+
+    <div id="audioPopover" class="audio-popover" role="dialog" aria-label="Music settings">
+      <div class="audio-head">
+        <span>Music Volume</span>
+        <button class="close-options" onclick="closeAudioPopover()">×</button>
+      </div>
+      <input id="musicVolume" type="range" min="0" max="0.25" step="0.01" value="0.08" aria-label="Background music volume" />
+      <div id="musicVolumeLabel" class="audio-note">8% (subtle)</div>
+      <div class="audio-note">Background music starts after you begin a session.</div>
+    </div>
 
     <div id="menuPopover" class="menu-popover" role="dialog" aria-label="Menu">
       <div class="menu-head">
@@ -844,6 +918,145 @@ let timedInterval = null;
 let shouldStickToBottom = true;
 let userNeonColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 let showQuickAccess = false;
+
+const DEFAULT_MUSIC_VOLUME = 0.08;
+const MUSIC_STORAGE_KEY = 'priory_music_volume';
+const MUSIC_TRACKS = [
+  { category: 'village', src: '/music/village.mp3' },
+  { category: 'priory', src: '/music/priory.mp3' },
+  { category: 'travel', src: '/music/travel.mp3' },
+  { category: 'market', src: '/music/market.mp3' },
+  { category: 'forest', src: '/music/forest.mp3' },
+  { category: 'chapel', src: '/music/chapel.mp3' },
+  { category: 'danger', src: '/music/danger.mp3' }
+];
+
+const SCENE_MUSIC_HINTS = [
+  { category: 'danger', keys: ['ambush', 'crisis', 'sealed', 'ash', 'watch', 'border'] },
+  { category: 'chapel', keys: ['chapel', 'church', 'convent', 'friary', 'hospice'] },
+  { category: 'market', keys: ['market', 'guild', 'dock', 'quay', 'inn', 'hall'] },
+  { category: 'forest', keys: ['forest', 'road', 'lane', 'field', 'mill', 'track'] },
+  { category: 'travel', keys: ['travel', 'passage', 'roadside', 'north_sea'] },
+  { category: 'priory', keys: ['priory', 'scriptorium', 'chapterhouse', 'refectory', 'dormitory'] },
+  { category: 'village', keys: ['village', 'green', 'house', 'school', 'parish'] }
+];
+
+const musicState = {
+  audio: null,
+  currentSrc: '',
+  started: false,
+  currentCategory: 'village',
+  missingTracks: new Set()
+};
+
+function normalizeVolume(rawValue) {
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) return DEFAULT_MUSIC_VOLUME;
+  return Math.min(0.25, Math.max(0, parsed));
+}
+
+function getSavedMusicVolume() {
+  const saved = localStorage.getItem(MUSIC_STORAGE_KEY);
+  return normalizeVolume(saved);
+}
+
+function setMusicButtonGlyph(volume) {
+  const btn = document.getElementById('musicBtn');
+  if (!btn) return;
+  if (volume <= 0.001) btn.textContent = '🔇';
+  else if (volume < 0.06) btn.textContent = '🔈';
+  else if (volume < 0.14) btn.textContent = '🔉';
+  else btn.textContent = '🔊';
+}
+
+function updateMusicVolumeLabel(volume) {
+  const label = document.getElementById('musicVolumeLabel');
+  if (!label) return;
+  label.textContent = `${Math.round(volume * 100)}%${volume <= 0.08 ? ' (subtle)' : ''}`;
+}
+
+function applyMusicVolume(volume) {
+  const normalized = normalizeVolume(volume);
+  localStorage.setItem(MUSIC_STORAGE_KEY, normalized.toString());
+  if (musicState.audio) {
+    musicState.audio.volume = normalized;
+  }
+  updateMusicVolumeLabel(normalized);
+  setMusicButtonGlyph(normalized);
+}
+
+function closeAudioPopover() {
+  document.getElementById('audioPopover').classList.remove('show');
+}
+
+function toggleAudioPopover() {
+  const pop = document.getElementById('audioPopover');
+  pop.classList.toggle('show');
+  if (pop.classList.contains('show')) {
+    closeMenuPopover();
+  }
+}
+
+function inferMusicCategory(textBlob) {
+  const source = (textBlob || '').toLowerCase();
+  for (const rule of SCENE_MUSIC_HINTS) {
+    if (rule.keys.some((key) => source.includes(key))) {
+      return rule.category;
+    }
+  }
+  return 'village';
+}
+
+function pickTrackForCategory(category) {
+  return MUSIC_TRACKS.find(track => track.category === category) || MUSIC_TRACKS[0] || null;
+}
+
+function ensureMusicAudio() {
+  if (musicState.audio) return musicState.audio;
+  const audio = new Audio();
+  audio.loop = true;
+  audio.preload = 'auto';
+  audio.volume = getSavedMusicVolume();
+  musicState.audio = audio;
+  return audio;
+}
+
+function playMusicForCategory(category) {
+  const track = pickTrackForCategory(category);
+  if (!track) return;
+
+  const audio = ensureMusicAudio();
+  if (musicState.currentSrc === track.src && !audio.paused) return;
+
+  if (musicState.missingTracks.has(track.src)) return;
+
+  musicState.currentCategory = category;
+  if (musicState.currentSrc !== track.src) {
+    musicState.currentSrc = track.src;
+    audio.src = track.src;
+  }
+
+  audio.play().catch(() => {
+    musicState.missingTracks.add(track.src);
+  });
+}
+
+function syncMusicFromNarrative(lines, userInput = '') {
+  const joined = [userInput, ...(lines || [])].join(' ').toLowerCase();
+  const category = inferMusicCategory(joined);
+  playMusicForCategory(category);
+}
+
+function initMusicControls() {
+  const slider = document.getElementById('musicVolume');
+  const initial = getSavedMusicVolume();
+  slider.value = initial.toFixed(2);
+  applyMusicVolume(initial);
+
+  slider.addEventListener('input', () => {
+    applyMusicVolume(slider.value);
+  });
+}
 
 function selectedRadio(name) {
   return document.querySelector(`input[name="${name}"]:checked`)?.value || '';
@@ -1022,6 +1235,7 @@ function toggleMenuPopover() {
   const menu = document.getElementById('menuPopover');
   const shouldShow = !menu.classList.contains('show');
   closeMenuPopover();
+  closeAudioPopover();
   if (shouldShow) menu.classList.add('show');
 }
 
@@ -1185,6 +1399,8 @@ async function startSession() {
   document.getElementById('sessionModal').classList.add('hidden');
   sessionErrorEl.textContent = '';
   setInputEnabled(true);
+  musicState.started = true;
+  syncMusicFromNarrative(data.bootstrapLines || []);
   focusCommandBox();
 }
 
@@ -1278,6 +1494,11 @@ async function endSessionAndReturnToStart() {
   panel.classList.add('hidden');
   panel.classList.remove('fading');
 
+  if (musicState.audio) {
+    musicState.audio.pause();
+    musicState.audio.currentTime = 0;
+  }
+
   setInputEnabled(false);
   document.getElementById('cmd').value = '';
   document.getElementById('sessionError').textContent = '';
@@ -1323,6 +1544,9 @@ async function sendCommand() {
   const data = await res.json();
   if (!res.ok) { append([`ERROR: ${data.error || 'command failed'}`]); return; }
   append(data.lines);
+  if (musicState.started) {
+    syncMusicFromNarrative(data.lines, input);
+  }
 
   if (data.timedPrompt) {
     startTimedPrompt(data.timedPrompt);
@@ -1359,6 +1583,7 @@ window.addEventListener('keydown', (e) => {
 
   if (e.key === 'Escape') {
     closeMenuPopover();
+    closeAudioPopover();
     closeInventory();
   }
 });
@@ -1367,6 +1592,7 @@ window.addEventListener('click', (e) => {
   const row = document.getElementById('commandRow');
   if (!row.contains(e.target)) {
     closeMenuPopover();
+    closeAudioPopover();
   }
 });
 
@@ -1418,6 +1644,7 @@ document.querySelectorAll('input[name="authMode"]').forEach(el => el.addEventLis
 document.getElementById('neonColor').addEventListener('change', () => applyNeon(resolveNeonSelection()));
 
 initNeonPicker();
+initMusicControls();
 applyNeon(userNeonColor);
 updateQuickPanelVisibility();
 syncSessionDetailFields();

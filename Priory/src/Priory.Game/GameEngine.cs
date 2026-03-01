@@ -299,6 +299,12 @@ public sealed class GameEngine
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        if (exits.Any(x => x.Equals("outside", StringComparison.OrdinalIgnoreCase))
+            && !actionTips.Any(x => x.Equals("go outside", StringComparison.OrdinalIgnoreCase)))
+        {
+            actionTips.Add("go outside");
+        }
+
         if (exits.Count > 0)
             lines.Add($"Available options: {string.Join(" | ", exits.Select(FormatExitHint))}.");
 
@@ -1277,7 +1283,7 @@ public sealed class GameEngine
             return "These first choices shape your spiritual posture before your public duties begin.";
 
         if (!string.IsNullOrWhiteSpace(actionKey))
-            return $"You focus on {actionKey}. This choice carries practical consequences for people depending on Saint Catherine's judgment.";
+            return $"You focus on the {actionKey}. What you choose here can help or burden the people who rely on Saint Catherine.";
 
         return "You pause to weigh obligations, risks, and who will bear the cost of your decision.";
     }
@@ -1725,12 +1731,21 @@ public sealed class GameEngine
         var actions = new Dictionary<string, string>(scene.Actions, StringComparer.OrdinalIgnoreCase);
         if (_state.Flags.Contains("event:cart_departed"))
         {
-            var unavailable = actions
-                .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
-                .Select(kv => kv.Key)
-                .ToList();
-            foreach (var key in unavailable)
-                actions.Remove(key);
+            const string cartDepartTurnCounter = "cart_departed_turn";
+            var currentTurn = _state.Counters.GetValueOrDefault("turn_count");
+            if (!_state.Counters.ContainsKey(cartDepartTurnCounter))
+                _state.Counters[cartDepartTurnCounter] = currentTurn;
+
+            var turnsSinceDeparture = currentTurn - _state.Counters.GetValueOrDefault(cartDepartTurnCounter);
+            if (turnsSinceDeparture >= 3)
+            {
+                var unavailable = actions
+                    .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
+                    .Select(kv => kv.Key)
+                    .ToList();
+                foreach (var key in unavailable)
+                    actions.Remove(key);
+            }
         }
         return actions;
     }
