@@ -22,6 +22,7 @@ public sealed class GameState
     public PlayerSex Sex { get; set; } = PlayerSex.Unknown;
     public string? PartyId { get; set; }
     public string SceneId { get; set; } = "intro";
+    public string? PreviousSceneId { get; set; }
     public string? LifePath { get; set; }
     public int Coin { get; set; }
     public int Day { get; set; } = 1;

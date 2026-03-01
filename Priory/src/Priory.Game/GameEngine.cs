@@ -290,8 +290,8 @@ public sealed class GameEngine
         if (_state.ActiveMenuId is not null) return;
 
         var scene = CurrentScene();
-        var exits = scene.Exits.Keys.OrderBy(x => x).ToList();
-        var actionTips = scene.Actions
+        var exits = AvailableExits(scene).Keys.OrderBy(x => x).ToList();
+        var actionTips = AvailableActions(scene)
             .OrderBy(kv => kv.Key)
             .Take(5)
             .Select(kv => SuggestActionPhrase(kv.Key, kv.Value))
@@ -629,23 +629,7 @@ public sealed class GameEngine
 
         if (!string.IsNullOrWhiteSpace(option.NextScene))
         {
-            _state.SceneId = option.NextScene;
-            lines.Add(CurrentScene().Text);
-
-            if (CurrentScene().EnterMenu is { } nextMenuId)
-            {
-                _state.ActiveMenuId = nextMenuId;
-                lines.Add(RenderMenu(_story.Menus[nextMenuId]));
-            }
-            else
-            {
-                lines.Add(ExitLine(CurrentScene()));
-                AddContextTip(lines);
-            }
-
-            if (CurrentScene().EnterTimed is { } nextTimedId)
-                _state.ActiveTimedId = nextTimedId;
-
+            MoveToScene(option.NextScene, lines);
             if (CurrentScene().EndChapter) IsEnded = true;
         }
 
@@ -676,6 +660,12 @@ public sealed class GameEngine
         if (script.StartsWith("minigame:"))
         {
             PlayMiniGame(script[9..], lines);
+            return;
+        }
+
+        if (script.StartsWith("chance:"))
+        {
+            ResolveChanceEvent(script[7..], lines);
             return;
         }
 
@@ -1272,44 +1262,35 @@ public sealed class GameEngine
     private void HandleMovement(ParsedInput parsed, List<string> lines)
     {
         var scene = CurrentScene();
+        var exits = AvailableExits(scene);
         var target = parsed.Target;
 
-        if (string.IsNullOrWhiteSpace(target) && (parsed.Verb is "climb" or "board" or "mount") && scene.Exits.ContainsKey("cart"))
+        if (string.IsNullOrWhiteSpace(target) && (parsed.Verb is "climb" or "board" or "mount") && exits.ContainsKey("cart"))
             target = "cart";
-        if (string.IsNullOrWhiteSpace(target) && (parsed.Verb is "leave" or "depart") && scene.Exits.ContainsKey("leave cart"))
+        if (string.IsNullOrWhiteSpace(target) && (parsed.Verb is "leave" or "depart") && exits.ContainsKey("leave cart"))
             target = "leave cart";
+
+        if (IsOutsideRequest(parsed, target) && TryMoveOutside(lines))
+        {
+            AdvanceTime(lines, 1);
+            if (CurrentScene().EndChapter) IsEnded = true;
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(target))
         {
-            lines.Add("Go where? Try one of: " + (scene.Exits.Count == 0 ? "nowhere yet" : string.Join(", ", scene.Exits.Keys)));
+            lines.Add("Go where? Try one of: " + (exits.Count == 0 ? "nowhere yet" : string.Join(", ", exits.Keys)));
             return;
         }
 
-        if (!TryResolveKey(scene.Exits.Keys, target, out var resolvedExit))
+        if (!TryResolveKey(exits.Keys, target, out var resolvedExit))
         {
             lines.Add("You cannot travel there from this location.");
-            lines.Add("Available routes: " + (scene.Exits.Count == 0 ? "none" : string.Join(", ", scene.Exits.Keys)));
+            lines.Add("Available routes: " + (exits.Count == 0 ? "none" : string.Join(", ", exits.Keys)));
             return;
         }
 
-        var next = scene.Exits[resolvedExit!];
-        _state.SceneId = next;
-        lines.Add(CurrentScene().Text);
-
-        if (CurrentScene().EnterMenu is { } menu)
-        {
-            _state.ActiveMenuId = menu;
-            lines.Add(RenderMenu(_story.Menus[menu]));
-        }
-        else
-        {
-            lines.Add(ExitLine(CurrentScene()));
-            AddContextTip(lines);
-        }
-
-        if (CurrentScene().EnterTimed is { } timed)
-            _state.ActiveTimedId = timed;
-
+        MoveToScene(exits[resolvedExit!], lines);
         AdvanceTime(lines, 1);
         if (CurrentScene().EndChapter) IsEnded = true;
     }
@@ -1317,6 +1298,7 @@ public sealed class GameEngine
     private void HandleAction(ParsedInput parsed, List<string> lines)
     {
         var scene = CurrentScene();
+        var actions = AvailableActions(scene);
         var target = parsed.Target;
         if (string.IsNullOrWhiteSpace(target))
         {
@@ -1324,15 +1306,15 @@ public sealed class GameEngine
             return;
         }
 
-        if (!TryResolveKey(scene.Actions.Keys, target, out var resolvedAction))
+        if (!TryResolveKey(actions.Keys, target, out var resolvedAction))
         {
             lines.Add("Nothing comes of it.");
-            if (scene.Actions.Count > 0)
-                lines.Add("Try one of: " + string.Join(", ", scene.Actions.Keys.Take(5)));
+            if (actions.Count > 0)
+                lines.Add("Try one of: " + string.Join(", ", actions.Keys.Take(5)));
             return;
         }
 
-        var result = scene.Actions[resolvedAction!];
+        var result = actions[resolvedAction!];
 
         if (parsed.Intent == Intent.Talk && !result.StartsWith("menu:"))
         {
@@ -1374,23 +1356,7 @@ public sealed class GameEngine
 
         if (result.StartsWith("scene:"))
         {
-            _state.SceneId = result[6..];
-            lines.Add(CurrentScene().Text);
-
-            if (CurrentScene().EnterMenu is { } sceneMenuId)
-            {
-                _state.ActiveMenuId = sceneMenuId;
-                lines.Add(RenderMenu(_story.Menus[sceneMenuId]));
-            }
-            else
-            {
-                lines.Add(ExitLine(CurrentScene()));
-                AddContextTip(lines);
-            }
-
-            if (CurrentScene().EnterTimed is { } sceneTimedId)
-                _state.ActiveTimedId = sceneTimedId;
-
+            MoveToScene(result[6..], lines);
             AdvanceTime(lines, 1);
             return;
         }
@@ -1403,6 +1369,60 @@ public sealed class GameEngine
 
         lines.Add(result);
         AdvanceTime(lines, 1);
+    }
+
+    private void ResolveChanceEvent(string eventId, List<string> lines)
+    {
+        switch (eventId)
+        {
+            case "church_alms_box":
+            {
+                if (_state.Flags.Contains("event:church_alms_box_done"))
+                {
+                    lines.Add("You have already accounted for the alms box this week; the clerk waves you onward.");
+                    return;
+                }
+
+                var score = _rng.Next(1, 21) + _state.Virtues.GetValueOrDefault("justice") + _state.Virtues.GetValueOrDefault("prudence");
+                if (score >= 18)
+                {
+                    lines.Add("You reconcile the alms ledger against offerings and uncover skimmed coin before scandal can spread.");
+                    _state.Coin += 4;
+                    _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 3, 0, 100);
+                    _state.Virtues["justice"] = _state.Virtues.GetValueOrDefault("justice") + 1;
+                    lines.Add("Success: +4 coin, relations improved, and your eye for justice sharpens.");
+                }
+                else
+                {
+                    lines.Add("You audit the alms box, but your read is inconclusive; the matter remains unsettled.");
+                    _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") - 1, 0, 100);
+                    lines.Add("Outcome: no coin gained, minor local frustration.");
+                }
+
+                _state.Flags.Add("event:church_alms_box_done");
+                return;
+            }
+            case "watch_patrol_scout":
+            {
+                var score = _rng.Next(1, 21) + _state.Virtues.GetValueOrDefault("fortitude") + _state.Virtues.GetValueOrDefault("prudence");
+                if (score >= 20)
+                {
+                    lines.Add("You read the treeline before dusk and spot movement early enough to warn the road wardens.");
+                    _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 2, 0, 100);
+                    _state.Counters["watch_scout_success"] = _state.Counters.GetValueOrDefault("watch_scout_success") + 1;
+                    lines.Add("Success: priory security improves.");
+                }
+                else
+                {
+                    lines.Add("You patrol hard but find only old sign and wind-bent brush.");
+                    _state.Counters["watch_scout_attempt"] = _state.Counters.GetValueOrDefault("watch_scout_attempt") + 1;
+                    lines.Add("No decisive result this time. You can try again later.");
+                }
+                return;
+            }
+        }
+
+        lines.Add("Nothing comes of that attempt.");
     }
 
     private TimedPrompt? MaybeActivateTimed(List<string> lines)
@@ -1644,10 +1664,89 @@ public sealed class GameEngine
 
     private SceneDef CurrentScene() => _story.Scenes[_state.SceneId];
 
-    private static string ExitLine(SceneDef scene)
-        => scene.Exits.Count == 0
+    private string ExitLine(SceneDef scene)
+    {
+        var exits = AvailableExits(scene);
+        return exits.Count == 0
             ? "Travel options: none from here."
-            : "From here you can travel to: " + string.Join(", ", scene.Exits.Keys);
+            : "From here you can travel to: " + string.Join(", ", exits.Keys);
+    }
+
+    private Dictionary<string, string> AvailableExits(SceneDef scene)
+    {
+        var exits = new Dictionary<string, string>(scene.Exits, StringComparer.OrdinalIgnoreCase);
+        if (exits.ContainsKey("outside"))
+            exits.Remove("outside");
+        return exits;
+    }
+
+    private Dictionary<string, string> AvailableActions(SceneDef scene)
+    {
+        var actions = new Dictionary<string, string>(scene.Actions, StringComparer.OrdinalIgnoreCase);
+        if (_state.Flags.Contains("event:cart_departed"))
+        {
+            var unavailable = actions
+                .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
+                .Select(kv => kv.Key)
+                .ToList();
+            foreach (var key in unavailable)
+                actions.Remove(key);
+        }
+        return actions;
+    }
+
+    private bool IsOutsideRequest(ParsedInput parsed, string? target)
+    {
+        if (parsed.Verb is "exit") return true;
+        if (string.IsNullOrWhiteSpace(target)) return false;
+
+        var normalized = NormalizePhrase(target);
+        return normalized is "outside" or "out" or "building" or "room" or "church" or "chapel" or "inn" or "hall" or "shop" or "friary" or "convent" or "school" or "house";
+    }
+
+    private bool TryMoveOutside(List<string> lines)
+    {
+        var scene = CurrentScene();
+        if (scene.Exits.TryGetValue("outside", out var outsideScene))
+        {
+            MoveToScene(outsideScene, lines);
+            return true;
+        }
+
+        var previousSceneId = _state.PreviousSceneId;
+        if (string.IsNullOrWhiteSpace(previousSceneId) || !_story.Scenes.TryGetValue(previousSceneId, out var previousScene))
+            return false;
+
+        var linked = previousScene.Exits.Values.Contains(scene.Id, StringComparer.OrdinalIgnoreCase)
+                     || scene.Exits.Values.Contains(previousScene.Id, StringComparer.OrdinalIgnoreCase);
+        if (!linked) return false;
+
+        MoveToScene(previousScene.Id, lines);
+        return true;
+    }
+
+    private void MoveToScene(string nextSceneId, List<string> lines)
+    {
+        var previousSceneId = _state.SceneId;
+        _state.SceneId = nextSceneId;
+        _state.PreviousSceneId = previousSceneId;
+
+        lines.Add(CurrentScene().Text);
+
+        if (CurrentScene().EnterMenu is { } menu)
+        {
+            _state.ActiveMenuId = menu;
+            lines.Add(RenderMenu(_story.Menus[menu]));
+        }
+        else
+        {
+            lines.Add(ExitLine(CurrentScene()));
+            AddContextTip(lines);
+        }
+
+        if (CurrentScene().EnterTimed is { } timed)
+            _state.ActiveTimedId = timed;
+    }
 
     private static bool TryResolveKey(IEnumerable<string> keys, string target, out string? resolved)
     {

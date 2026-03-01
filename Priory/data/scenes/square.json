@@ -5,11 +5,13 @@
     "church": "parish_church",
     "market": "market_lane",
     "shops": "market_shop_lane",
-    "guildhall": "guildhall"
+    "guildhall": "guildhall",
+    "priory road": "roadside_track"
   },
   "actions": {
     "friar": "menu:friar_menu",
     "well": "A ring of villagers trades rumors beside the well.",
-    "cart": "timed:catch_cart"
+    "cart": "timed:catch_cart",
+    "road": "The northern road to Saint Catherine lies beyond the market, open even when no cart is available."
   }
 }

@@ -58,7 +58,7 @@ public static class Parser
         ["journal"] = Intent.Quests,
         ["quest"] = Intent.Quests,
         ["quit"] = Intent.Quit,
-        ["exit"] = Intent.Quit,
+        ["exit"] = Intent.Go,
         ["party"] = Intent.Party,
         ["companions"] = Intent.Party,
         ["version"] = Intent.Version,
@@ -87,8 +87,6 @@ public static class Parser
             return new(Intent.Unknown, Verb: verb);
         }
 
-        if (verb.Equals("exit", StringComparison.OrdinalIgnoreCase) && parts.Length > 1)
-            intent = Intent.Go;
 
         string? target = null;
         if (parts.Length > 1)

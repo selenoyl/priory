@@ -7,7 +7,10 @@
     {
       "text": "Run and climb aboard.",
       "response": "You catch the rear rail and haul yourself up.",
-      "nextScene": "travel_road"
+      "nextScene": "travel_road",
+      "setFlags": [
+        "event:cart_departed"
+      ]
     },
     {
       "text": "Let it go and remain in Blackpine.",
@@ -15,7 +18,10 @@
       "nextScene": "square",
       "counterDelta": {
         "missed_cart": 1
-      }
+      },
+      "setFlags": [
+        "event:cart_departed"
+      ]
     }
   ]
 }

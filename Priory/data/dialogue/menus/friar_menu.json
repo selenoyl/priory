@@ -9,7 +9,13 @@
         "temperance": 1,
         "justice": 1
       },
-      "nextTimed": "catch_cart"
+      "nextTimed": "catch_cart",
+      "requireNotFlags": [
+        "event:friar_intro_done"
+      ],
+      "setFlags": [
+        "event:friar_intro_done"
+      ]
     },
     {
       "text": "Ask him to pray for your road.",
@@ -18,7 +24,13 @@
         "justice": 1,
         "fortitude": 1
       },
-      "nextTimed": "catch_cart"
+      "nextTimed": "catch_cart",
+      "requireNotFlags": [
+        "event:friar_intro_done"
+      ],
+      "setFlags": [
+        "event:friar_intro_done"
+      ]
     },
     {
       "text": "Challenge him on Dominican severity.",
@@ -35,6 +47,13 @@
       },
       "requireSexes": [
         "male"
+      ]
+    },
+    {
+      "text": "Ask if he has any further counsel for the road.",
+      "response": "'Keep your promises, and keep short accounts with God,' he says. 'Blackpine watches what men do more than what they claim.'",
+      "requireFlags": [
+        "event:friar_intro_done"
       ]
     }
   ]

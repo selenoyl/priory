@@ -8,6 +8,7 @@
   },
   "actions": {
     "altar": "You kneel and pray without spectacle. A difficult peace settles in you.",
-    "clerk": "menu:clerk_menu"
+    "clerk": "menu:clerk_menu",
+    "alms box": "script:chance:church_alms_box"
   }
 }
