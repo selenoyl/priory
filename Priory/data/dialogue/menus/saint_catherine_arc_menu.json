@@ -1,0 +1,14 @@
+{
+  "id": "saint_catherine_arc_menu",
+  "prompt": "Saint Catherine Rebuild Arc: activate quests and run rebuild drills.",
+  "options": [
+    {
+      "text": "Open rebuild docket pages",
+      "nextMenu": "saint_catherine_arc_page_1"
+    },
+    {
+      "text": "Close docket",
+      "response": "You close the Saint Catherine rebuild docket for now."
+    }
+  ]
+}

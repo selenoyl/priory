@@ -1,0 +1,124 @@
+{
+  "id": "saint_catherine_arc_page_1",
+  "prompt": "Saint Catherine Rebuild Arc \u2014 Page 1/2",
+  "options": [
+    {
+      "text": "Activate SC-01 The Ruined Cloister Survey",
+      "startQuest": "sc_arc_ruined_cloister_survey",
+      "response": "[Saint Catherine Arc] SC-01 The Ruined Cloister Survey entered your active docket."
+    },
+    {
+      "text": "Train: investigate drill",
+      "script": "minigame:investigate"
+    },
+    {
+      "text": "Train: ledger drill",
+      "script": "minigame:ledger"
+    },
+    {
+      "text": "Activate SC-02 Claim of the Stone",
+      "startQuest": "sc_arc_claim_of_stone",
+      "response": "[Saint Catherine Arc] SC-02 Claim of the Stone entered your active docket."
+    },
+    {
+      "text": "Train: dispute drill",
+      "script": "minigame:dispute"
+    },
+    {
+      "text": "Train: masonry drill",
+      "script": "minigame:masonry"
+    },
+    {
+      "text": "Activate SC-03 The Missing Foundation Chest",
+      "startQuest": "sc_arc_missing_foundation_chest",
+      "response": "[Saint Catherine Arc] SC-03 The Missing Foundation Chest entered your active docket."
+    },
+    {
+      "text": "Train: investigate drill",
+      "script": "minigame:investigate"
+    },
+    {
+      "text": "Activate SC-04 The Wheel Mark",
+      "startQuest": "sc_arc_wheel_mark",
+      "response": "[Saint Catherine Arc] SC-04 The Wheel Mark entered your active docket."
+    },
+    {
+      "text": "Train: sermon drill",
+      "script": "minigame:sermon"
+    },
+    {
+      "text": "Activate SC-05 Rebuild the Gatehouse",
+      "startQuest": "sc_arc_rebuild_gatehouse",
+      "response": "[Saint Catherine Arc] SC-05 Rebuild the Gatehouse entered your active docket."
+    },
+    {
+      "text": "Train: masonry drill",
+      "script": "minigame:masonry"
+    },
+    {
+      "text": "Train: woodcut drill",
+      "script": "minigame:woodcut"
+    },
+    {
+      "text": "Activate SC-06 The First Novices",
+      "startQuest": "sc_arc_first_novices",
+      "response": "[Saint Catherine Arc] SC-06 The First Novices entered your active docket."
+    },
+    {
+      "text": "Train: dispute drill",
+      "script": "minigame:dispute"
+    },
+    {
+      "text": "Activate SC-07 The Work Rule",
+      "startQuest": "sc_arc_work_rule",
+      "response": "[Saint Catherine Arc] SC-07 The Work Rule entered your active docket."
+    },
+    {
+      "text": "Train: ledger drill",
+      "script": "minigame:ledger"
+    },
+    {
+      "text": "Activate SC-08 Bread for Tools",
+      "startQuest": "sc_arc_bread_for_tools",
+      "response": "[Saint Catherine Arc] SC-08 Bread for Tools entered your active docket."
+    },
+    {
+      "text": "Train: ledger drill",
+      "script": "minigame:ledger"
+    },
+    {
+      "text": "Train: dispute drill",
+      "script": "minigame:dispute"
+    },
+    {
+      "text": "Activate SC-09 The Chapel Before the Hall",
+      "startQuest": "sc_arc_chapel_before_hall",
+      "response": "[Saint Catherine Arc] SC-09 The Chapel Before the Hall entered your active docket."
+    },
+    {
+      "text": "Train: masonry drill",
+      "script": "minigame:masonry"
+    },
+    {
+      "text": "Activate SC-10 The Winter Soup Line",
+      "startQuest": "sc_arc_winter_soup_line",
+      "response": "[Saint Catherine Arc] SC-10 The Winter Soup Line entered your active docket."
+    },
+    {
+      "text": "Train: alms drill",
+      "script": "minigame:alms"
+    },
+    {
+      "text": "Train: queue drill",
+      "script": "minigame:queue"
+    },
+    {
+      "text": "Next page",
+      "nextMenu": "saint_catherine_arc_page_2"
+    },
+    {
+      "text": "Back to Saint Catherine Arc docket",
+      "nextMenu": "saint_catherine_arc_menu"
+    }
+  ]
+}

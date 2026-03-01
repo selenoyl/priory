@@ -1066,6 +1066,39 @@ public sealed class GameEngine
             case "fishing":
                 GoFishing(lines);
                 return;
+            case "investigate":
+                PlayInvestigationBoard(lines);
+                return;
+            case "ledger":
+                PlayLedgerPuzzle(lines);
+                return;
+            case "herbal":
+                PlayHerbalRemedy(lines);
+                return;
+            case "hunt":
+                PlayTrackingHunt(lines);
+                return;
+            case "woodcut":
+                PlayWoodcutHaul(lines);
+                return;
+            case "masonry":
+                PlayMasonryPlanning(lines);
+                return;
+            case "sermon":
+                PlaySermonCraft(lines);
+                return;
+            case "queue":
+                PlayCrowdQueueControl(lines);
+                return;
+            case "dispute":
+                PlayScholasticDisputation(lines);
+                return;
+            case "alms":
+                PlayAlmsTriage(lines);
+                return;
+            case "stealth":
+                PlayNightWatchPatrol(lines);
+                return;
             default:
                 lines.Add("That pastime is not available.");
                 return;
@@ -1197,6 +1230,217 @@ public sealed class GameEngine
             AddVirtue("temperance", 1);
         }
 
+        AdvanceTime(lines, 1);
+    }
+
+
+    private void PlayInvestigationBoard(List<string> lines)
+    {
+        lines.Add("You pin clues to the board, compare testimony, and test one hypothesis before chapter bell.");
+        var clarity = _rng.Next(1, 21) + Virtue("humility") + Virtue("temperance");
+        _state.Inventory.Add("Witness Statement");
+        if (!_state.Inventory.Contains("Ledger Page")) _state.Inventory.Add("Ledger Page");
+        if (clarity >= 18)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            AddVirtue("humility", 1);
+            lines.Add("Your board holds together under scrutiny. Relations +1.");
+        }
+        else
+        {
+            lines.Add("Some contradictions remain unresolved; the case can continue next session.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayLedgerPuzzle(List<string> lines)
+    {
+        lines.Add("You reconcile entries against stores while the steward watches the totals.");
+        var score = _rng.Next(1, 21) + Virtue("temperance") + Virtue("humility");
+        if (!_state.Inventory.Contains("Audit Stamp")) _state.Inventory.Add("Audit Stamp");
+        if (!_state.Inventory.Contains("Inventory Token")) _state.Inventory.Add("Inventory Token");
+        if (score >= 17)
+        {
+            _state.Coin += 2;
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") + 1, 0, 100);
+            lines.Add("Your accounts reconcile cleanly. Coin +2, treasury +1.");
+        }
+        else
+        {
+            _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") - 1, 0, 100);
+            lines.Add("A discrepancy remains and confidence dips. Morale -1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayHerbalRemedy(List<string> lines)
+    {
+        lines.Add("You sort herbs by scent and bruise, then prepare a careful remedy.");
+        if (!_state.Inventory.Contains("Dried Yarrow")) _state.Inventory.Add("Dried Yarrow");
+        if (!_state.Inventory.Contains("Comfrey Bundle")) _state.Inventory.Add("Comfrey Bundle");
+        var success = _rng.Next(1, 21) + Virtue("charity") + Virtue("faith") >= 16;
+        if (success)
+        {
+            if (!_state.Inventory.Contains("Poultice")) _state.Inventory.Add("Poultice");
+            if (!_state.Inventory.Contains("Tincture")) _state.Inventory.Add("Tincture");
+            _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+            lines.Add("The remedy takes hold. Morale +1 and medicine stocked.");
+        }
+        else
+        {
+            lines.Add("The brew is weak this time; materials are consumed for limited relief.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayTrackingHunt(List<string> lines)
+    {
+        lines.Add("You follow broken brush and hoof grooves, choosing speed over certainty.");
+        var score = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("hope");
+        if (score >= 17)
+        {
+            if (!_state.Inventory.Contains("Meat Rations")) _state.Inventory.Add("Meat Rations");
+            if (!_state.Inventory.Contains("Wolf Pelt")) _state.Inventory.Add("Wolf Pelt");
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("You return with proof and provisions. Security +1.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") - 1, 0, 100);
+            lines.Add("Tracks scatter at dusk; the road remains uneasy. Security -1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayWoodcutHaul(List<string> lines)
+    {
+        lines.Add("You balance felling, hauling, and preserving what should not be stripped bare.");
+        if (!_state.Inventory.Contains("Logs")) _state.Inventory.Add("Logs");
+        if (!_state.Inventory.Contains("Timber Planks")) _state.Inventory.Add("Timber Planks");
+        if (!_state.Inventory.Contains("Charcoal Sack")) _state.Inventory.Add("Charcoal Sack");
+        _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") + 1, 0, 100);
+        AddVirtue("temperance", 1);
+        lines.Add("Materials delivered with minimal waste. Treasury +1.");
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayMasonryPlanning(List<string> lines)
+    {
+        lines.Add("You place labor and stone against weak joints before weather can find them.");
+        if (!_state.Inventory.Contains("Cut Stone")) _state.Inventory.Add("Cut Stone");
+        if (!_state.Inventory.Contains("Lime Mortar")) _state.Inventory.Add("Lime Mortar");
+        if (!_state.Inventory.Contains("Iron Nails")) _state.Inventory.Add("Iron Nails");
+        var score = _rng.Next(1, 21) + Virtue("temperance") + Virtue("fortitude");
+        if (score >= 17)
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 2, 0, 100);
+            lines.Add("Your plan holds through inspection. Security +2.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("The plan is serviceable but costly; repairs will need another pass.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlaySermonCraft(List<string> lines)
+    {
+        lines.Add("You draft theme, tone, and rebuke level, then deliver before a divided crowd.");
+        if (!_state.Inventory.Contains("Rumor (intel)")) _state.Inventory.Add("Rumor (intel)");
+        if (!_state.Inventory.Contains("Donation Coin")) _state.Inventory.Add("Donation Coin");
+        var score = _rng.Next(1, 21) + Virtue("faith") + Virtue("humility");
+        if (score >= 17)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 2, 0, 100);
+            lines.Add("Your words steady both conscience and temper. Relations +2.");
+        }
+        else
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            lines.Add("Some are moved, others resist; tension softens only slightly. Relations +1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayCrowdQueueControl(List<string> lines)
+    {
+        lines.Add("You assign ushers, triage urgency, and keep the line from turning into panic.");
+        if (!_state.Inventory.Contains("Order Token")) _state.Inventory.Add("Order Token");
+        if (!_state.Inventory.Contains("Blessed Cloth")) _state.Inventory.Add("Blessed Cloth");
+        var score = _rng.Next(1, 21) + Virtue("temperance") + Virtue("charity");
+        if (score >= 16)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("Fair ordering prevents a crush and earns trust. Relations +1, security +1.");
+        }
+        else
+        {
+            lines.Add("You prevent the worst, but tempers flare and rumors linger.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayScholasticDisputation(List<string> lines)
+    {
+        lines.Add("Thesis, objection, reply: each exchange tests clarity more than volume.");
+        if (!_state.Inventory.Contains("Reference Manuscript")) _state.Inventory.Add("Reference Manuscript");
+        if (!_state.Inventory.Contains("Scholar’s Note")) _state.Inventory.Add("Scholar’s Note");
+        if (!_state.Inventory.Contains("Seal of Approval")) _state.Inventory.Add("Seal of Approval");
+        var score = _rng.Next(1, 21) + Virtue("faith") + Virtue("humility");
+        if (score >= 18)
+        {
+            AddVirtue("faith", 1);
+            AddVirtue("humility", 1);
+            _state.Priory["piety"] = Math.Clamp(_state.Priory.GetValueOrDefault("piety") + 1, 0, 100);
+            lines.Add("You win by precision without pride. Piety +1.");
+        }
+        else
+        {
+            lines.Add("The exchange remains unresolved, but no fracture follows.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayAlmsTriage(List<string> lines)
+    {
+        lines.Add("You triage requests with thin stores: immediate hunger, long-term labor, and fairness all compete.");
+        if (!_state.Inventory.Contains("Ration Card")) _state.Inventory.Add("Ration Card");
+        if (!_state.Inventory.Contains("Favors (town)")) _state.Inventory.Add("Favors (town)");
+        var score = _rng.Next(1, 21) + Virtue("charity") + Virtue("temperance");
+        if (score >= 17)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 2, 0, 100);
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 1, 0, 100);
+            lines.Add("The town is fed without complete disorder. Relations +2, treasury -1.");
+        }
+        else
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 2, 0, 100);
+            lines.Add("Aid reaches many, but reserves take a heavy hit. Relations +1, treasury -2.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayNightWatchPatrol(List<string> lines)
+    {
+        lines.Add("You walk dark corridors and gate paths, checking locks before rumor picks a culprit.");
+        if (!_state.Inventory.Contains("Recovered Tools")) _state.Inventory.Add("Recovered Tools");
+        if (!_state.Inventory.Contains("Key Ring")) _state.Inventory.Add("Key Ring");
+        if (!_state.Inventory.Contains("Contraband")) _state.Inventory.Add("Contraband");
+        var score = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("humility");
+        if (score >= 16)
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 2, 0, 100);
+            lines.Add("You catch the breach cleanly and avoid false blame. Security +2.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("You deter repeat theft, though the full truth remains murky. Security +1.");
+        }
         AdvanceTime(lines, 1);
     }
 
