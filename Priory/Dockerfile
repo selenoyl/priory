@@ -9,6 +9,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish/ ./
 COPY data ./data
+COPY music ./music
 RUN mkdir -p /app/saves
 ENV PRIORY_SAVE_SECRET=CHANGE_ME
 ENV PRIORY_SERVER_MODE=true

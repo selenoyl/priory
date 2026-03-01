@@ -567,6 +567,25 @@
       font-size: 0.82em;
     }
 
+    #musicDebugPanel {
+      display: none;
+      margin-top: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      padding: 6px;
+      background: rgba(8, 12, 22, 0.75);
+      font-size: 0.74rem;
+      line-height: 1.3;
+      color: #d7e5ff;
+      white-space: pre-wrap;
+    }
+
+    #musicDebugPanel.show {
+      display: block;
+    }
+
     .inventory-modal {
       position: absolute;
       inset: 0;
@@ -862,7 +881,8 @@
       </div>
       <input id="musicVolume" type="range" min="0" max="0.25" step="0.01" value="0.08" aria-label="Background music volume" />
       <div id="musicVolumeLabel" class="audio-note">8% (subtle)</div>
-      <div class="audio-note">Background music starts after you begin a session.</div>
+      <div id="musicStatusNote" class="audio-note">Background music starts after you begin a session.</div>
+      <div id="musicDebugPanel" aria-live="polite"></div>
     </div>
 
     <div id="menuPopover" class="menu-popover" role="dialog" aria-label="Menu">
@@ -922,15 +942,24 @@ let showQuickAccess = false;
 const DEFAULT_MUSIC_VOLUME = 0.08;
 const MUSIC_STORAGE_KEY = 'priory_music_volume';
 const MUSIC_BASE_PATH = '/music';
+const MUSIC_LIBRARY_ENDPOINT = '/api/music-tracks';
 const MUSIC_TRACKS = {
-  menu: `${MUSIC_BASE_PATH}/menu.mp3`,
-  town: `${MUSIC_BASE_PATH}/towns.mp3`,
-  forest: `${MUSIC_BASE_PATH}/forest.mp3`,
-  adventure: `${MUSIC_BASE_PATH}/adventure.mp3`,
-  adventure2: `${MUSIC_BASE_PATH}/adventure2.mp3`,
-  church: `${MUSIC_BASE_PATH}/church%20music%20default.mp3`,
-  churchFast: `${MUSIC_BASE_PATH}/church%20music%20sped%20up.mp3`,
-  building: `${MUSIC_BASE_PATH}/inside%20buildings%20(that%20arent%20churches).mp3`
+  menu: ['menu.mp3'],
+  town: ['towns.mp3', 'town.mp3'],
+  forest: ['forest.mp3'],
+  adventure: ['adventure.mp3'],
+  adventure2: ['adventure2.mp3'],
+  church: ['church music default.mp3', 'church_music_default.mp3'],
+  building: ['inside buildings (that arent churches).mp3', 'inside_buildings.mp3']
+};
+const MUSIC_CATEGORY_HINTS = {
+  menu: ['menu'],
+  town: ['town', 'market', 'village', 'square', 'inn', 'dock', 'quay'],
+  forest: ['forest', 'woods', 'wild'],
+  adventure: ['adventure', 'journey', 'travel'],
+  adventure2: ['battle', 'danger', 'crisis', 'ambush', 'adventure2'],
+  church: ['church', 'chapel', 'convent', 'friary', 'prayer', 'hymn'],
+  building: ['inside', 'hall', 'house', 'scriptorium', 'building']
 };
 
 const SCENE_MUSIC_RULES = [
@@ -946,8 +975,11 @@ const musicState = {
   currentSrc: '',
   started: false,
   currentTrackKey: 'menu',
-  missingTracks: new Set(),
-  pendingTrackKey: null
+  pendingTrackKey: null,
+  catalogLoaded: false,
+  allTracks: [],
+  debugVisible: false,
+  debugLog: []
 };
 
 function normalizeVolume(rawValue) {
@@ -986,6 +1018,43 @@ function applyMusicVolume(volume) {
   setMusicButtonGlyph(normalized);
 }
 
+
+
+function pushMusicDebug(message) {
+  const stamp = new Date().toLocaleTimeString();
+  musicState.debugLog.push(`[${stamp}] ${message}`);
+  if (musicState.debugLog.length > 120) {
+    musicState.debugLog.splice(0, musicState.debugLog.length - 120);
+  }
+  renderMusicDebugLog();
+}
+
+function renderMusicDebugLog() {
+  const panel = document.getElementById('musicDebugPanel');
+  if (!panel) return;
+  panel.textContent = musicState.debugLog.join('
+');
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function toggleMusicDebug() {
+  musicState.debugVisible = !musicState.debugVisible;
+  const panel = document.getElementById('musicDebugPanel');
+  if (!panel) return;
+  panel.classList.toggle('show', musicState.debugVisible);
+  if (musicState.debugVisible && musicState.debugLog.length === 0) {
+    pushMusicDebug('Music debug enabled.');
+  }
+  append([`Music debug ${musicState.debugVisible ? 'enabled' : 'disabled'}.`]);
+}
+
+function setMusicStatusNote(message) {
+  const note = document.getElementById('musicStatusNote');
+  if (!note) return;
+  note.textContent = message;
+  pushMusicDebug(`status: ${message}`);
+}
+
 function closeAudioPopover() {
   document.getElementById('audioPopover').classList.remove('show');
 }
@@ -1008,8 +1077,74 @@ function inferMusicTrackKey(textBlob) {
   return 'adventure';
 }
 
+function buildTrackUrl(fileName) {
+  return `${MUSIC_BASE_PATH}/${encodeURIComponent(fileName)}`;
+}
+
+function classifyTrack(fileName) {
+  const normalized = (fileName || '').toLowerCase();
+  let bestKey = 'adventure';
+  let bestScore = 0;
+  Object.entries(MUSIC_CATEGORY_HINTS).forEach(([key, hints]) => {
+    const score = hints.reduce((sum, hint) => sum + (normalized.includes(hint) ? 1 : 0), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestKey = key;
+    }
+  });
+  return bestKey;
+}
+
+function assignMusicLibrary(trackNames) {
+  const unique = Array.from(new Set((trackNames || []).filter(Boolean)));
+  if (unique.length === 0) {
+    musicState.allTracks = [];
+    return;
+  }
+
+  Object.keys(MUSIC_TRACKS).forEach((key) => {
+    MUSIC_TRACKS[key] = [];
+  });
+
+  unique.forEach((fileName) => {
+    const category = classifyTrack(fileName);
+    MUSIC_TRACKS[category].push(fileName);
+  });
+
+  const fallback = MUSIC_TRACKS.adventure.length > 0 ? MUSIC_TRACKS.adventure[0] : unique[0];
+  Object.keys(MUSIC_TRACKS).forEach((key) => {
+    if (MUSIC_TRACKS[key].length === 0 && fallback) {
+      MUSIC_TRACKS[key] = [fallback];
+    }
+  });
+
+  musicState.allTracks = unique;
+}
+
+async function loadMusicLibrary() {
+  try {
+    const res = await fetch(MUSIC_LIBRARY_ENDPOINT, { cache: 'no-store' });
+    if (!res.ok) {
+      setMusicStatusNote('Music library endpoint unavailable.');
+      return;
+    }
+    const data = await res.json();
+    assignMusicLibrary(data.tracks || []);
+    pushMusicDebug(`catalog loaded: ${(data.tracks || []).length} track(s)`);
+    musicState.catalogLoaded = true;
+    if ((data.tracks || []).length === 0) {
+      setMusicStatusNote('No music files found in /music.');
+    }
+  } catch {
+    setMusicStatusNote('Could not load music library.');
+  }
+}
+
 function resolveTrackSrc(trackKey) {
-  return MUSIC_TRACKS[trackKey] || MUSIC_TRACKS.adventure;
+  const names = MUSIC_TRACKS[trackKey] && MUSIC_TRACKS[trackKey].length > 0
+    ? MUSIC_TRACKS[trackKey]
+    : MUSIC_TRACKS.adventure;
+  return names.map(buildTrackUrl);
 }
 
 function ensureMusicAudio() {
@@ -1022,6 +1157,23 @@ function ensureMusicAudio() {
     audio.currentTime = 0;
     audio.play().catch(() => {});
   });
+  audio.addEventListener('playing', () => {
+    setMusicStatusNote('Now playing ambient music.');
+  });
+  audio.addEventListener('error', () => {
+    const candidates = resolveTrackSrc(musicState.currentTrackKey || 'menu');
+    pushMusicDebug(`audio error on ${audio.src || '(none)'}`);
+    const next = candidates.find((src) => src !== audio.src);
+    if (!next) {
+      pushMusicDebug('no fallback candidate available after audio error');
+      setMusicStatusNote('Selected track failed to load. Check /music filenames.');
+      return;
+    }
+    pushMusicDebug(`trying fallback source: ${next}`);
+    audio.src = next;
+    musicState.currentSrc = next;
+    tryPlayAudio(audio);
+  });
   musicState.audio = audio;
   return audio;
 }
@@ -1033,17 +1185,21 @@ function tryPlayAudio(audio) {
 }
 
 function playMusicTrack(trackKey) {
-  const src = resolveTrackSrc(trackKey);
-  if (!src) return;
+  const srcCandidates = resolveTrackSrc(trackKey);
+  if (srcCandidates.length === 0) {
+    pushMusicDebug(`no track candidates for key: ${trackKey}`);
+    setMusicStatusNote('No playable tracks mapped for this scene.');
+    return;
+  }
 
   const audio = ensureMusicAudio();
-  if (musicState.currentSrc === src && !audio.paused) return;
-  if (musicState.missingTracks.has(src)) return;
+  if (srcCandidates.includes(musicState.currentSrc) && !audio.paused) return;
 
+  pushMusicDebug(`play request key=${trackKey} candidates=${srcCandidates.length}`);
   musicState.currentTrackKey = trackKey;
-  musicState.currentSrc = src;
-  audio.src = src;
-  tryPlayAudio(audio).catch?.(() => {});
+  musicState.currentSrc = srcCandidates[0];
+  audio.src = musicState.currentSrc;
+  tryPlayAudio(audio);
 }
 
 function syncMusicFromNarrative(lines, userInput = '') {
@@ -1069,7 +1225,7 @@ function registerMusicUnlockHandlers() {
   window.addEventListener('keydown', unlock);
 }
 
-function initMusicControls() {
+async function initMusicControls() {
   const slider = document.getElementById('musicVolume');
   const initial = getSavedMusicVolume();
   slider.value = initial.toFixed(2);
@@ -1079,6 +1235,8 @@ function initMusicControls() {
     applyMusicVolume(slider.value);
   });
 
+  setMusicStatusNote('Loading music library...');
+  await loadMusicLibrary();
   registerMusicUnlockHandlers();
   playMusicTrack('menu');
 }
@@ -1435,8 +1593,10 @@ async function startSession() {
   sessionErrorEl.textContent = '';
   setInputEnabled(true);
   musicState.started = true;
+  setMusicStatusNote('Session active. Music should play for current scene.');
   musicState.pendingTrackKey = inferMusicTrackKey((data.bootstrapLines || []).join(' '));
   syncMusicFromNarrative(data.bootstrapLines || []);
+  tryPlayAudio(ensureMusicAudio());
   focusCommandBox();
 }
 
@@ -1531,6 +1691,7 @@ async function endSessionAndReturnToStart() {
   panel.classList.remove('fading');
 
   musicState.started = false;
+  setMusicStatusNote('Background music starts after you begin a session.');
   musicState.pendingTrackKey = 'menu';
   playMusicTrack('menu');
 
@@ -1569,6 +1730,12 @@ async function sendCommand() {
   const input = document.getElementById('cmd').value;
   if (!input.trim()) { return; }
   document.getElementById('cmd').value = '';
+
+  if (input.trim().toLowerCase() === '/debug music') {
+    toggleMusicDebug();
+    focusCommandBox();
+    return;
+  }
 
   const res = await fetch(`/api/sessions/${sessionId}/command`, {
     method: 'POST',

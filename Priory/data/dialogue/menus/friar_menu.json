@@ -4,7 +4,7 @@
   "options": [
     {
       "text": "Say you seek quiet.",
-      "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'\n\nBehind you, the carter raises his voice: 'First call! Cart leaves soon for Saint Catherine.'",
+      "response": "'Quiet is not silence,' he answers. 'May God guard your steps.'",
       "virtueDelta": {
         "temperance": 1,
         "justice": 1
@@ -14,12 +14,12 @@
       ],
       "setFlags": [
         "event:friar_intro_done",
-        "event:cart_warning_one"
+        "event:cart_departure_pending"
       ]
     },
     {
       "text": "Ask him to pray for your road.",
-      "response": "He raises a hand and prays briefly for courage and restraint.\n\nFrom the cart, the driver calls: 'First warning! Leaving shortly, with or without passengers.'",
+      "response": "He raises a hand and prays briefly for courage and restraint.",
       "virtueDelta": {
         "justice": 1,
         "fortitude": 1
@@ -29,7 +29,7 @@
       ],
       "setFlags": [
         "event:friar_intro_done",
-        "event:cart_warning_one"
+        "event:cart_departure_pending"
       ]
     },
     {
@@ -51,7 +51,7 @@
     },
     {
       "text": "Ask if he has any further counsel for the road.",
-      "response": "'Keep your promises, and keep short accounts with God,' he says. 'Blackpine watches what men do more than what they claim.'\n\nThe carter snaps the reins in warning: 'Second call! We depart in moments, with or without you.'",
+      "response": "'Keep your promises, and keep short accounts with God,' he says. 'Blackpine watches what men do more than what they claim.'",
       "requireFlags": [
         "event:friar_intro_done",
         "event:cart_warning_one"

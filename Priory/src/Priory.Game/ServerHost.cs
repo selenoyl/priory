@@ -1,3 +1,5 @@
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 using System.Collections.Concurrent;
 using System.Text;
 
@@ -37,6 +39,31 @@ public static class ServerHost
             }
         });
 
+        var musicRoots = new[]
+        {
+            Path.Combine(app.Environment.ContentRootPath, "music"),
+            Path.Combine(app.Environment.ContentRootPath, "wwwroot", "music"),
+            Path.Combine(app.Environment.ContentRootPath, "data", "music")
+        }
+        .Where(Directory.Exists)
+        .ToArray();
+
+        if (musicRoots.Length > 0)
+        {
+            var providers = musicRoots.Select(root => (IFileProvider)new PhysicalFileProvider(root)).ToArray();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = providers.Length == 1 ? providers[0] : new CompositeFileProvider(providers),
+                RequestPath = "/music",
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+                    ctx.Context.Response.Headers.Pragma = "no-cache";
+                    ctx.Context.Response.Headers.Expires = "0";
+                }
+            });
+        }
+
         var sessions = new ConcurrentDictionary<string, SessionState>(StringComparer.OrdinalIgnoreCase);
         var accountRepo = new AccountRepository(saveRoot);
 
@@ -45,6 +72,26 @@ public static class ServerHost
 
         app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
         app.MapGet("/version", () => Results.Ok(new { buildId, startedAtUtc }));
+        app.MapGet("/api/music-tracks", () =>
+        {
+            var tracks = musicRoots
+                .SelectMany(root => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+                .Where(path =>
+                {
+                    var ext = Path.GetExtension(path);
+                    return ext.Equals(".mp3", StringComparison.OrdinalIgnoreCase)
+                        || ext.Equals(".ogg", StringComparison.OrdinalIgnoreCase)
+                        || ext.Equals(".wav", StringComparison.OrdinalIgnoreCase)
+                        || ext.Equals(".m4a", StringComparison.OrdinalIgnoreCase);
+                })
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            return Results.Ok(new { tracks });
+        });
 
         app.MapPost("/api/sessions", (CreateSessionRequest request) =>
         {
