@@ -96,13 +96,31 @@
     .crossmark .vert { width: 14px; height: 68px; left: 30px; top: 3px; }
     .crossmark .horiz { width: 58px; height: 14px; left: 8px; top: 30px; }
 
+
+    @keyframes chatNeonPulse {
+      0%, 100% {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 8%, transparent),
+                    0 0 18px color-mix(in srgb, var(--neon) 20%, transparent),
+                    0 0 34px color-mix(in srgb, var(--neon) 10%, transparent);
+      }
+      50% {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 12%, transparent),
+                    0 0 24px color-mix(in srgb, var(--neon) 28%, transparent),
+                    0 0 44px color-mix(in srgb, var(--neon) 16%, transparent);
+      }
+    }
+
     .log {
       width: 100%;
       min-height: 0;
       height: 100%;
       background: #1a1a1a;
       color: #ddd;
-      border: 1px solid #333;
+      border: 1px solid color-mix(in srgb, var(--neon) 30%, #333 70%);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 8%, transparent),
+                  0 0 18px color-mix(in srgb, var(--neon) 20%, transparent),
+                  0 0 34px color-mix(in srgb, var(--neon) 10%, transparent);
+      animation: chatNeonPulse 7.8s ease-in-out infinite;
       padding: 12px;
       overflow-y: auto;
       display: flex;
@@ -112,6 +130,23 @@
       scrollbar-gutter: stable;
       scrollbar-width: thin;
       scrollbar-color: #4e4e4e #1f1f1f;
+    }
+
+    #commandRow {
+      border: 1px solid color-mix(in srgb, var(--neon) 24%, #303030 76%);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 7%, transparent),
+                  0 0 16px color-mix(in srgb, var(--neon) 18%, transparent),
+                  0 0 30px color-mix(in srgb, var(--neon) 9%, transparent);
+      animation: chatNeonPulse 7.8s ease-in-out infinite;
+      background: color-mix(in srgb, var(--neon) 3%, #151515 97%);
+      padding: 8px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .log,
+      #commandRow {
+        animation: none;
+      }
     }
 
     .log::-webkit-scrollbar { width: 10px; }
@@ -364,21 +399,44 @@
     .quick-panel.show { display: grid; }
     .quick-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 
-    .menu-popover,
-    .options-popover {
-      position: absolute;
-      right: 0;
-      top: calc(100% + 8px);
-      border: 1px solid color-mix(in srgb, var(--neon) 22%, #3f3f3f 78%);
+    .menu-popover {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 1px solid color-mix(in srgb, var(--neon) 30%, #3f3f3f 70%);
       background: #151515;
-      padding: 8px;
-      min-width: 230px;
+      padding: 12px;
+      min-width: min(92vw, 340px);
       display: none;
-      z-index: 12;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      z-index: 24;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px color-mix(in srgb, var(--neon) 14%, transparent);
     }
 
-    .menu-popover.show,
+    .menu-popover.show {
+      display: grid;
+      gap: 8px;
+    }
+
+    .menu-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #bfbfbf;
+      font-size: 0.82em;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .options-popover {
+      border: 1px solid color-mix(in srgb, var(--neon) 18%, #3f3f3f 82%);
+      background: #141414;
+      padding: 8px;
+      min-width: 0;
+      display: none;
+      box-shadow: none;
+    }
+
     .options-popover.show {
       display: grid;
       gap: 6px;
@@ -684,21 +742,25 @@
     <button id="inventoryBtn" onclick="openInventory()">Inventory</button>
     <button id="menuBtn" onclick="toggleMenuPopover()">Menu</button>
 
-    <div id="menuPopover" class="menu-popover">
+    <div id="menuPopover" class="menu-popover" role="dialog" aria-label="Menu">
+      <div class="menu-head">
+        <span>Menu</span>
+        <button class="close-options" onclick="closeMenuPopover()">×</button>
+      </div>
       <button onclick="toggleOptionsPopover()">Options</button>
       <button onclick="saveAndQuit()">Save and Quit</button>
       <button onclick="closeMenuPopover()">Close Menu</button>
-    </div>
 
-    <div id="optionsPopover" class="options-popover">
-      <div class="options-head">
-        <span>Options</span>
-        <button class="close-options" onclick="closeOptionsPopover()">×</button>
+      <div id="optionsPopover" class="options-popover">
+        <div class="options-head">
+          <span>Options</span>
+          <button class="close-options" onclick="closeOptionsPopover()">×</button>
+        </div>
+        <label class="options-row">
+          Show Quick Access menu
+          <input id="showQuickAccessToggle" type="checkbox" />
+        </label>
       </div>
-      <label class="options-row">
-        Show Quick Access menu
-        <input id="showQuickAccessToggle" type="checkbox" />
-      </label>
     </div>
   </div>
 
@@ -825,6 +887,24 @@ function appendVirtueGrid(line) {
   return el;
 }
 
+function appendLineWithInlineBold(container, line) {
+  const parts = String(line).split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  if (parts.length === 0) {
+    container.textContent = line;
+    return;
+  }
+
+  for (const part of parts) {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      const strong = document.createElement('strong');
+      strong.textContent = part.slice(2, -2);
+      container.appendChild(strong);
+    } else {
+      container.appendChild(document.createTextNode(part));
+    }
+  }
+}
+
 function append(lines) {
   const log = document.getElementById('log');
   const wasNearBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 24;
@@ -846,7 +926,7 @@ function append(lines) {
 
       const el = document.createElement('div');
       el.className = `entry ${classifyLine(line)}`;
-      el.textContent = line;
+      appendLineWithInlineBold(el, line);
       log.appendChild(el);
     }
   }
@@ -1055,6 +1135,7 @@ async function startSession() {
 
   document.getElementById('sessionModal').classList.add('hidden');
   sessionErrorEl.textContent = '';
+  setInputEnabled(true);
   focusCommandBox();
 }
 

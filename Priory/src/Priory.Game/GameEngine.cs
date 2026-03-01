@@ -449,6 +449,9 @@ public sealed class GameEngine
         if (!(option.Script?.StartsWith("task:") ?? false))
             AdvanceTime(lines, 1);
 
+        if (menu.Id.StartsWith("intro_", StringComparison.OrdinalIgnoreCase) && _state.ActiveMenuId is null)
+            AddContextTip(lines);
+
         return new(lines, MaybeActivateTimed(lines));
     }
 
