@@ -1,9 +1,9 @@
 {
   "id": "franciscan_friary",
-  "text": "The Franciscan friary is poor but alive: rough benches, soup kettles, and men who know the village by name.",
+  "text": "The Blackpine Franciscan friary is poor but alive: rough benches, soup kettles, and brothers who know the village by name.",
   "exits": {
     "green": "village_green",
-    "courtyard": "priory_courtyard"
+    "road": "roadside_track"
   },
   "actions": {
     "guardian": "menu:franciscan_guardian_menu",

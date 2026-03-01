@@ -65,11 +65,69 @@
     .intro-splash.fade-out { opacity: 0; pointer-events: none; }
     .intro-splash.hidden { display: none; }
 
-    .splash-inner {
+    .splash-stage {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transition: opacity 1200ms ease;
+      pointer-events: none;
+    }
+
+    .splash-stage.show { opacity: 1; }
+
+    .splash-card {
       text-align: center;
       display: grid;
       gap: 10px;
       justify-items: center;
+    }
+
+    .raikes-robot {
+      position: relative;
+      width: 176px;
+      height: 176px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--neon) 86%, #0f2657 14%);
+      box-shadow: 0 0 28px color-mix(in srgb, var(--neon) 42%, transparent),
+                  inset 0 -8px 0 color-mix(in srgb, #000 22%, transparent);
+      image-rendering: pixelated;
+    }
+
+    .raikes-robot::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      top: -28px;
+      background: color-mix(in srgb, var(--neon) 86%, #0f2657 14%);
+      border-radius: 4px;
+      box-shadow: 0 0 14px color-mix(in srgb, var(--neon) 32%, transparent);
+    }
+
+    .raikes-eye {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #03142f;
+      top: 70px;
+    }
+
+    .raikes-eye.left { left: 50px; }
+    .raikes-eye.right { right: 50px; }
+
+    .raikes-smile {
+      position: absolute;
+      left: 50%;
+      top: 98px;
+      width: 86px;
+      height: 34px;
+      transform: translateX(-50%);
+      border-bottom: 12px solid #03142f;
+      border-radius: 0 0 44px 44px;
     }
 
     .splash-motto {
@@ -612,11 +670,24 @@
 <body>
 <div class="wrap">
   <div id="introSplash" class="intro-splash">
-    <div class="splash-inner">
-      <div class="crossmark" aria-hidden="true" style="transform: translateY(-20px) scale(2.25); margin: 0 0 18px;">
-        <div class="vert"></div><div class="horiz"></div>
+    <div id="introStageDominican" class="splash-stage show">
+      <div class="splash-card">
+        <div class="crossmark" aria-hidden="true" style="transform: translateY(-20px) scale(2.25); margin: 0 0 18px;">
+          <div class="vert"></div><div class="horiz"></div>
+        </div>
+        <div class="splash-motto">LAUDARE, BENEDICERE, PRAEDICARE.</div>
       </div>
-      <div class="splash-motto">LAUDARE, BENEDICERE, PRAEDICARE.</div>
+    </div>
+
+    <div id="introStageRaikes" class="splash-stage">
+      <div class="splash-card">
+        <div class="raikes-robot" aria-hidden="true">
+          <div class="raikes-eye left"></div>
+          <div class="raikes-eye right"></div>
+          <div class="raikes-smile"></div>
+        </div>
+        <div class="splash-motto">POWERED BY RAIKES IT SERVICES</div>
+      </div>
     </div>
   </div>
 
@@ -1338,12 +1409,23 @@ window.addEventListener('resize', () => {
 
 function playIntroSplash() {
   const splash = document.getElementById('introSplash');
-  if (!splash) return;
+  const stageDominican = document.getElementById('introStageDominican');
+  const stageRaikes = document.getElementById('introStageRaikes');
+  if (!splash || !stageDominican || !stageRaikes) return;
 
   setTimeout(() => {
-    splash.classList.add('fade-out');
-    setTimeout(() => splash.classList.add('hidden'), 3050);
-  }, 900);
+    stageDominican.classList.remove('show');
+
+    setTimeout(() => {
+      stageRaikes.classList.add('show');
+
+      setTimeout(() => {
+        stageRaikes.classList.remove('show');
+        splash.classList.add('fade-out');
+        setTimeout(() => splash.classList.add('hidden'), 3050);
+      }, 2400);
+    }, 1000);
+  }, 1900);
 }
 
 const quickAccessToggle = document.getElementById('showQuickAccessToggle');

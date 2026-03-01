@@ -8,7 +8,6 @@
     "fields": "priory_fields",
     "village": "village_green",
     "road": "roadside_track",
-    "friary": "franciscan_friary",
     "grange": "benedictine_grange",
     "hospice": "sisters_hospice"
   },
