@@ -10,6 +10,11 @@
       "nextScene": "travel_road",
       "setFlags": [
         "event:cart_departed"
+      ],
+      "clearFlags": [
+        "event:cart_warning_one",
+        "event:cart_warning_two",
+        "event:friar_intro_done"
       ]
     },
     {
@@ -21,6 +26,11 @@
       },
       "setFlags": [
         "event:cart_departed"
+      ],
+      "clearFlags": [
+        "event:cart_warning_one",
+        "event:cart_warning_two",
+        "event:friar_intro_done"
       ]
     }
   ]
