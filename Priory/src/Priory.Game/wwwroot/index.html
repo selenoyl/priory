@@ -1032,8 +1032,7 @@ function pushMusicDebug(message) {
 function renderMusicDebugLog() {
   const panel = document.getElementById('musicDebugPanel');
   if (!panel) return;
-  panel.textContent = musicState.debugLog.join('
-');
+  panel.textContent = musicState.debugLog.join('\n');
   panel.scrollTop = panel.scrollHeight;
 }
 
