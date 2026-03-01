@@ -259,6 +259,7 @@ public sealed class GameEngine
         }
 
         MaybeAddPeriodicTip(lines, parsed.Intent);
+        ProgressCartDepartureTimeline(lines);
         PersistParty();
         var timedPrompt = MaybeActivateTimed(lines);
         return new(lines, timedPrompt);
@@ -463,6 +464,7 @@ public sealed class GameEngine
         if (menu.Id.StartsWith("intro_", StringComparison.OrdinalIgnoreCase) && _state.ActiveMenuId is null)
             AddContextTip(lines);
 
+        ProgressCartDepartureTimeline(lines);
         return new(lines, MaybeActivateTimed(lines));
     }
 
@@ -1398,26 +1400,38 @@ public sealed class GameEngine
     private void ProcessVisitorsAndDonations(List<string> lines)
     {
         var rb = _state.Rebuild;
+        var hospitality = rb.Stats.GetValueOrDefault("hospitality");
+        var sanctity = rb.Stats.GetValueOrDefault("sanctity");
+        if (hospitality <= 0 && sanctity <= 0)
+        {
+            rb.VisitorsToday = 0;
+            return;
+        }
+
         var rep = ComputeReputationScore();
-        var visitorFlow = Math.Max(0, rb.Stats.GetValueOrDefault("hospitality") + rb.Stats.GetValueOrDefault("sanctity") + rep / 2);
-        var visitors = Math.Clamp(visitorFlow / 2 + _rng.Next(0, 3), 0, rb.VisitorCapacity + 3);
+        var visitorFlow = Math.Max(0, hospitality + sanctity + Math.Max(0, rep / 5));
+        var visitors = Math.Clamp(visitorFlow / 2 + _rng.Next(0, 2), 0, rb.VisitorCapacity + 2);
         rb.VisitorsToday = Math.Min(visitors, rb.VisitorCapacity);
         var overflow = Math.Max(0, visitors - rb.VisitorCapacity);
-        if (overflow > 0)
+        if (overflow >= 2)
             lines.Add($"Visitor overflow: {overflow} traveler(s) could not be lodged.");
 
-        var donation = rb.VisitorsToday * (1 + rb.Stats.GetValueOrDefault("hospitality") / 3)
-            + Math.Max(0, Virtue("humility"))
-            + Math.Max(0, Virtue("temperance"));
-        if (Virtue("charity") >= 4)
-            donation = Math.Max(0, donation - 1);
+        if (rb.VisitorsToday <= 0) return;
 
-        if (donation > 0)
-        {
-            _state.Coin += donation;
-            rb.DonationsTotal += donation;
-            lines.Add($"Hosting yields {donation}d in gifts and patron support.");
-        }
+        var donationChance = Math.Clamp(6 + rb.VisitorsToday * 7 + hospitality * 3 + sanctity * 2 + Math.Max(0, Virtue("humility")), 8, 55);
+        if (_rng.Next(1, 101) > donationChance) return;
+
+        var donation = Math.Max(1,
+            rb.VisitorsToday
+            + _rng.Next(0, Math.Max(2, hospitality + 1))
+            + Math.Max(0, Virtue("temperance")) / 2);
+
+        if (Virtue("charity") >= 4)
+            donation = Math.Max(1, donation - 1);
+
+        _state.Coin += donation;
+        rb.DonationsTotal += donation;
+        lines.Add($"Hosting yields {donation}d in gifts and patron support.");
     }
 
     private void ProcessConstructionComplications(List<string> lines)
@@ -1691,7 +1705,15 @@ public sealed class GameEngine
         }
 
         _state.ActiveQuests.Add(questId);
-        lines.Add($"[Quest Started] {q.Title}: {q.Description}");
+        if (string.Equals(q.Id, "main_rebuild_priory", StringComparison.OrdinalIgnoreCase))
+        {
+            lines.Add($"[Quest Started] {q.Title}");
+            lines.Add(q.Description);
+        }
+        else
+        {
+            lines.Add($"[Quest Started] {q.Title}: {q.Description}");
+        }
         if (q.RequiresSynchronizedParty)
             lines.Add("[Co-op Hook] This quest can later enforce synchronized real-time party participation.");
     }
@@ -2788,6 +2810,9 @@ public sealed class GameEngine
         var actions = new Dictionary<string, string>(scene.Actions, StringComparer.OrdinalIgnoreCase);
         if (_state.Flags.Contains("event:cart_departed"))
         {
+            _state.Flags.Remove("event:cart_departure_pending");
+            _state.Flags.Remove("event:cart_final_call");
+            _state.Counters.Remove("cart_warning_turns");
             const string cartDepartTurnCounter = "cart_departed_turn";
             var currentTurn = _state.Counters.GetValueOrDefault("turn_count");
             if (!_state.Counters.ContainsKey(cartDepartTurnCounter))
@@ -2805,6 +2830,39 @@ public sealed class GameEngine
             }
         }
         return actions;
+    }
+
+    private void ProgressCartDepartureTimeline(List<string> lines)
+    {
+        if (_state.ActiveTimedId is not null || _activeTimed is not null) return;
+        if (_state.Flags.Contains("event:cart_departed")) return;
+        if (!_state.Flags.Contains("event:cart_departure_pending")) return;
+        if (!string.Equals(_state.SceneId, "square", StringComparison.OrdinalIgnoreCase)) return;
+
+        const string cartWarningTurnCounter = "cart_warning_turns";
+        var turns = _state.Counters.GetValueOrDefault(cartWarningTurnCounter) + 1;
+        _state.Counters[cartWarningTurnCounter] = turns;
+
+        if (!_state.Flags.Contains("event:cart_warning_one") && turns >= 2)
+        {
+            _state.Flags.Add("event:cart_warning_one");
+            lines.Add("From the cart, the driver finally shouts: 'First call! Cart leaves soon for Saint Catherine.'");
+            return;
+        }
+
+        if (!_state.Flags.Contains("event:cart_warning_two") && turns >= 4)
+        {
+            _state.Flags.Add("event:cart_warning_two");
+            lines.Add("The carter stands and calls louder: 'Second call! We depart in moments, with or without you.'");
+            return;
+        }
+
+        if (!_state.Flags.Contains("event:cart_final_call") && turns >= 6)
+        {
+            _state.Flags.Add("event:cart_final_call");
+            lines.Add("The cart lurches forward: 'Last call!' You have only moments to act.");
+            _state.ActiveTimedId = "catch_cart";
+        }
     }
 
     private bool IsOutsideRequest(ParsedInput parsed, string? target)
