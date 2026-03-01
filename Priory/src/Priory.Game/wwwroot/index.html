@@ -78,10 +78,20 @@
     .splash-stage.show { opacity: 1; }
 
     .splash-card {
+      --splash-symbol-band: 198px;
       text-align: center;
       display: grid;
-      gap: 10px;
+      grid-template-rows: var(--splash-symbol-band) auto;
       justify-items: center;
+      align-items: start;
+    }
+
+    .splash-mark-slot {
+      width: 100%;
+      height: var(--splash-symbol-band);
+      display: grid;
+      justify-items: center;
+      align-items: start;
     }
 
     .raikes-logo-wrap {
@@ -90,6 +100,7 @@
       display: grid;
       place-items: center;
       filter: drop-shadow(0 0 26px color-mix(in srgb, var(--neon) 44%, transparent));
+      transform: translateY(-20px);
     }
 
     .raikes-logo-mark {
@@ -122,6 +133,7 @@
       width: 74px;
       height: 74px;
       filter: drop-shadow(0 0 8px color-mix(in srgb, var(--neon) 50%, transparent));
+      transform: translateY(42px) scale(2.25);
     }
 
     .crossmark .vert,
@@ -132,7 +144,7 @@
     }
 
     .crossmark .vert { width: 14px; height: 68px; left: 30px; top: 3px; }
-    .crossmark .horiz { width: 58px; height: 14px; left: 8px; top: 30px; }
+    .crossmark .horiz { width: 52px; height: 14px; left: 11px; top: 20px; }
 
 
     @keyframes chatNeonPulse {
@@ -652,8 +664,10 @@
   <div id="introSplash" class="intro-splash">
     <div id="introStageDominican" class="splash-stage show">
       <div class="splash-card">
-        <div class="crossmark" aria-hidden="true" style="transform: translateY(-20px) scale(2.25); margin: 0 0 18px;">
-          <div class="vert"></div><div class="horiz"></div>
+        <div class="splash-mark-slot" aria-hidden="true">
+          <div class="crossmark">
+            <div class="vert"></div><div class="horiz"></div>
+          </div>
         </div>
         <div class="splash-motto">LAUDARE, BENEDICERE, PRAEDICARE.</div>
       </div>
@@ -661,10 +675,12 @@
 
     <div id="introStageRaikes" class="splash-stage">
       <div class="splash-card">
-        <div class="raikes-logo-wrap" aria-hidden="true">
-          <div class="raikes-logo-mark"></div>
+        <div class="splash-mark-slot" aria-hidden="true">
+          <div class="raikes-logo-wrap">
+            <div class="raikes-logo-mark"></div>
+          </div>
         </div>
-        <div class="splash-motto">POWERED BY RAIKES IT SERVICES</div>
+        <div class="splash-motto">CREATED BY RYAN RAIKES.</div>
       </div>
     </div>
   </div>
