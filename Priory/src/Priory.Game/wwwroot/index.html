@@ -838,6 +838,11 @@ function append(lines) {
         log.appendChild(appendVirtueGrid(rawLine));
         break;
       }
+
+      if (/^Scrollable line\s+\d+$/i.test(line.trim())) {
+        continue;
+      }
+
       const el = document.createElement('div');
       el.className = `entry ${classifyLine(line)}`;
       el.textContent = line;
