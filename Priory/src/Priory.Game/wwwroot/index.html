@@ -839,7 +839,7 @@ function append(lines) {
         break;
       }
 
-      if (/^Scrollable line\s+\d+$/i.test(line.trim())) {
+      if (/^(?:Scrollable line|Story content)\s+\d+$/i.test(line.trim())) {
         continue;
       }
 
