@@ -1,0 +1,17 @@
+{
+  "id": "sealed_room_investigation_menu",
+  "prompt": "Evidence points to blackmail and imprudence, not simple greed. Purity without charity may now do harm.",
+  "options": [
+    {
+      "text": "Involve York officials at once.",
+      "response": "External oversight protects legality but wounds internal trust.",
+      "prioryDelta": { "security": 2, "morale": -1 }
+    },
+    {
+      "text": "Conduct canonical correction within priory first.",
+      "response": "Brothers bear discipline together; some call it too gentle.",
+      "prioryDelta": { "morale": 1, "security": -1 },
+      "virtueDelta": { "temperance": 1 }
+    }
+  ]
+}

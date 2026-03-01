@@ -1,0 +1,18 @@
+{
+  "id": "university_lector_menu",
+  "prompt": "A Dominican lector offers practical support for Saint Catherine:",
+  "options": [
+    {
+      "text": "Request legal templates for priory defense and contracts.",
+      "response": "You return with robust legal tools.",
+      "prioryDelta": { "security": 2, "treasury": 1 },
+      "virtueDelta": { "prudence": 1 }
+    },
+    {
+      "text": "Request pastoral manuals for confession and preaching.",
+      "response": "Your mission work gains clarity and depth.",
+      "prioryDelta": { "piety": 2, "relations": 1 },
+      "virtueDelta": { "justice": 1 }
+    }
+  ]
+}

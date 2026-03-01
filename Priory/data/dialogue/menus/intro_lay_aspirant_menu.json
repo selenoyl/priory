@@ -1,0 +1,22 @@
+{
+  "id": "intro_lay_aspirant_menu",
+  "prompt": "Before leaving, you examine your motives:",
+  "options": [
+    {
+      "text": "Confess fear of false zeal.",
+      "response": "You admit your fear and choose patience over display.",
+      "virtueDelta": {
+        "temperance": 1,
+        "prudence": 1
+      }
+    },
+    {
+      "text": "Ask for a rule of life from day one.",
+      "response": "You commit to discipline, even when unseen.",
+      "virtueDelta": {
+        "justice": 1,
+        "fortitude": 1
+      }
+    }
+  ]
+}

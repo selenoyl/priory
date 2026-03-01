@@ -1,0 +1,23 @@
+{
+  "id": "river_factors_menu",
+  "prompt": "River factors propose contracts:",
+  "options": [
+    {
+      "text": "Lock stable grain pricing for winter.",
+      "response": "You reduce uncertainty at modest cost.",
+      "prioryDelta": { "food": 2, "treasury": -1 }
+    },
+    {
+      "text": "Speculate on spring wool rebound.",
+      "response": "Risky, but potentially lucrative.",
+      "prioryDelta": { "treasury": 2, "morale": -1 },
+      "virtueDelta": { "fortitude": 1 }
+    },
+    {
+      "text": "Decline speculation and keep reserves liquid.",
+      "response": "Stability over gain.",
+      "virtueDelta": { "prudence": 1 },
+      "prioryDelta": { "security": 1 }
+    }
+  ]
+}
