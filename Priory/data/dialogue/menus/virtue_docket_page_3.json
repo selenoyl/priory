@@ -1,0 +1,68 @@
+{
+  "id": "virtue_docket_page_3",
+  "prompt": "Regional Virtue Docket \u2014 Page 3/8",
+  "options": [
+    {
+      "text": "Open case #21: Alms vs Repairs",
+      "response": "Quest logged: Alms vs Repairs (Priory). Virtue focus: Faith. Tension to watch: Faith vs Temperance (trust vs planning).",
+      "startQuest": "virtue_arc_alms_vs_repairs"
+    },
+    {
+      "text": "Open case #22: Guild War",
+      "response": "Quest logged: Guild War (Stonemarket). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_guild_war"
+    },
+    {
+      "text": "Open case #23: Hungry Bandits",
+      "response": "Quest logged: Hungry Bandits (Roadways). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_hungry_bandits"
+    },
+    {
+      "text": "Open case #24: The Forged Charter",
+      "response": "Quest logged: The Forged Charter (Manor archives). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_forged_charter"
+    },
+    {
+      "text": "Open case #25: The Bishop\u2019s Due",
+      "response": "Quest logged: The Bishop\u2019s Due (Priory). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_bishops_due"
+    },
+    {
+      "text": "Open case #26: Patronage with Strings",
+      "response": "Quest logged: Patronage with Strings (Stonemarket). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_patronage_strings"
+    },
+    {
+      "text": "Open case #27: Second Failed Harvest",
+      "response": "Quest logged: Second Failed Harvest (Region-wide). Virtue focus: Hope. Tension to watch: Hope vs Temperance (rebuild vs conserve).",
+      "startQuest": "virtue_arc_second_failed_harvest"
+    },
+    {
+      "text": "Open case #28: The Apocalyptic Mystic",
+      "response": "Quest logged: The Apocalyptic Mystic (Stonemarket square). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_apocalyptic_mystic"
+    },
+    {
+      "text": "Open case #29: Roof Collapse",
+      "response": "Quest logged: Roof Collapse (Parish chapel). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_roof_collapse"
+    },
+    {
+      "text": "Open case #30: Royal Edict on Houses",
+      "response": "Quest logged: Royal Edict on Houses (Priory). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_royal_edict_houses"
+    },
+    {
+      "text": "Previous page",
+      "nextMenu": "virtue_docket_page_2"
+    },
+    {
+      "text": "Next page",
+      "nextMenu": "virtue_docket_page_4"
+    },
+    {
+      "text": "Back to regional docket",
+      "nextMenu": "virtue_docket_menu"
+    }
+  ]
+}

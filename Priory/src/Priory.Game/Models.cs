@@ -29,10 +29,12 @@ public sealed class GameState
     public TimeSegment Segment { get; set; } = TimeSegment.Prime;
     public Dictionary<string, int> Virtues { get; set; } = new()
     {
-        ["prudence"] = 0,
         ["fortitude"] = 0,
         ["temperance"] = 0,
-        ["justice"] = 0
+        ["faith"] = 0,
+        ["hope"] = 0,
+        ["charity"] = 0,
+        ["humility"] = 0
     };
     public Dictionary<string, int> Priory { get; set; } = new()
     {
@@ -52,6 +54,7 @@ public sealed class GameState
     public string? ActiveTimedId { get; set; }
     public DateTimeOffset? ActiveTimedDeadline { get; set; }
     public HashSet<string> SeenLoreEventIds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public RebuildState Rebuild { get; set; } = new();
 }
 
 public sealed class PartyState
@@ -99,6 +102,62 @@ public sealed class StoryData
     public Dictionary<string, QuestDef> Quests { get; set; } = new();
     public Dictionary<string, ItemDef> Items { get; set; } = new();
     public Dictionary<string, ShopDef> Shops { get; set; } = new();
+    public Dictionary<string, RebuildNodeDef> RebuildNodes { get; set; } = new();
+}
+
+
+
+public sealed class RebuildNodeDef
+{
+    public string NodeId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public List<RebuildLevelDef> Levels { get; set; } = new();
+    public Dictionary<string, int> MinStats { get; set; } = new();
+    public Dictionary<string, int> RequiresNodeLevels { get; set; } = new();
+}
+
+public sealed class RebuildLevelDef
+{
+    public int Level { get; set; }
+    public string Name { get; set; } = "";
+    public Dictionary<string, int> Cost { get; set; } = new();
+    public int TimeDays { get; set; }
+    public int LaborPerDay { get; set; } = 3;
+    public Dictionary<string, int> StatDelta { get; set; } = new();
+    public List<string> Unlocks { get; set; } = new();
+}
+
+public sealed class ActiveRebuildProject
+{
+    public string NodeId { get; set; } = "";
+    public int TargetLevel { get; set; }
+    public int DaysRemaining { get; set; }
+    public int RequiredLaborPerDay { get; set; } = 3;
+}
+
+public sealed class RebuildState
+{
+    public Dictionary<string, int> NodeLevels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, int> Stats { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["stability"] = 0,
+        ["defense"] = 0,
+        ["hospitality"] = 0,
+        ["sanctity"] = 0,
+        ["scholarship"] = 0,
+        ["economy"] = 0
+    };
+    public Dictionary<string, int> LaborAssigned { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["monks"] = 2,
+        ["laybrothers"] = 1,
+        ["workers"] = 0
+    };
+    public int LaborStress { get; set; }
+    public int VisitorsToday { get; set; }
+    public int VisitorCapacity { get; set; } = 4;
+    public int DonationsTotal { get; set; }
+    public ActiveRebuildProject? ActiveProject { get; set; }
 }
 
 public sealed class SceneDef

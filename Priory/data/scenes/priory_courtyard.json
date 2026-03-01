@@ -26,6 +26,21 @@
     "cloth delegation": "script:goto_cloth_arc",
     "road of shells": "script:goto_shells_arc",
     "border ash": "script:goto_border_arc",
-    "sealed room": "script:goto_sealed_room_arc"
+    "sealed room": "script:goto_sealed_room_arc",
+    "regional docket": "menu:virtue_docket_menu",
+    "saint catherine docket": "menu:saint_catherine_arc_menu",
+    "day loop": "script:day_loop",
+    "formation": "script:monk_formation",
+    "bulletin board": "script:bulletin_board",
+    "reputation": "script:reputation_check",
+    "collections": "script:collections_review",
+    "travel hazard drill": "script:travel_hazard",
+    "tight crafting": "script:tight_crafting",
+    "virtue trial": "script:virtue_trial",
+    "rebuild planner": "script:rebuild:overview",
+    "build plan": "script:rebuild:plan",
+    "assign labor": "script:rebuild:assign/balanced",
+    "upgrade chapel": "script:rebuild:upgrade/N-CHAPEL",
+    "upgrade gatehouse": "script:rebuild:upgrade/N-GATEHOUSE"
   }
 }

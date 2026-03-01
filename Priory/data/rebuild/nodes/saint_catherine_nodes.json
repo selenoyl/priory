@@ -1,0 +1,127 @@
+[
+  {
+    "nodeId": "N-CHAPEL",
+    "name": "Chapel",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Restored Nave",
+        "cost": { "Logs": 10, "IronNails": 15, "LimeMortar": 5, "Coin": 10 },
+        "timeDays": 3,
+        "laborPerDay": 3,
+        "statDelta": { "sanctity": 2, "stability": 1 },
+        "unlocks": ["Daily prayer event pool expands", "Feast day micro-events"]
+      },
+      {
+        "level": 2,
+        "name": "Choir + Altar Improvements",
+        "cost": { "CutStone": 8, "LimeMortar": 8, "Candles": 5, "Coin": 20 },
+        "timeDays": 4,
+        "laborPerDay": 4,
+        "statDelta": { "sanctity": 3, "hospitality": 1 },
+        "unlocks": ["Pilgrims more likely to visit", "Clergy gift quest hooks"]
+      }
+    ]
+  },
+  {
+    "nodeId": "N-GATEHOUSE",
+    "name": "Gatehouse",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Secure Gate + Locks",
+        "cost": { "TimberPlanks": 10, "IronNails": 10, "Coin": 15 },
+        "timeDays": 2,
+        "laborPerDay": 3,
+        "statDelta": { "defense": 2, "hospitality": -1 },
+        "unlocks": ["Reduced theft events"]
+      },
+      {
+        "level": 2,
+        "name": "Hospitable Gate Bench + Rules",
+        "cost": { "TimberPlanks": 8, "Candles": 3, "Coin": 20 },
+        "timeDays": 3,
+        "laborPerDay": 3,
+        "statDelta": { "hospitality": 2, "defense": 1 },
+        "unlocks": ["Overnight traveler stays", "VisitorFlow increases"]
+      }
+    ]
+  },
+  {
+    "nodeId": "N-REFECTORY",
+    "name": "Refectory + Kitchen",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Working Kitchen",
+        "cost": { "IronNails": 8, "TimberPlanks": 10, "Coin": 15 },
+        "timeDays": 3,
+        "laborPerDay": 3,
+        "statDelta": { "economy": 2, "hospitality": 1 },
+        "unlocks": ["Soup line capacity", "Rations crafting enabled"]
+      }
+    ]
+  },
+  {
+    "nodeId": "N-SCRIPTORIUM",
+    "name": "Scriptorium",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Copy Desk Row",
+        "cost": { "TimberPlanks": 6, "Candles": 4, "Ink": 4, "Coin": 15 },
+        "timeDays": 3,
+        "laborPerDay": 3,
+        "statDelta": { "scholarship": 2, "sanctity": 1 },
+        "unlocks": ["Copy books", "Better sermon/disputation options"]
+      }
+    ]
+  },
+  {
+    "nodeId": "N-LIBRARY",
+    "name": "Library",
+    "requiresNodeLevels": { "N-SCRIPTORIUM": 1 },
+    "minStats": { "stability": 1 },
+    "levels": [
+      {
+        "level": 1,
+        "name": "Catalog Shelf Hall",
+        "cost": { "TimberPlanks": 10, "Candles": 4, "Coin": 20 },
+        "timeDays": 4,
+        "laborPerDay": 4,
+        "statDelta": { "scholarship": 2, "hospitality": 1 },
+        "unlocks": ["Books completion UI", "Scholars can visit"]
+      }
+    ]
+  },
+  {
+    "nodeId": "N-HOSPICE",
+    "name": "Hospice / Infirmary",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Infirmary Beds",
+        "cost": { "TimberPlanks": 8, "Candles": 3, "Coin": 15 },
+        "timeDays": 3,
+        "laborPerDay": 3,
+        "statDelta": { "hospitality": 2, "sanctity": 1 },
+        "unlocks": ["Medical crafting boosts", "Charity quest hooks increase"]
+      }
+    ]
+  },
+  {
+    "nodeId": "N-WALLS",
+    "name": "Walls & Grounds",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Perimeter Repairs",
+        "cost": { "CutStone": 10, "LimeMortar": 8, "Coin": 20 },
+        "timeDays": 4,
+        "laborPerDay": 4,
+        "statDelta": { "defense": 2, "stability": 2 },
+        "unlocks": ["Lower IncidentRisk"]
+      }
+    ]
+  }
+]

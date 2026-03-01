@@ -17,6 +17,7 @@ public enum Intent
     Party,
     Version,
     Virtues,
+    Rebuild,
     Numeric
 }
 
@@ -65,7 +66,10 @@ public static class Parser
         ["ver"] = Intent.Version,
         ["virtue"] = Intent.Virtues,
         ["virtues"] = Intent.Virtues,
-        ["v"] = Intent.Virtues
+        ["v"] = Intent.Virtues,
+        ["rebuild"] = Intent.Rebuild,
+        ["build"] = Intent.Rebuild,
+        ["planner"] = Intent.Rebuild
     };
 
     public static ParsedInput Parse(string input)

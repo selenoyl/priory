@@ -1,0 +1,68 @@
+{
+  "id": "virtue_docket_page_2",
+  "prompt": "Regional Virtue Docket \u2014 Page 2/8",
+  "options": [
+    {
+      "text": "Open case #11: The Harsh Young Preacher",
+      "response": "Quest logged: The Harsh Young Preacher (Priory / town square). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_harsh_young_preacher"
+    },
+    {
+      "text": "Open case #12: Sermon Sparks Unrest",
+      "response": "Quest logged: Sermon Sparks Unrest (Stonemarket). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_sermon_sparks_unrest"
+    },
+    {
+      "text": "Open case #13: The Noble\u2019s Demand",
+      "response": "Quest logged: The Noble\u2019s Demand (Manor / priory). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_nobles_demand"
+    },
+    {
+      "text": "Open case #14: Public Disputation",
+      "response": "Quest logged: Public Disputation (Town hall / churchyard). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_public_disputation"
+    },
+    {
+      "text": "Open case #15: Seal of Confession",
+      "response": "Quest logged: Seal of Confession (Priory confessional). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_seal_of_confession"
+    },
+    {
+      "text": "Open case #16: The Missing Grain Cart",
+      "response": "Quest logged: The Missing Grain Cart (Road to Frostmere). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_missing_grain_cart"
+    },
+    {
+      "text": "Open case #17: Bribe for a Blessing",
+      "response": "Quest logged: Bribe for a Blessing (Stonemarket). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_bribe_for_blessing"
+    },
+    {
+      "text": "Open case #18: Toll Road Dispute",
+      "response": "Quest logged: Toll Road Dispute (Stonemarket crossroads). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_toll_road_dispute"
+    },
+    {
+      "text": "Open case #19: Murmurs of Revolt",
+      "response": "Quest logged: Murmurs of Revolt (Frostmere). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_murmurs_of_revolt"
+    },
+    {
+      "text": "Open case #20: The Royal Audit",
+      "response": "Quest logged: The Royal Audit (Priory records room). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_royal_audit"
+    },
+    {
+      "text": "Previous page",
+      "nextMenu": "virtue_docket_page_1"
+    },
+    {
+      "text": "Next page",
+      "nextMenu": "virtue_docket_page_3"
+    },
+    {
+      "text": "Back to regional docket",
+      "nextMenu": "virtue_docket_menu"
+    }
+  ]
+}

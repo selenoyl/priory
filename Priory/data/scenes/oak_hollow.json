@@ -1,0 +1,14 @@
+{
+  "id": "oak_hollow",
+  "text": "Oak Hollow rests in a wooded dip where charcoal smoke and turned earth scent the air. Families keep old stories close and measure strangers by patience, not rank.",
+  "exits": {
+    "blackpine": "square",
+    "stonemarket road": "stonemarket",
+    "village green": "village_green"
+  },
+  "actions": {
+    "sacred oak": "Villagers tie prayer ribbons to a broad oak, arguing whether custom or doctrine should guide them.",
+    "charcoal pit": "Burners tend the mound carefully; one spark too soon ruins a week of labor.",
+    "elders": "menu:petition_menu"
+  }
+}

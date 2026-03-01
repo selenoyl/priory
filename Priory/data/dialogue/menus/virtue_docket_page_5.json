@@ -1,0 +1,68 @@
+{
+  "id": "virtue_docket_page_5",
+  "prompt": "Regional Virtue Docket \u2014 Page 5/8",
+  "options": [
+    {
+      "text": "Open case #42: Letters Hidden",
+      "response": "Quest logged: Letters Hidden (Priory). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_letters_hidden"
+    },
+    {
+      "text": "Open case #43: The Prideful Friar",
+      "response": "Quest logged: The Prideful Friar (Priory / pulpit). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_prideful_friar"
+    },
+    {
+      "text": "Open case #44: The Miscounted Stores",
+      "response": "Quest logged: The Miscounted Stores (Priory cellar). Virtue focus: Fortitude.",
+      "startQuest": "virtue_arc_miscounted_stores"
+    },
+    {
+      "text": "Open case #45: Bread Theft",
+      "response": "Quest logged: Bread Theft (Priory gate). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_bread_theft"
+    },
+    {
+      "text": "Open case #46: Broken Silence",
+      "response": "Quest logged: Broken Silence (Priory dormitory). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_broken_silence"
+    },
+    {
+      "text": "Open case #47: The Despairing Monk",
+      "response": "Quest logged: The Despairing Monk (Priory infirmary). Virtue focus: Hope.",
+      "startQuest": "virtue_arc_despairing_monk"
+    },
+    {
+      "text": "Open case #48: Calls for Harsh Discipline",
+      "response": "Quest logged: Calls for Harsh Discipline (Chapter meeting). Virtue focus: Temperance.",
+      "startQuest": "virtue_arc_harsh_discipline_calls"
+    },
+    {
+      "text": "Open case #49: Rival Priory\u2019s Accusation",
+      "response": "Quest logged: Rival Priory\u2019s Accusation (Regional). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_rival_priory_accusation"
+    },
+    {
+      "text": "Open case #50: Dormitory Illness",
+      "response": "Quest logged: Dormitory Illness (Priory dormitory). Virtue focus: Charity.",
+      "startQuest": "virtue_arc_dormitory_illness"
+    },
+    {
+      "text": "Open case #51: Scriptorium Error",
+      "response": "Quest logged: Scriptorium Error (Priory scriptorium). Virtue focus: Humility.",
+      "startQuest": "virtue_arc_scriptorium_error"
+    },
+    {
+      "text": "Previous page",
+      "nextMenu": "virtue_docket_page_4"
+    },
+    {
+      "text": "Next page",
+      "nextMenu": "virtue_docket_page_6"
+    },
+    {
+      "text": "Back to regional docket",
+      "nextMenu": "virtue_docket_menu"
+    }
+  ]
+}

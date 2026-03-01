@@ -26,6 +26,7 @@ public sealed class StoryLoader
         LoadQuestFiles(story);
         LoadItemFiles(story);
         LoadShopFiles(story);
+        LoadRebuildNodeFiles(story);
         return story;
     }
 
@@ -106,4 +107,25 @@ public sealed class StoryLoader
             story.Shops[s.Id] = s;
         }
     }
+
+    private void LoadRebuildNodeFiles(StoryData story)
+    {
+        foreach (var file in JsonFiles(Path.Combine(_dataRoot, "rebuild", "nodes")))
+        {
+            var json = File.ReadAllText(file).TrimStart();
+            if (json.StartsWith("["))
+            {
+                var nodes = JsonSerializer.Deserialize<List<RebuildNodeDef>>(json, _jsonOptions)
+                    ?? throw new InvalidOperationException($"Failed loading rebuild node list: {file}");
+                foreach (var node in nodes)
+                    story.RebuildNodes[node.NodeId] = node;
+                continue;
+            }
+
+            var single = JsonSerializer.Deserialize<RebuildNodeDef>(json, _jsonOptions)
+                ?? throw new InvalidOperationException($"Failed loading rebuild node: {file}");
+            story.RebuildNodes[single.NodeId] = single;
+        }
+    }
+
 }

@@ -1,0 +1,128 @@
+{
+  "id": "saint_catherine_arc_page_2",
+  "prompt": "Saint Catherine Rebuild Arc \u2014 Page 2/2",
+  "options": [
+    {
+      "text": "Activate SC-11 The Unquiet Ledger",
+      "startQuest": "sc_arc_unquiet_ledger",
+      "response": "[Saint Catherine Arc] SC-11 The Unquiet Ledger entered your active docket."
+    },
+    {
+      "text": "Train: ledger drill",
+      "script": "minigame:ledger"
+    },
+    {
+      "text": "Train: investigate drill",
+      "script": "minigame:investigate"
+    },
+    {
+      "text": "Activate SC-12 The First Public Disputation",
+      "startQuest": "sc_arc_first_public_disputation",
+      "response": "[Saint Catherine Arc] SC-12 The First Public Disputation entered your active docket."
+    },
+    {
+      "text": "Train: dispute drill",
+      "script": "minigame:dispute"
+    },
+    {
+      "text": "Train: sermon drill",
+      "script": "minigame:sermon"
+    },
+    {
+      "text": "Activate SC-13 The Hidden Room",
+      "startQuest": "sc_arc_hidden_room",
+      "response": "[Saint Catherine Arc] SC-13 The Hidden Room entered your active docket."
+    },
+    {
+      "text": "Train: investigate drill",
+      "script": "minigame:investigate"
+    },
+    {
+      "text": "Activate SC-14 The Mason's Strike",
+      "startQuest": "sc_arc_masons_strike",
+      "response": "[Saint Catherine Arc] SC-14 The Mason's Strike entered your active docket."
+    },
+    {
+      "text": "Train: ledger drill",
+      "script": "minigame:ledger"
+    },
+    {
+      "text": "Train: sermon drill",
+      "script": "minigame:sermon"
+    },
+    {
+      "text": "Activate SC-15 The Theft at Night",
+      "startQuest": "sc_arc_theft_at_night",
+      "response": "[Saint Catherine Arc] SC-15 The Theft at Night entered your active docket."
+    },
+    {
+      "text": "Train: stealth drill",
+      "script": "minigame:stealth"
+    },
+    {
+      "text": "Train: investigate drill",
+      "script": "minigame:investigate"
+    },
+    {
+      "text": "Activate SC-16 Consecration of the Restored Chapel",
+      "startQuest": "sc_arc_consecration_restored_chapel",
+      "response": "[Saint Catherine Arc] SC-16 Consecration of the Restored Chapel entered your active docket."
+    },
+    {
+      "text": "Train: sermon drill",
+      "script": "minigame:sermon"
+    },
+    {
+      "text": "Activate SC-17 The Failing Brother",
+      "startQuest": "sc_arc_failing_brother",
+      "response": "[Saint Catherine Arc] SC-17 The Failing Brother entered your active docket."
+    },
+    {
+      "text": "Train: herbal drill",
+      "script": "minigame:herbal"
+    },
+    {
+      "text": "Train: ledger drill",
+      "script": "minigame:ledger"
+    },
+    {
+      "text": "Activate SC-18 A Season of Setbacks",
+      "startQuest": "sc_arc_season_of_setbacks",
+      "response": "[Saint Catherine Arc] SC-18 A Season of Setbacks entered your active docket."
+    },
+    {
+      "text": "Train: masonry drill",
+      "script": "minigame:masonry"
+    },
+    {
+      "text": "Train: sermon drill",
+      "script": "minigame:sermon"
+    },
+    {
+      "text": "Activate SC-19 The Lord's Ultimatum",
+      "startQuest": "sc_arc_lords_ultimatum",
+      "response": "[Saint Catherine Arc] SC-19 The Lord's Ultimatum entered your active docket."
+    },
+    {
+      "text": "Train: dispute drill",
+      "script": "minigame:dispute"
+    },
+    {
+      "text": "Activate SC-20 The Rule of Alms",
+      "startQuest": "sc_arc_rule_of_alms",
+      "response": "[Saint Catherine Arc] SC-20 The Rule of Alms entered your active docket."
+    },
+    {
+      "text": "Train: alms drill",
+      "script": "minigame:alms"
+    },
+    {
+      "text": "Previous page",
+      "nextMenu": "saint_catherine_arc_page_1"
+    },
+    {
+      "text": "Back to Saint Catherine Arc docket",
+      "nextMenu": "saint_catherine_arc_menu"
+    }
+  ]
+}

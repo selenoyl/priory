@@ -1,0 +1,15 @@
+{
+  "id": "stonemarket",
+  "text": "Stonemarket rises on old stone footings where caravans converge. Tolls are tallied cleanly, ledgers are polished, and influence quietly changes hands behind guild smiles.",
+  "exits": {
+    "blackpine": "square",
+    "guild quarter": "guildhall",
+    "oak hollow road": "oak_hollow",
+    "frostmere road": "frostmere"
+  },
+  "actions": {
+    "toll house": "A clerk records axle counts, then lowers his voice to discuss who paid early and who paid twice.",
+    "grain exchange": "Merchants haggle over grain futures while teamsters wait for scales to settle.",
+    "guild stewards": "menu:guild_masters_menu"
+  }
+}

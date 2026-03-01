@@ -61,6 +61,7 @@ public sealed class GameEngine
             PlayerName = string.IsNullOrWhiteSpace(playerName) ? "Pilgrim" : playerName.Trim(),
             Sex = sex
         };
+        EnsureRebuildState();
         AttachSharedState();
         IsEnded = false;
         _state.SceneId = "intro";
@@ -150,6 +151,7 @@ public sealed class GameEngine
             _state = JsonSerializer.Deserialize<GameState>(File.ReadAllText(path)) ?? new GameState();
             if (_state.Sex == PlayerSex.Unknown)
                 _state.Sex = PlayerSex.Male;
+            EnsureRebuildState();
             if (!string.IsNullOrWhiteSpace(_state.PartyId) && _partyRepo.TryLoadById(_state.PartyId, out var shared) && shared is not null)
             {
                 _partyState = shared;
@@ -197,7 +199,7 @@ public sealed class GameEngine
         {
             case Intent.Help:
                 lines.Add("How input works: start with a verb, then optionally a target. Examples: 'look', 'go priory gate', 'talk steward', 'examine ledger', 'take wax candles'.");
-                lines.Add("Common actions: look, go/enter <place>, talk/speak <person>, examine <thing>, take <item>, inventory, status, virtues, quests, party, save, version, quit.");
+                lines.Add("Common actions: look, go/enter <place>, talk/speak <person>, examine <thing>, take <item>, inventory, status, virtues, rebuild, quests, party, save, version, quit.");
                 lines.Add("Tip: number choices (1, 2, 3...) select menu/timed options when they are shown.");
                 break;
             case Intent.Look:
@@ -226,6 +228,9 @@ public sealed class GameEngine
                 break;
             case Intent.Virtues:
                 lines.Add(VirtueDiagram());
+                break;
+            case Intent.Rebuild:
+                HandleRebuildCommand(parsed, lines);
                 break;
             case Intent.Quests:
                 lines.Add(QuestLog());
@@ -298,6 +303,12 @@ public sealed class GameEngine
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        if (scene.Exits.ContainsKey("outside")
+            && !actionTips.Any(x => x.Equals("go outside", StringComparison.OrdinalIgnoreCase)))
+        {
+            actionTips.Add("go outside");
+        }
 
         if (exits.Count > 0)
             lines.Add($"Available options: {string.Join(" | ", exits.Select(FormatExitHint))}.");
@@ -388,7 +399,7 @@ public sealed class GameEngine
         }
 
         var option = _activeTimed.Options[index];
-        if (!IsOptionAvailable(option, out var why))
+        if (!IsOptionAvailable(option, out var why, _activeTimed is null ? null : $"timed:{_activeTimed.Id}:{index}"))
         {
             lines.Add($"That path is unavailable: {why}");
             index = ChooseDefaultTimedIndex(_activeTimed);
@@ -428,7 +439,7 @@ public sealed class GameEngine
 
         var available = menu.Options
             .Select((o, i) => (o, i))
-            .Where(x => IsOptionAvailable(x.o, out _))
+            .Where(x => IsOptionAvailable(x.o, out _, $"menu:{menu.Id}:{x.i}"))
             .ToList();
 
         var index = parsed.Number - 1;
@@ -464,7 +475,7 @@ public sealed class GameEngine
         _state.LifePath = lp.Name;
 
         foreach (var kv in lp.VirtueDelta)
-            _state.Virtues[kv.Key] = _state.Virtues.GetValueOrDefault(kv.Key) + kv.Value;
+            AddVirtue(kv.Key, kv.Value);
 
         var lifePathVirtueSummary = FormatVirtueChanges(lp.VirtueDelta);
 
@@ -497,9 +508,66 @@ public sealed class GameEngine
         StartQuest("main_rebuild_priory", lines);
     }
 
-    private bool IsOptionAvailable(MenuOptionDef option, out string reason)
+
+    private static string BuildMenuChoiceFlag(string menuId, string optionText)
+        => $"menu_choice_taken:{NormalizePhrase(menuId).Replace(' ', '_')}:{NormalizePhrase(optionText).Replace(' ', '_')}";
+
+    private bool IsRepeatableMenu(string menuId)
+    {
+        if (string.IsNullOrWhiteSpace(menuId)) return false;
+        var id = menuId.ToLowerInvariant();
+        return id.Contains("shop") || id.Contains("task_board") || id.Contains("pouch") || id.Contains("book_list") || id.Contains("watch_log");
+    }
+
+    private bool IsConsequentialDecision(string menuId, MenuOptionDef option)
+    {
+        if (IsRepeatableMenu(menuId)) return false;
+        if (option.Script?.StartsWith("task:") == true) return false;
+        if (option.Script?.StartsWith("shop:") == true) return false;
+        if (option.Script?.StartsWith("minigame:") == true) return false;
+
+        return option.PrioryDelta is { Count: > 0 }
+               || option.VirtueDelta is { Count: > 0 }
+               || option.SetFlags is { Count: > 0 }
+               || option.ClearFlags is { Count: > 0 }
+               || option.CounterDelta is { Count: > 0 }
+               || !string.IsNullOrWhiteSpace(option.StartQuest)
+               || !string.IsNullOrWhiteSpace(option.CompleteQuest)
+               || !string.IsNullOrWhiteSpace(option.NextScene)
+               || !string.IsNullOrWhiteSpace(option.NextMenu)
+               || !string.IsNullOrWhiteSpace(option.NextTimed);
+    }
+
+    private string? BuildMenuChoiceReminder(string menuId)
+    {
+        var prefix = $"menu_choice_taken:{NormalizePhrase(menuId).Replace(' ', '_')}:";
+        var found = _state.Flags
+            .FirstOrDefault(f => f.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(found)) return null;
+
+        var choiceSlug = found[prefix.Length..].Replace('_', ' ');
+        if (string.IsNullOrWhiteSpace(choiceSlug)) return null;
+        return $"You already made this decision earlier ({choiceSlug}). That commitment still stands.";
+    }
+
+    private bool IsOptionAvailable(MenuOptionDef option, out string reason, string? sourceContext = null)
     {
         reason = "";
+
+        if (!string.IsNullOrWhiteSpace(sourceContext) && sourceContext.StartsWith("menu:", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = sourceContext.Split(':', 3);
+            if (parts.Length >= 2)
+            {
+                var menuId = parts[1];
+                if (IsConsequentialDecision(menuId, option) && _state.Flags.Contains(BuildMenuChoiceFlag(menuId, option.Text)))
+                {
+                    reason = "already chosen";
+                    return false;
+                }
+            }
+        }
+
         if (option.RequireFlags is { Count: > 0 })
         {
             foreach (var flag in option.RequireFlags)
@@ -577,7 +645,7 @@ public sealed class GameEngine
             else
             {
                 foreach (var delta in option.VirtueDelta)
-                    _state.Virtues[delta.Key] = _state.Virtues.GetValueOrDefault(delta.Key) + delta.Value;
+                    AddVirtue(delta.Key, delta.Value)
 
                 var virtueSummary = FormatVirtueChanges(option.VirtueDelta);
                 if (!string.IsNullOrWhiteSpace(virtueSummary))
@@ -624,6 +692,17 @@ public sealed class GameEngine
         if (!string.IsNullOrWhiteSpace(option.CompleteQuest))
             CompleteQuest(option.CompleteQuest, lines);
 
+        if (!string.IsNullOrWhiteSpace(sourceContext) && sourceContext.StartsWith("menu:", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = sourceContext.Split(':', 3);
+            if (parts.Length >= 2)
+            {
+                var menuId = parts[1];
+                if (IsConsequentialDecision(menuId, option))
+                    _state.Flags.Add(BuildMenuChoiceFlag(menuId, option.Text));
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(option.Script))
             RunScript(option.Script, lines);
 
@@ -666,6 +745,12 @@ public sealed class GameEngine
         if (script.StartsWith("chance:"))
         {
             ResolveChanceEvent(script[7..], lines);
+            return;
+        }
+
+        if (script.StartsWith("rebuild:"))
+        {
+            ResolveRebuildScript(script[8..], lines);
             return;
         }
 
@@ -723,6 +808,670 @@ public sealed class GameEngine
                 StartQuest("reich_theology_letters", lines);
                 lines.Add("Letters from the Rhineland studia raise grave theological and pastoral questions.");
                 return;
+            case "day_loop":
+                ResolveDayLoop(lines);
+                return;
+            case "monk_formation":
+                ResolveMonkFormation(lines);
+                return;
+            case "bulletin_board":
+                ResolveBulletinBoard(lines);
+                return;
+            case "reputation_check":
+                ResolveReputationCheck(lines);
+                return;
+            case "collections_review":
+                ResolveCollectionsReview(lines);
+                return;
+            case "travel_hazard":
+                ResolveTravelHazard(lines);
+                return;
+            case "tight_crafting":
+                ResolveTightCrafting(lines);
+                return;
+            case "virtue_trial":
+                ResolveVirtueTrial(lines);
+                return;
+            case "rebuild_overview":
+                RenderRebuildOverview(lines);
+                return;
+            case "rebuild_plan":
+                RenderRebuildPlan(lines);
+                return;
+            case "rebuild_assign_balanced":
+                AssignLaborPreset("balanced", lines);
+                return;
+        }
+    }
+
+    private void ResolveDayLoop(List<string> lines)
+    {
+        var totalTasks = _state.Counters.GetValueOrDefault("task_total");
+        var segmentsElapsed = _state.Counters.GetValueOrDefault("segments_elapsed_today");
+        lines.Add($"Day loop ledger: total labors {totalTasks}, segments elapsed today {segmentsElapsed}/5.");
+
+        if (segmentsElapsed >= 4)
+        {
+            AddVirtue("temperance", 1);
+            _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+            lines.Add("You close the day in order: temperance +1, morale +1.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") - 1, 0, 100);
+            lines.Add("Loose scheduling leaves gaps in supervision. Security -1.");
+        }
+
+        _state.Counters["segments_elapsed_today"] = 0;
+        AdvanceTime(lines, SegmentOrder.Length);
+    }
+
+    private void ResolveMonkFormation(List<string> lines)
+    {
+        var reputation = ComputeReputationScore();
+        var novices = _state.Counters.GetValueOrDefault("formation_novices");
+
+        if (reputation < 18)
+        {
+            lines.Add("Formation inquiry deferred: village trust and priory witness are not yet steady enough.");
+            lines.Add("Raise relations, piety, and humility before admitting more novices.");
+            return;
+        }
+
+        _state.Counters["formation_novices"] = novices + 1;
+        _state.Priory["piety"] = Math.Clamp(_state.Priory.GetValueOrDefault("piety") + 1, 0, 100);
+        _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+        lines.Add($"A novice is admitted to first formation conference. Novices in formation: {_state.Counters["formation_novices"]}.");
+        lines.Add("Piety +1, morale +1.");
+        AdvanceTime(lines, 1);
+    }
+
+    private void ResolveBulletinBoard(List<string> lines)
+    {
+        var openHazards = _state.Counters.GetValueOrDefault("hazards_resolved");
+        lines.Add("Bulletin board:"
+            + $" patrol quotas {_state.Counters.GetValueOrDefault("task_patrol")},"
+            + $" field quotas {_state.Counters.GetValueOrDefault("task_fields")},"
+            + $" charity queues {_state.Counters.GetValueOrDefault("task_charity")},"
+            + $" hazards resolved {openHazards}.");
+
+        if (_state.Priory.GetValueOrDefault("food") <= 25)
+            lines.Add("Notice: food stores critical. Prioritize fields or disciplined alms rationing.");
+        if (_state.Priory.GetValueOrDefault("security") <= 25)
+            lines.Add("Notice: road watch thinning. Assign patrols before next market wave.");
+    }
+
+    private void ResolveReputationCheck(List<string> lines)
+    {
+        var score = ComputeReputationScore();
+        lines.Add($"Reputation check: {score} (relations + piety + humility + charity).");
+        if (score >= 24)
+            lines.Add("Standing: Trusted. High-risk petitions and mediated disputes will usually open.");
+        else if (score >= 16)
+            lines.Add("Standing: Recognized. Ordinary requests proceed, but contentious appeals may resist.");
+        else
+            lines.Add("Standing: Fragile. Some doors remain closed until witness and prudence improve.");
+    }
+
+    private void ResolveCollectionsReview(List<string> lines)
+    {
+        var collection = _state.Inventory
+            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToList();
+
+        if (collection.Count == 0)
+        {
+            lines.Add("Collections cabinet is empty. Recover evidence, tools, and devotional objects to stock it.");
+            return;
+        }
+
+        lines.Add("Collections cabinet (top holdings):");
+        foreach (var entry in collection)
+            lines.Add($"  - {entry.Key} x{entry.Count()}");
+
+        _state.Counters["collection_reviews"] = _state.Counters.GetValueOrDefault("collection_reviews") + 1;
+    }
+
+    private void ResolveTravelHazard(List<string> lines)
+    {
+        var roll = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("temperance");
+        if (roll >= 19)
+        {
+            lines.Add("Travel hazard contained: your escort spacing and route timing avert an ambush.");
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 2, 0, 100);
+            _state.Counters["hazards_resolved"] = _state.Counters.GetValueOrDefault("hazards_resolved") + 1;
+            lines.Add("Security +2.");
+        }
+        else
+        {
+            lines.Add("Travel hazard strikes: wagon axle damage and frightened pilgrims slow the route.");
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 1, 0, 100);
+            _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") - 1, 0, 100);
+            lines.Add("Treasury -1, morale -1.");
+        }
+
+        AdvanceTime(lines, 1);
+    }
+
+    private void ResolveTightCrafting(List<string> lines)
+    {
+        var hasFiber = _state.Inventory.Contains("Comfrey Bundle") || _state.Inventory.Contains("Charcoal Sack");
+        var hasBinding = _state.Inventory.Contains("Blessed Cloth") || _state.Inventory.Contains("Timber Planks");
+        if (!hasFiber || !hasBinding)
+        {
+            lines.Add("Tight crafting failed: you lack paired materials (fiber + binding). Try herbal/wood tasks first.");
+            return;
+        }
+
+        if (!_state.Inventory.Contains("Field Bandage Kit"))
+            _state.Inventory.Add("Field Bandage Kit");
+        AddVirtue("humility", 1);
+        _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+        lines.Add("You craft a compact field bandage kit under tight constraints. Humility +1, morale +1.");
+        AdvanceTime(lines, 1);
+    }
+
+    private void ResolveVirtueTrial(List<string> lines)
+    {
+        var test = _rng.Next(0, 3);
+        if (test == 0)
+        {
+            var score = Virtue("charity") + Virtue("temperance") + _rng.Next(1, 7);
+            if (score >= 9)
+            {
+                lines.Add("Virtue trial (mercy vs reserves): you ration aid without abandoning the weakest.");
+                _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+                AddVirtue("charity", 1);
+            }
+            else
+            {
+                lines.Add("Virtue trial (mercy vs reserves): your plan confuses both storekeepers and petitioners.");
+                _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") - 1, 0, 100);
+            }
+        }
+        else if (test == 1)
+        {
+            var score = Virtue("faith") + Virtue("humility") + _rng.Next(1, 7);
+            if (score >= 9)
+            {
+                lines.Add("Virtue trial (truth under pressure): you answer plainly and keep confidence intact.");
+                _state.Priory["piety"] = Math.Clamp(_state.Priory.GetValueOrDefault("piety") + 1, 0, 100);
+            }
+            else
+            {
+                lines.Add("Virtue trial (truth under pressure): your witness is sound, but poorly timed.");
+                _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") - 1, 0, 100);
+            }
+        }
+        else
+        {
+            var score = Virtue("fortitude") + Virtue("hope") + _rng.Next(1, 7);
+            if (score >= 9)
+            {
+                lines.Add("Virtue trial (fear at dusk): you steady the line and complete the watch.");
+                _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            }
+            else
+            {
+                lines.Add("Virtue trial (fear at dusk): order holds, but confidence thins.");
+                _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") - 1, 0, 100);
+            }
+        }
+
+        AdvanceTime(lines, 1);
+    }
+
+    private int ComputeReputationScore()
+        => _state.Priory.GetValueOrDefault("relations") / 10
+           + _state.Priory.GetValueOrDefault("piety") / 10
+           + Math.Max(0, Virtue("humility"))
+           + Math.Max(0, Virtue("charity"));
+
+    private void HandleRebuildCommand(ParsedInput parsed, List<string> lines)
+    {
+        EnsureRebuildState();
+        var target = parsed.Target?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(target) || target.Equals("overview", StringComparison.OrdinalIgnoreCase))
+        {
+            RenderRebuildOverview(lines);
+            lines.Add("Tip: 'rebuild plan', 'rebuild upgrade <node>', or 'rebuild assign <balanced|aggressive|cautious>'.");
+            return;
+        }
+
+        if (target.StartsWith("plan", StringComparison.OrdinalIgnoreCase))
+        {
+            RenderRebuildPlan(lines);
+            return;
+        }
+
+        if (target.StartsWith("upgrade", StringComparison.OrdinalIgnoreCase))
+        {
+            var nodeQuery = target["upgrade".Length..].Trim();
+            StartRebuildUpgrade(nodeQuery, lines);
+            return;
+        }
+
+        if (target.StartsWith("assign", StringComparison.OrdinalIgnoreCase))
+        {
+            var preset = target["assign".Length..].Trim();
+            AssignLaborPreset(string.IsNullOrWhiteSpace(preset) ? "balanced" : preset, lines);
+            return;
+        }
+
+        lines.Add("Unknown rebuild command. Use: rebuild, rebuild plan, rebuild upgrade <node>, rebuild assign <preset>.");
+    }
+
+    private void ResolveRebuildScript(string verb, List<string> lines)
+    {
+        EnsureRebuildState();
+        if (string.IsNullOrWhiteSpace(verb))
+        {
+            RenderRebuildOverview(lines);
+            return;
+        }
+
+        if (verb.Equals("overview", StringComparison.OrdinalIgnoreCase))
+        {
+            RenderRebuildOverview(lines);
+            return;
+        }
+
+        if (verb.Equals("plan", StringComparison.OrdinalIgnoreCase))
+        {
+            RenderRebuildPlan(lines);
+            return;
+        }
+
+        if (verb.StartsWith("upgrade/", StringComparison.OrdinalIgnoreCase))
+        {
+            StartRebuildUpgrade(verb[8..], lines);
+            return;
+        }
+
+        if (verb.StartsWith("assign/", StringComparison.OrdinalIgnoreCase))
+        {
+            AssignLaborPreset(verb[7..], lines);
+            return;
+        }
+
+        lines.Add("Rebuild script call was invalid.");
+    }
+
+    private void EnsureRebuildState()
+    {
+        _state.Rebuild ??= new RebuildState();
+        _state.Rebuild.Stats ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in new[] { "stability", "defense", "hospitality", "sanctity", "scholarship", "economy" })
+            _state.Rebuild.Stats[key] = _state.Rebuild.Stats.GetValueOrDefault(key);
+        _state.Rebuild.NodeLevels ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        _state.Rebuild.LaborAssigned ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        _state.Rebuild.LaborAssigned["monks"] = _state.Rebuild.LaborAssigned.GetValueOrDefault("monks", 2);
+        _state.Rebuild.LaborAssigned["laybrothers"] = _state.Rebuild.LaborAssigned.GetValueOrDefault("laybrothers", 1);
+        _state.Rebuild.LaborAssigned["workers"] = _state.Rebuild.LaborAssigned.GetValueOrDefault("workers", 0);
+        _state.Rebuild.VisitorCapacity = Math.Max(1, _state.Rebuild.VisitorCapacity);
+    }
+
+    private void RenderRebuildOverview(List<string> lines)
+    {
+        EnsureRebuildState();
+        var rb = _state.Rebuild;
+        lines.Add("Saint Catherine Rebuild Planner");
+        lines.Add($"Stats: Stability {rb.Stats.GetValueOrDefault("stability")}, Defense {rb.Stats.GetValueOrDefault("defense")}, Hospitality {rb.Stats.GetValueOrDefault("hospitality")}, Sanctity {rb.Stats.GetValueOrDefault("sanctity")}, Scholarship {rb.Stats.GetValueOrDefault("scholarship")}, Economy {rb.Stats.GetValueOrDefault("economy")}");
+
+        var rep = ComputeReputationScore();
+        var visitorFlow = Math.Max(0, rb.Stats.GetValueOrDefault("hospitality") + rb.Stats.GetValueOrDefault("sanctity") + rep / 2);
+        var incidentRisk = Math.Max(1, 14 - rb.Stats.GetValueOrDefault("defense") - rb.Stats.GetValueOrDefault("stability") - Virtue("temperance"));
+        lines.Add($"Derived: VisitorFlow {visitorFlow}, DonationRate baseline {Math.Max(1, visitorFlow / 2)}, IncidentRisk d20≤{incidentRisk}.");
+
+        if (rb.ActiveProject is null)
+        {
+            lines.Add("Active Project: none");
+        }
+        else
+        {
+            lines.Add($"Active Project: {ResolveNodeLabel(rb.ActiveProject.NodeId)} L{rb.ActiveProject.TargetLevel} ({rb.ActiveProject.DaysRemaining} day(s) remaining, labor/day {rb.ActiveProject.RequiredLaborPerDay}).");
+        }
+
+        lines.Add($"Labor: monks {rb.LaborAssigned.GetValueOrDefault("monks")}, lay brothers {rb.LaborAssigned.GetValueOrDefault("laybrothers")}, hired workers {rb.LaborAssigned.GetValueOrDefault("workers")}, stress {rb.LaborStress}.");
+        lines.Add($"Visitors today: {rb.VisitorsToday}/{rb.VisitorCapacity}. Lifetime donations generated by hosting: {rb.DonationsTotal}d.");
+        lines.Add($"Collections: Books {ComputeCollectionPercent("book")}% | Relics {ComputeCollectionPercent("relic")}%. ");
+        lines.Add("Use 'rebuild plan' to inspect upgrade trees.");
+    }
+
+    private void RenderRebuildPlan(List<string> lines)
+    {
+        EnsureRebuildState();
+        if (_story.RebuildNodes.Count == 0)
+        {
+            lines.Add("No rebuild node data is loaded.");
+            return;
+        }
+
+        lines.Add("Build Menu (node -> next level)");
+        foreach (var node in _story.RebuildNodes.Values.OrderBy(n => n.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var currentLevel = _state.Rebuild.NodeLevels.GetValueOrDefault(node.NodeId);
+            var next = node.Levels.OrderBy(l => l.Level).FirstOrDefault(l => l.Level == currentLevel + 1);
+            if (next is null)
+            {
+                lines.Add($"- {node.Name}: complete (level {currentLevel}/{node.Levels.Count}).");
+                continue;
+            }
+
+            var cost = string.Join(", ", next.Cost.Select(kv => kv.Key.Equals("coin", StringComparison.OrdinalIgnoreCase) ? $"{kv.Value}d" : $"{kv.Key} x{kv.Value}"));
+            var deltas = string.Join(", ", next.StatDelta.Select(kv => $"{kv.Key}+{kv.Value}"));
+            lines.Add($"- {node.Name}: next L{next.Level} '{next.Name}' | {next.TimeDays} day(s), labor/day {next.LaborPerDay} | Cost: {cost} | Stats: {deltas}");
+        }
+        lines.Add("Command: rebuild upgrade <node name or id>");
+    }
+
+    private void AssignLaborPreset(string preset, List<string> lines)
+    {
+        EnsureRebuildState();
+        var p = preset.Trim().ToLowerInvariant();
+        switch (p)
+        {
+            case "aggressive":
+                _state.Rebuild.LaborAssigned["monks"] = 3;
+                _state.Rebuild.LaborAssigned["laybrothers"] = 2;
+                _state.Rebuild.LaborAssigned["workers"] = 2;
+                _state.Rebuild.LaborStress = Math.Clamp(_state.Rebuild.LaborStress + 2, 0, 20);
+                lines.Add("Labor preset set to aggressive: fast progress, higher stress risk.");
+                return;
+            case "cautious":
+                _state.Rebuild.LaborAssigned["monks"] = 1;
+                _state.Rebuild.LaborAssigned["laybrothers"] = 1;
+                _state.Rebuild.LaborAssigned["workers"] = 0;
+                _state.Rebuild.LaborStress = Math.Clamp(_state.Rebuild.LaborStress - 1, 0, 20);
+                lines.Add("Labor preset set to cautious: slower progress, lower stress.");
+                return;
+            default:
+                _state.Rebuild.LaborAssigned["monks"] = 2;
+                _state.Rebuild.LaborAssigned["laybrothers"] = 1;
+                _state.Rebuild.LaborAssigned["workers"] = 1;
+                lines.Add("Labor preset set to balanced.");
+                return;
+        }
+    }
+
+    private void StartRebuildUpgrade(string nodeQuery, List<string> lines)
+    {
+        EnsureRebuildState();
+        if (_state.Rebuild.ActiveProject is not null)
+        {
+            lines.Add("A project is already underway. Complete it or wait for completion before starting another.");
+            return;
+        }
+
+        if (!TryResolveRebuildNode(nodeQuery, out var node))
+        {
+            lines.Add("Unknown node. Use 'rebuild plan' to see available nodes.");
+            return;
+        }
+
+        var currentLevel = _state.Rebuild.NodeLevels.GetValueOrDefault(node!.NodeId);
+        var level = node.Levels.OrderBy(l => l.Level).FirstOrDefault(l => l.Level == currentLevel + 1);
+        if (level is null)
+        {
+            lines.Add($"{node.Name} is already at maximum level.");
+            return;
+        }
+
+        if (!CheckRebuildGating(node, level, lines))
+            return;
+
+        if (!TryPayRebuildCost(level.Cost, lines))
+            return;
+
+        _state.Rebuild.ActiveProject = new ActiveRebuildProject
+        {
+            NodeId = node.NodeId,
+            TargetLevel = level.Level,
+            DaysRemaining = level.TimeDays,
+            RequiredLaborPerDay = Math.Max(1, level.LaborPerDay)
+        };
+
+        lines.Add($"Project started: {node.Name} L{level.Level} - {level.Name}. Estimated {level.TimeDays} day(s).");
+        if (level.Unlocks.Count > 0)
+            lines.Add("On completion unlocks: " + string.Join("; ", level.Unlocks));
+    }
+
+    private bool CheckRebuildGating(RebuildNodeDef node, RebuildLevelDef level, List<string> lines)
+    {
+        foreach (var req in node.RequiresNodeLevels)
+        {
+            var have = _state.Rebuild.NodeLevels.GetValueOrDefault(req.Key);
+            if (have < req.Value)
+            {
+                lines.Add($"Locked: requires {ResolveNodeLabel(req.Key)} level {req.Value}.");
+                return false;
+            }
+        }
+
+        foreach (var statReq in node.MinStats)
+        {
+            var have = _state.Rebuild.Stats.GetValueOrDefault(statReq.Key);
+            if (have < statReq.Value)
+            {
+                lines.Add($"Locked: requires {statReq.Key} {statReq.Value} (current {have}).");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool TryPayRebuildCost(Dictionary<string, int> cost, List<string> lines)
+    {
+        var materialNeed = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var coinNeed = 0;
+        foreach (var kv in cost)
+        {
+            if (kv.Key.Equals("coin", StringComparison.OrdinalIgnoreCase)) coinNeed += kv.Value;
+            else materialNeed[kv.Key] = kv.Value;
+        }
+
+        if (_state.Coin < coinNeed)
+        {
+            lines.Add($"Insufficient coin: need {coinNeed}d, have {_state.Coin}d.");
+            return false;
+        }
+
+        foreach (var need in materialNeed)
+        {
+            var have = CountMaterial(need.Key);
+            if (have < need.Value)
+            {
+                lines.Add($"Insufficient {need.Key}: need {need.Value}, have {have}.");
+                return false;
+            }
+        }
+
+        _state.Coin -= coinNeed;
+        foreach (var need in materialNeed)
+            RemoveMaterial(need.Key, need.Value);
+
+        lines.Add($"Construction cost paid: {coinNeed}d and {string.Join(", ", materialNeed.Select(kv => $"{kv.Key} x{kv.Value}"))}.");
+        return true;
+    }
+
+    private bool TryResolveRebuildNode(string query, out RebuildNodeDef? node)
+    {
+        node = null;
+        if (string.IsNullOrWhiteSpace(query)) return false;
+        var q = query.Trim();
+
+        node = _story.RebuildNodes.Values.FirstOrDefault(n => n.NodeId.Equals(q, StringComparison.OrdinalIgnoreCase)
+            || n.Name.Equals(q, StringComparison.OrdinalIgnoreCase)
+            || n.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
+            || n.NodeId.Contains(q, StringComparison.OrdinalIgnoreCase));
+
+        return node is not null;
+    }
+
+    private string ResolveNodeLabel(string nodeId)
+        => _story.RebuildNodes.TryGetValue(nodeId, out var node) ? node.Name : nodeId;
+
+    private int CountMaterial(string materialKey)
+    {
+        var target = NormalizeMaterialName(materialKey);
+        return _state.Inventory.Count(i => NormalizeMaterialName(i) == target);
+    }
+
+    private void RemoveMaterial(string materialKey, int count)
+    {
+        var target = NormalizeMaterialName(materialKey);
+        for (var i = _state.Inventory.Count - 1; i >= 0 && count > 0; i--)
+        {
+            if (NormalizeMaterialName(_state.Inventory[i]) != target) continue;
+            _state.Inventory.RemoveAt(i);
+            count--;
+        }
+    }
+
+    private static string NormalizeMaterialName(string raw)
+        => (raw ?? string.Empty).Trim().ToLowerInvariant().Replace(" ", string.Empty).Replace("_", string.Empty);
+
+    private int ComputeCollectionPercent(string group)
+    {
+        var g = group.ToLowerInvariant();
+        var count = _state.Inventory.Count(i => i.Contains(g, StringComparison.OrdinalIgnoreCase));
+        return Math.Min(100, count * 10);
+    }
+
+    private void ProcessRebuildDay(List<string> lines)
+    {
+        EnsureRebuildState();
+        ProcessProjectProgress(lines);
+        ProcessVisitorsAndDonations(lines);
+        ProcessConstructionComplications(lines);
+    }
+
+    private void ProcessProjectProgress(List<string> lines)
+    {
+        var active = _state.Rebuild.ActiveProject;
+        if (active is null) return;
+
+        var labor = _state.Rebuild.LaborAssigned.GetValueOrDefault("monks") * 2
+            + _state.Rebuild.LaborAssigned.GetValueOrDefault("laybrothers") * 2
+            + _state.Rebuild.LaborAssigned.GetValueOrDefault("workers")
+            + Math.Max(0, _state.Rebuild.Stats.GetValueOrDefault("economy"));
+
+        if (labor >= active.RequiredLaborPerDay)
+            active.DaysRemaining -= 1;
+        else if (_rng.Next(0, 100) < 35)
+            active.DaysRemaining += 1;
+
+        if (active.DaysRemaining > 0)
+        {
+            lines.Add($"Rebuild progress: {ResolveNodeLabel(active.NodeId)} needs {active.DaysRemaining} more day(s).");
+            return;
+        }
+
+        if (!_story.RebuildNodes.TryGetValue(active.NodeId, out var node))
+        {
+            _state.Rebuild.ActiveProject = null;
+            return;
+        }
+
+        var level = node.Levels.FirstOrDefault(l => l.Level == active.TargetLevel);
+        if (level is null)
+        {
+            _state.Rebuild.ActiveProject = null;
+            return;
+        }
+
+        _state.Rebuild.NodeLevels[node.NodeId] = active.TargetLevel;
+        foreach (var delta in level.StatDelta)
+            _state.Rebuild.Stats[delta.Key.ToLowerInvariant()] = _state.Rebuild.Stats.GetValueOrDefault(delta.Key.ToLowerInvariant()) + delta.Value;
+
+        _state.Rebuild.VisitorCapacity = 4 + _state.Rebuild.Stats.GetValueOrDefault("hospitality");
+        _state.Rebuild.ActiveProject = null;
+        lines.Add($"[Project Complete] {node.Name} L{level.Level}: {level.Name}.");
+        if (level.Unlocks.Count > 0)
+            lines.Add("Unlocked: " + string.Join("; ", level.Unlocks));
+    }
+
+    private void ProcessVisitorsAndDonations(List<string> lines)
+    {
+        var rb = _state.Rebuild;
+        var rep = ComputeReputationScore();
+        var visitorFlow = Math.Max(0, rb.Stats.GetValueOrDefault("hospitality") + rb.Stats.GetValueOrDefault("sanctity") + rep / 2);
+        var visitors = Math.Clamp(visitorFlow / 2 + _rng.Next(0, 3), 0, rb.VisitorCapacity + 3);
+        rb.VisitorsToday = Math.Min(visitors, rb.VisitorCapacity);
+        var overflow = Math.Max(0, visitors - rb.VisitorCapacity);
+        if (overflow > 0)
+            lines.Add($"Visitor overflow: {overflow} traveler(s) could not be lodged.");
+
+        var donation = rb.VisitorsToday * (1 + rb.Stats.GetValueOrDefault("hospitality") / 3)
+            + Math.Max(0, Virtue("humility"))
+            + Math.Max(0, Virtue("temperance"));
+        if (Virtue("charity") >= 4)
+            donation = Math.Max(0, donation - 1);
+
+        if (donation > 0)
+        {
+            _state.Coin += donation;
+            rb.DonationsTotal += donation;
+            lines.Add($"Hosting yields {donation}d in gifts and patron support.");
+        }
+    }
+
+    private void ProcessConstructionComplications(List<string> lines)
+    {
+        var active = _state.Rebuild.ActiveProject;
+        if (active is null) return;
+
+        var incidentRiskTarget = Math.Max(1, 14 - _state.Rebuild.Stats.GetValueOrDefault("defense") - _state.Rebuild.Stats.GetValueOrDefault("stability") - Virtue("temperance"));
+        if (_rng.Next(1, 21) > incidentRiskTarget) return;
+
+        var complication = _rng.Next(0, 3);
+        switch (complication)
+        {
+            case 0:
+                lines.Add("Complication: a storm tears part of the scaffolding.");
+                if (CountMaterial("logs") > 0)
+                {
+                    RemoveMaterial("logs", 1);
+                    lines.Add("You consume 1 Logs to patch quickly and keep the schedule.");
+                }
+                else
+                {
+                    active.DaysRemaining += 1;
+                    lines.Add("No spare timber; project delayed by 1 day.");
+                }
+                break;
+            case 1:
+                lines.Add("Complication: worker injury on site.");
+                if (_state.Coin >= 4)
+                {
+                    _state.Coin -= 4;
+                    lines.Add("You pay the healer (4d), avoiding stoppage.");
+                }
+                else
+                {
+                    _state.Rebuild.LaborStress = Math.Clamp(_state.Rebuild.LaborStress + 2, 0, 20);
+                    active.DaysRemaining += 1;
+                    lines.Add("Without coin for quick treatment, morale and pace dip (delay +1 day).");
+                }
+                break;
+            default:
+                lines.Add("Complication: diocesan inspection requests records and witness.");
+                var check = Virtue("humility") + Virtue("faith") + _state.Rebuild.Stats.GetValueOrDefault("sanctity") + _rng.Next(1, 7);
+                if (check >= 8)
+                {
+                    lines.Add("Inspection clears with minimal disruption.");
+                    _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+                }
+                else
+                {
+                    lines.Add("Inspection finds irregularities; paperwork slows labor (+1 day).");
+                    active.DaysRemaining += 1;
+                }
+                break;
         }
     }
 
@@ -885,7 +1634,8 @@ public sealed class GameEngine
             case "study":
                 _state.Counters["task_study"] = _state.Counters.GetValueOrDefault("task_study") + 1;
                 _state.Counters["task_total"] = _state.Counters.GetValueOrDefault("task_total") + 1;
-                _state.Virtues["prudence"] += 1;
+                AddVirtue("hope", 1);
+                AddVirtue("humility", 1);
                 _state.Priory["piety"] = Math.Clamp(_state.Priory["piety"] + 1, 0, 100);
                 lines.Add(Pick(
                     "You copy disputed texts with Dominican annotations and sharpen your judgment.",
@@ -896,7 +1646,7 @@ public sealed class GameEngine
                 _state.Counters["task_patrol"] = _state.Counters.GetValueOrDefault("task_patrol") + 1;
                 _state.Counters["task_total"] = _state.Counters.GetValueOrDefault("task_total") + 1;
                 _state.Priory["security"] = Math.Clamp(_state.Priory["security"] + 2, 0, 100);
-                _state.Virtues["fortitude"] += 1;
+                AddVirtue("fortitude", 1);
                 lines.Add(Pick(
                     "You walk the forest road at vespers. Trouble recedes before discipline.",
                     "At the mill bend, you prevent a fight before knives clear sheaths.",
@@ -991,6 +1741,39 @@ public sealed class GameEngine
             case "fishing":
                 GoFishing(lines);
                 return;
+            case "investigate":
+                PlayInvestigationBoard(lines);
+                return;
+            case "ledger":
+                PlayLedgerPuzzle(lines);
+                return;
+            case "herbal":
+                PlayHerbalRemedy(lines);
+                return;
+            case "hunt":
+                PlayTrackingHunt(lines);
+                return;
+            case "woodcut":
+                PlayWoodcutHaul(lines);
+                return;
+            case "masonry":
+                PlayMasonryPlanning(lines);
+                return;
+            case "sermon":
+                PlaySermonCraft(lines);
+                return;
+            case "queue":
+                PlayCrowdQueueControl(lines);
+                return;
+            case "dispute":
+                PlayScholasticDisputation(lines);
+                return;
+            case "alms":
+                PlayAlmsTriage(lines);
+                return;
+            case "stealth":
+                PlayNightWatchPatrol(lines);
+                return;
             default:
                 lines.Add("That pastime is not available.");
                 return;
@@ -1014,7 +1797,7 @@ public sealed class GameEngine
 
         for (var r = 1; r <= rounds; r++)
         {
-            var yourRoll = _rng.Next(1, 7) + _rng.Next(1, 7) + (_state.Virtues["temperance"] > 2 ? 1 : 0);
+            var yourRoll = _rng.Next(1, 7) + _rng.Next(1, 7) + (Virtue("temperance") > 2 ? 1 : 0);
             var houseRoll = _rng.Next(1, 7) + _rng.Next(1, 7);
             if (yourRoll >= houseRoll)
             {
@@ -1038,7 +1821,7 @@ public sealed class GameEngine
         }
         else if (net < 0)
         {
-            _state.Virtues["temperance"] = Math.Max(_state.Virtues["temperance"] - 1, -10);
+            _state.Virtues["temperance"] = Math.Max(Virtue("temperance") - 1, -10);
             lines.Add($"You lose {Math.Abs(net)} pennies. A costly lesson in appetite.");
         }
         else
@@ -1058,7 +1841,7 @@ public sealed class GameEngine
 
         for (var decade = 1; decade <= 5; decade++)
         {
-            var recollection = _rng.Next(1, 7) + Math.Max(0, _state.Virtues["prudence"]) + Math.Max(0, _state.Virtues["temperance"]);
+            var recollection = _rng.Next(1, 7) + Math.Max(0, Virtue("faith")) + Math.Max(0, Virtue("temperance"));
             var distraction = _rng.Next(1, 9) + (_state.Day > 20 ? 1 : 0);
             if (recollection >= distraction)
             {
@@ -1073,8 +1856,9 @@ public sealed class GameEngine
 
         _state.Priory["piety"] = Math.Clamp(_state.Priory["piety"] + 1 + (focus / 2), 0, 100);
         _state.Priory["morale"] = Math.Clamp(_state.Priory["morale"] + (focus >= 3 ? 1 : 0), 0, 100);
-        _state.Virtues["temperance"] += 1;
-        if (focus >= 4) _state.Virtues["prudence"] += 1;
+        AddVirtue("temperance", 1);
+        AddVirtue("faith", 1);
+        if (focus >= 4) AddVirtue("hope", 1);
 
         lines.Add(focus >= 4
             ? "Prayer steadies your judgment for the day."
@@ -1085,7 +1869,7 @@ public sealed class GameEngine
 
     private void GoFishing(List<string> lines)
     {
-        var attempts = 3 + Math.Max(0, _state.Virtues["fortitude"]/3);
+        var attempts = 3 + Math.Max(0, Virtue("fortitude")/3);
         var catchCount = 0;
         var fishNames = new[] { "trout", "perch", "pike", "grayling" };
 
@@ -1118,19 +1902,254 @@ public sealed class GameEngine
         else
         {
             lines.Add("You return empty-handed, but with clearer eyes.");
-            _state.Virtues["temperance"] += 1;
+            AddVirtue("temperance", 1);
         }
 
         AdvanceTime(lines, 1);
     }
 
+
+    private void PlayInvestigationBoard(List<string> lines)
+    {
+        lines.Add("You pin clues to the board, compare testimony, and test one hypothesis before chapter bell.");
+        var clarity = _rng.Next(1, 21) + Virtue("humility") + Virtue("temperance");
+        _state.Inventory.Add("Witness Statement");
+        if (!_state.Inventory.Contains("Ledger Page")) _state.Inventory.Add("Ledger Page");
+        if (clarity >= 18)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            AddVirtue("humility", 1);
+            lines.Add("Your board holds together under scrutiny. Relations +1.");
+        }
+        else
+        {
+            lines.Add("Some contradictions remain unresolved; the case can continue next session.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayLedgerPuzzle(List<string> lines)
+    {
+        lines.Add("You reconcile entries against stores while the steward watches the totals.");
+        var score = _rng.Next(1, 21) + Virtue("temperance") + Virtue("humility");
+        if (!_state.Inventory.Contains("Audit Stamp")) _state.Inventory.Add("Audit Stamp");
+        if (!_state.Inventory.Contains("Inventory Token")) _state.Inventory.Add("Inventory Token");
+        if (score >= 17)
+        {
+            _state.Coin += 2;
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") + 1, 0, 100);
+            lines.Add("Your accounts reconcile cleanly. Coin +2, treasury +1.");
+        }
+        else
+        {
+            _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") - 1, 0, 100);
+            lines.Add("A discrepancy remains and confidence dips. Morale -1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayHerbalRemedy(List<string> lines)
+    {
+        lines.Add("You sort herbs by scent and bruise, then prepare a careful remedy.");
+        if (!_state.Inventory.Contains("Dried Yarrow")) _state.Inventory.Add("Dried Yarrow");
+        if (!_state.Inventory.Contains("Comfrey Bundle")) _state.Inventory.Add("Comfrey Bundle");
+        var success = _rng.Next(1, 21) + Virtue("charity") + Virtue("faith") >= 16;
+        if (success)
+        {
+            if (!_state.Inventory.Contains("Poultice")) _state.Inventory.Add("Poultice");
+            if (!_state.Inventory.Contains("Tincture")) _state.Inventory.Add("Tincture");
+            _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+            lines.Add("The remedy takes hold. Morale +1 and medicine stocked.");
+        }
+        else
+        {
+            lines.Add("The brew is weak this time; materials are consumed for limited relief.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayTrackingHunt(List<string> lines)
+    {
+        lines.Add("You follow broken brush and hoof grooves, choosing speed over certainty.");
+        var score = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("hope");
+        if (score >= 17)
+        {
+            if (!_state.Inventory.Contains("Meat Rations")) _state.Inventory.Add("Meat Rations");
+            if (!_state.Inventory.Contains("Wolf Pelt")) _state.Inventory.Add("Wolf Pelt");
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("You return with proof and provisions. Security +1.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") - 1, 0, 100);
+            lines.Add("Tracks scatter at dusk; the road remains uneasy. Security -1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayWoodcutHaul(List<string> lines)
+    {
+        lines.Add("You balance felling, hauling, and preserving what should not be stripped bare.");
+        if (!_state.Inventory.Contains("Logs")) _state.Inventory.Add("Logs");
+        if (!_state.Inventory.Contains("Timber Planks")) _state.Inventory.Add("Timber Planks");
+        if (!_state.Inventory.Contains("Charcoal Sack")) _state.Inventory.Add("Charcoal Sack");
+        _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") + 1, 0, 100);
+        AddVirtue("temperance", 1);
+        lines.Add("Materials delivered with minimal waste. Treasury +1.");
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayMasonryPlanning(List<string> lines)
+    {
+        lines.Add("You place labor and stone against weak joints before weather can find them.");
+        if (!_state.Inventory.Contains("Cut Stone")) _state.Inventory.Add("Cut Stone");
+        if (!_state.Inventory.Contains("Lime Mortar")) _state.Inventory.Add("Lime Mortar");
+        if (!_state.Inventory.Contains("Iron Nails")) _state.Inventory.Add("Iron Nails");
+        var score = _rng.Next(1, 21) + Virtue("temperance") + Virtue("fortitude");
+        if (score >= 17)
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 2, 0, 100);
+            lines.Add("Your plan holds through inspection. Security +2.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("The plan is serviceable but costly; repairs will need another pass.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlaySermonCraft(List<string> lines)
+    {
+        lines.Add("You draft theme, tone, and rebuke level, then deliver before a divided crowd.");
+        if (!_state.Inventory.Contains("Rumor (intel)")) _state.Inventory.Add("Rumor (intel)");
+        if (!_state.Inventory.Contains("Donation Coin")) _state.Inventory.Add("Donation Coin");
+        var score = _rng.Next(1, 21) + Virtue("faith") + Virtue("humility");
+        if (score >= 17)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 2, 0, 100);
+            lines.Add("Your words steady both conscience and temper. Relations +2.");
+        }
+        else
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            lines.Add("Some are moved, others resist; tension softens only slightly. Relations +1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayCrowdQueueControl(List<string> lines)
+    {
+        lines.Add("You assign ushers, triage urgency, and keep the line from turning into panic.");
+        if (!_state.Inventory.Contains("Order Token")) _state.Inventory.Add("Order Token");
+        if (!_state.Inventory.Contains("Blessed Cloth")) _state.Inventory.Add("Blessed Cloth");
+        var score = _rng.Next(1, 21) + Virtue("temperance") + Virtue("charity");
+        if (score >= 16)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("Fair ordering prevents a crush and earns trust. Relations +1, security +1.");
+        }
+        else
+        {
+            lines.Add("You prevent the worst, but tempers flare and rumors linger.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayScholasticDisputation(List<string> lines)
+    {
+        lines.Add("Thesis, objection, reply: each exchange tests clarity more than volume.");
+        if (!_state.Inventory.Contains("Reference Manuscript")) _state.Inventory.Add("Reference Manuscript");
+        if (!_state.Inventory.Contains("Scholar’s Note")) _state.Inventory.Add("Scholar’s Note");
+        if (!_state.Inventory.Contains("Seal of Approval")) _state.Inventory.Add("Seal of Approval");
+        var score = _rng.Next(1, 21) + Virtue("faith") + Virtue("humility");
+        if (score >= 18)
+        {
+            AddVirtue("faith", 1);
+            AddVirtue("humility", 1);
+            _state.Priory["piety"] = Math.Clamp(_state.Priory.GetValueOrDefault("piety") + 1, 0, 100);
+            lines.Add("You win by precision without pride. Piety +1.");
+        }
+        else
+        {
+            lines.Add("The exchange remains unresolved, but no fracture follows.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayAlmsTriage(List<string> lines)
+    {
+        lines.Add("You triage requests with thin stores: immediate hunger, long-term labor, and fairness all compete.");
+        if (!_state.Inventory.Contains("Ration Card")) _state.Inventory.Add("Ration Card");
+        if (!_state.Inventory.Contains("Favors (town)")) _state.Inventory.Add("Favors (town)");
+        var score = _rng.Next(1, 21) + Virtue("charity") + Virtue("temperance");
+        if (score >= 17)
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 2, 0, 100);
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 1, 0, 100);
+            lines.Add("The town is fed without complete disorder. Relations +2, treasury -1.");
+        }
+        else
+        {
+            _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 1, 0, 100);
+            _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 2, 0, 100);
+            lines.Add("Aid reaches many, but reserves take a heavy hit. Relations +1, treasury -2.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
+    private void PlayNightWatchPatrol(List<string> lines)
+    {
+        lines.Add("You walk dark corridors and gate paths, checking locks before rumor picks a culprit.");
+        if (!_state.Inventory.Contains("Recovered Tools")) _state.Inventory.Add("Recovered Tools");
+        if (!_state.Inventory.Contains("Key Ring")) _state.Inventory.Add("Key Ring");
+        if (!_state.Inventory.Contains("Contraband")) _state.Inventory.Add("Contraband");
+        var score = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("humility");
+        if (score >= 16)
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 2, 0, 100);
+            lines.Add("You catch the breach cleanly and avoid false blame. Security +2.");
+        }
+        else
+        {
+            _state.Priory["security"] = Math.Clamp(_state.Priory.GetValueOrDefault("security") + 1, 0, 100);
+            lines.Add("You deter repeat theft, though the full truth remains murky. Security +1.");
+        }
+        AdvanceTime(lines, 1);
+    }
+
     private string Pick(params string[] lines) => lines[_rng.Next(lines.Length)];
+
+    private static string CanonicalVirtueKey(string key)
+    {
+        var normalized = (key ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "prudence" => "humility",
+            "justice" => "charity",
+            _ => normalized
+        };
+    }
+
+    private int Virtue(string key)
+        => _state.Virtues.GetValueOrDefault(CanonicalVirtueKey(key));
+
+    private void AddVirtue(string key, int delta)
+    {
+        var canonical = CanonicalVirtueKey(key);
+        if (string.IsNullOrWhiteSpace(canonical) || delta == 0) return;
+        _state.Virtues[canonical] = _state.Virtues.GetValueOrDefault(canonical) + delta;
+    }
 
     private string FormatVirtueChanges(IReadOnlyDictionary<string, int> deltas)
     {
         var parts = deltas
             .Where(kv => kv.Value != 0)
-            .Select(kv => $"{kv.Key} {(kv.Value > 0 ? "+" : "")}{kv.Value}")
+            .Select(kv => (key: CanonicalVirtueKey(kv.Key), kv.Value))
+            .Where(kv => !string.IsNullOrWhiteSpace(kv.key))
+            .Select(kv => $"{kv.key} {(kv.Value > 0 ? "+" : "")}{kv.Value}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         return parts.Count == 0 ? string.Empty : string.Join(", ", parts);
@@ -1147,10 +2166,12 @@ public sealed class GameEngine
     {
         var spec = new (string Key, string Label, string ColorDot)[]
         {
-            ("prudence", "Prudence", "🔵"),
             ("fortitude", "Fortitude", "🔴"),
             ("temperance", "Temperance", "🟢"),
-            ("justice", "Justice", "🟡")
+            ("faith", "Faith", "🟣"),
+            ("hope", "Hope", "🔵"),
+            ("charity", "Charity", "🟡"),
+            ("humility", "Humility", "⚪")
         };
 
         const int maxBars = 10;
@@ -1251,6 +2272,10 @@ public sealed class GameEngine
         if (!string.IsNullOrWhiteSpace(context))
             lines.Add(context);
 
+        var reminder = BuildMenuChoiceReminder(menuId);
+        if (!string.IsNullOrWhiteSpace(reminder))
+            lines.Add(reminder);
+
         lines.Add(RenderMenu(menu));
     }
 
@@ -1277,7 +2302,7 @@ public sealed class GameEngine
             return "These first choices shape your spiritual posture before your public duties begin.";
 
         if (!string.IsNullOrWhiteSpace(actionKey))
-            return $"You focus on {actionKey}. This choice carries practical consequences for people depending on Saint Catherine's judgment.";
+            return $"You focus on the {actionKey}. What you choose here can help or burden the people who rely on Saint Catherine.";
 
         return "You pause to weigh obligations, risks, and who will bear the cost of your decision.";
     }
@@ -1286,7 +2311,7 @@ public sealed class GameEngine
     {
         var sb = new StringBuilder();
         sb.AppendLine(menu.Prompt);
-        var available = menu.Options.Where(o => IsOptionAvailable(o, out _)).ToList();
+        var available = menu.Options.Select((o, i) => (o, i)).Where(x => IsOptionAvailable(x.o, out _, $"menu:{menu.Id}:{x.i}")).Select(x => x.o).ToList();
         for (var i = 0; i < available.Count; i++)
         {
             var optionText = available[i].Text;
@@ -1423,14 +2448,14 @@ public sealed class GameEngine
                     return;
                 }
 
-                var score = _rng.Next(1, 21) + _state.Virtues.GetValueOrDefault("justice") + _state.Virtues.GetValueOrDefault("prudence");
+                var score = _rng.Next(1, 21) + Virtue("charity") + Virtue("humility");
                 if (score >= 18)
                 {
                     lines.Add("You reconcile the alms ledger against offerings and uncover skimmed coin before scandal can spread.");
                     _state.Coin += 4;
                     _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") + 3, 0, 100);
-                    _state.Virtues["justice"] = _state.Virtues.GetValueOrDefault("justice") + 1;
-                    lines.Add("Success: +4 coin, relations improved, and your eye for justice sharpens.");
+                    AddVirtue("charity", 1);
+                    lines.Add("Success: +4 coin, relations improved, and your charity and steadiness sharpen.");
                 }
                 else
                 {
@@ -1444,7 +2469,7 @@ public sealed class GameEngine
             }
             case "watch_patrol_scout":
             {
-                var score = _rng.Next(1, 21) + _state.Virtues.GetValueOrDefault("fortitude") + _state.Virtues.GetValueOrDefault("prudence");
+                var score = _rng.Next(1, 21) + Virtue("fortitude") + Virtue("hope");
                 if (score >= 20)
                 {
                     lines.Add("You read the treeline before dusk and spot movement early enough to warn the road wardens.");
@@ -1501,10 +2526,12 @@ public sealed class GameEngine
             .ToList();
         if (available.Count == 0) return timed.DefaultIndex;
 
-        var fort = _state.Virtues.GetValueOrDefault("fortitude");
-        var pru = _state.Virtues.GetValueOrDefault("prudence");
-        var tem = _state.Virtues.GetValueOrDefault("temperance");
-        var jus = _state.Virtues.GetValueOrDefault("justice");
+        var fort = Virtue("fortitude");
+        var hum = Virtue("humility");
+        var tem = Virtue("temperance");
+        var cha = Virtue("charity");
+        var faith = Virtue("faith");
+        var hope = Virtue("hope");
 
         var best = available[Math.Clamp(timed.DefaultIndex, 0, available.Count - 1)].i;
         var bestScore = int.MinValue;
@@ -1512,10 +2539,12 @@ public sealed class GameEngine
         {
             var t = opt.Text.ToLowerInvariant();
             var score = 0;
-            if (t.Contains("watch") || t.Contains("scan")) score += 2 * pru;
-            if (t.Contains("warn") || t.Contains("call")) score += 2 * jus;
+            if (t.Contains("watch") || t.Contains("scan")) score += 2 * hope;
+            if (t.Contains("warn") || t.Contains("call")) score += 2 * cha;
             if (t.Contains("seize") || t.Contains("grab") || t.Contains("ready")) score += 2 * fort;
             if (t.Contains("jump") || t.Contains("throw") || t.Contains("kick")) score += fort - tem;
+            if (t.Contains("pray") || t.Contains("steady")) score += faith + hope;
+            if (t.Contains("yield") || t.Contains("admit")) score += hum;
             if (score > bestScore)
             {
                 bestScore = score;
@@ -1532,11 +2561,14 @@ public sealed class GameEngine
         {
             var idx = Array.IndexOf(SegmentOrder, _state.Segment);
             idx = (idx + 1) % SegmentOrder.Length;
+            _state.Counters["segments_elapsed_today"] = _state.Counters.GetValueOrDefault("segments_elapsed_today") + 1;
             if (idx == 0)
             {
                 _state.Day += 1;
+                _state.Counters["segments_elapsed_today"] = 0;
                 _state.Priory["food"] = Math.Clamp(_state.Priory["food"] - 1, 0, 100);
                 _state.Priory["morale"] = Math.Clamp(_state.Priory["morale"] - (_state.Day % 5 == 0 ? 1 : 0), 0, 100);
+                ProcessRebuildDay(lines);
             }
             _state.Segment = SegmentOrder[idx];
         }
@@ -1545,6 +2577,37 @@ public sealed class GameEngine
         {
             _state.Flags.Add($"week_{_state.Day}");
             lines.Add("A week passes in Blackpine. News, grievances, and hopes gather at Saint Catherine.");
+
+            var fort = Virtue("fortitude");
+            var hum = Virtue("humility");
+            var tem = Virtue("temperance");
+            var cha = Virtue("charity");
+            var fai = Virtue("faith");
+            var hop = Virtue("hope");
+
+            if (cha >= 4 && tem <= 0)
+            {
+                _state.Priory["treasury"] = Math.Clamp(_state.Priory.GetValueOrDefault("treasury") - 1, 0, 100);
+                lines.Add("Your generosity outpaced reserves this week. Treasury -1 (Charity vs Temperance).");
+            }
+
+            if (fort >= 4 && hum <= 0)
+            {
+                _state.Priory["relations"] = Math.Clamp(_state.Priory.GetValueOrDefault("relations") - 1, 0, 100);
+                lines.Add("Your firmness was respected by some and resented by others. Relations -1 (Fortitude vs Humility).");
+            }
+
+            if (hop >= 3)
+            {
+                _state.Priory["morale"] = Math.Clamp(_state.Priory.GetValueOrDefault("morale") + 1, 0, 100);
+                lines.Add("Hope keeps the house from despair. Morale +1.");
+            }
+
+            if (fai >= 3)
+            {
+                _state.Priory["piety"] = Math.Clamp(_state.Priory.GetValueOrDefault("piety") + 1, 0, 100);
+                lines.Add("Shared prayer steadies the priory in uncertainty. Piety +1.");
+            }
         }
     }
 
@@ -1725,12 +2788,21 @@ public sealed class GameEngine
         var actions = new Dictionary<string, string>(scene.Actions, StringComparer.OrdinalIgnoreCase);
         if (_state.Flags.Contains("event:cart_departed"))
         {
-            var unavailable = actions
-                .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
-                .Select(kv => kv.Key)
-                .ToList();
-            foreach (var key in unavailable)
-                actions.Remove(key);
+            const string cartDepartTurnCounter = "cart_departed_turn";
+            var currentTurn = _state.Counters.GetValueOrDefault("turn_count");
+            if (!_state.Counters.ContainsKey(cartDepartTurnCounter))
+                _state.Counters[cartDepartTurnCounter] = currentTurn;
+
+            var turnsSinceDeparture = currentTurn - _state.Counters.GetValueOrDefault(cartDepartTurnCounter);
+            if (turnsSinceDeparture >= 3)
+            {
+                var unavailable = actions
+                    .Where(kv => string.Equals(kv.Value, "timed:catch_cart", StringComparison.OrdinalIgnoreCase))
+                    .Select(kv => kv.Key)
+                    .ToList();
+                foreach (var key in unavailable)
+                    actions.Remove(key);
+            }
         }
         return actions;
     }
@@ -1741,7 +2813,7 @@ public sealed class GameEngine
         if (string.IsNullOrWhiteSpace(target)) return false;
 
         var normalized = NormalizePhrase(target);
-        return normalized is "outside" or "out" or "building" or "room" or "church" or "chapel" or "inn" or "hall" or "shop" or "friary" or "convent" or "school" or "house";
+        return normalized is "outside" or "out" or "exit" or "street";
     }
 
     private bool TryMoveOutside(List<string> lines)

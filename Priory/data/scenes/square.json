@@ -6,7 +6,10 @@
     "market": "market_lane",
     "shops": "market_shop_lane",
     "guildhall": "guildhall",
-    "priory road": "roadside_track"
+    "priory road": "roadside_track",
+    "stonemarket road": "stonemarket",
+    "oak hollow road": "oak_hollow",
+    "north mere road": "frostmere"
   },
   "actions": {
     "friar": "menu:friar_menu",
