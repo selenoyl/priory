@@ -1,6 +1,6 @@
 {
   "id": "lane",
-  "text": "Cold Yorkshire air meets you in the lane. A cart waits, horse breathing fog. Blackpine square opens beyond.",
+  "text": "Cold Yorkshire air meets you in the lane as the cart rolls into Blackpine, horse breathing fog. The driver glances your way and says, **\"Most men choose their road. Others wake to find the road has chosen them.\"** Blackpine square opens beyond.",
   "exits": {
     "cart": "square",
     "square": "square",

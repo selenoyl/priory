@@ -65,11 +65,41 @@
     .intro-splash.fade-out { opacity: 0; pointer-events: none; }
     .intro-splash.hidden { display: none; }
 
-    .splash-inner {
+    .splash-stage {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transition: opacity 1200ms ease;
+      pointer-events: none;
+    }
+
+    .splash-stage.show { opacity: 1; }
+
+    .splash-card {
       text-align: center;
       display: grid;
       gap: 10px;
       justify-items: center;
+    }
+
+    .raikes-logo-wrap {
+      width: 176px;
+      height: 176px;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 0 26px color-mix(in srgb, var(--neon) 44%, transparent));
+    }
+
+    .raikes-logo-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      mix-blend-mode: screen;
+      filter: hue-rotate(145deg) saturate(2.2) brightness(1.05);
     }
 
     .splash-motto {
@@ -96,13 +126,31 @@
     .crossmark .vert { width: 14px; height: 68px; left: 30px; top: 3px; }
     .crossmark .horiz { width: 58px; height: 14px; left: 8px; top: 30px; }
 
+
+    @keyframes chatNeonPulse {
+      0%, 100% {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 8%, transparent),
+                    0 0 18px color-mix(in srgb, var(--neon) 20%, transparent),
+                    0 0 34px color-mix(in srgb, var(--neon) 10%, transparent);
+      }
+      50% {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 12%, transparent),
+                    0 0 24px color-mix(in srgb, var(--neon) 28%, transparent),
+                    0 0 44px color-mix(in srgb, var(--neon) 16%, transparent);
+      }
+    }
+
     .log {
       width: 100%;
       min-height: 0;
       height: 100%;
       background: #1a1a1a;
       color: #ddd;
-      border: 1px solid #333;
+      border: 1px solid color-mix(in srgb, var(--neon) 30%, #333 70%);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 8%, transparent),
+                  0 0 18px color-mix(in srgb, var(--neon) 20%, transparent),
+                  0 0 34px color-mix(in srgb, var(--neon) 10%, transparent);
+      animation: chatNeonPulse 7.8s ease-in-out infinite;
       padding: 12px;
       overflow-y: auto;
       display: flex;
@@ -112,6 +160,23 @@
       scrollbar-gutter: stable;
       scrollbar-width: thin;
       scrollbar-color: #4e4e4e #1f1f1f;
+    }
+
+    #commandRow {
+      border: 1px solid color-mix(in srgb, var(--neon) 24%, #303030 76%);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 7%, transparent),
+                  0 0 16px color-mix(in srgb, var(--neon) 18%, transparent),
+                  0 0 30px color-mix(in srgb, var(--neon) 9%, transparent);
+      animation: chatNeonPulse 7.8s ease-in-out infinite;
+      background: color-mix(in srgb, var(--neon) 3%, #151515 97%);
+      padding: 8px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .log,
+      #commandRow {
+        animation: none;
+      }
     }
 
     .log::-webkit-scrollbar { width: 10px; }
@@ -364,21 +429,44 @@
     .quick-panel.show { display: grid; }
     .quick-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 
-    .menu-popover,
-    .options-popover {
-      position: absolute;
-      right: 0;
-      top: calc(100% + 8px);
-      border: 1px solid color-mix(in srgb, var(--neon) 22%, #3f3f3f 78%);
+    .menu-popover {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 1px solid color-mix(in srgb, var(--neon) 30%, #3f3f3f 70%);
       background: #151515;
-      padding: 8px;
-      min-width: 230px;
+      padding: 12px;
+      min-width: min(92vw, 340px);
       display: none;
-      z-index: 12;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      z-index: 24;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px color-mix(in srgb, var(--neon) 14%, transparent);
     }
 
-    .menu-popover.show,
+    .menu-popover.show {
+      display: grid;
+      gap: 8px;
+    }
+
+    .menu-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #bfbfbf;
+      font-size: 0.82em;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .options-popover {
+      border: 1px solid color-mix(in srgb, var(--neon) 18%, #3f3f3f 82%);
+      background: #141414;
+      padding: 8px;
+      min-width: 0;
+      display: none;
+      box-shadow: none;
+    }
+
     .options-popover.show {
       display: grid;
       gap: 6px;
@@ -554,11 +642,22 @@
 <body>
 <div class="wrap">
   <div id="introSplash" class="intro-splash">
-    <div class="splash-inner">
-      <div class="crossmark" aria-hidden="true" style="transform: translateY(-20px) scale(2.25); margin: 0 0 18px;">
-        <div class="vert"></div><div class="horiz"></div>
+    <div id="introStageDominican" class="splash-stage show">
+      <div class="splash-card">
+        <div class="crossmark" aria-hidden="true" style="transform: translateY(-20px) scale(2.25); margin: 0 0 18px;">
+          <div class="vert"></div><div class="horiz"></div>
+        </div>
+        <div class="splash-motto">LAUDARE, BENEDICERE, PRAEDICARE.</div>
       </div>
-      <div class="splash-motto">LAUDARE, BENEDICERE, PRAEDICARE.</div>
+    </div>
+
+    <div id="introStageRaikes" class="splash-stage">
+      <div class="splash-card">
+        <div class="raikes-logo-wrap" aria-hidden="true">
+          <img class="raikes-logo-image" src="data:image/png;base64,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" alt="" />
+        </div>
+        <div class="splash-motto">POWERED BY RAIKES IT SERVICES</div>
+      </div>
     </div>
   </div>
 
@@ -684,21 +783,25 @@
     <button id="inventoryBtn" onclick="openInventory()">Inventory</button>
     <button id="menuBtn" onclick="toggleMenuPopover()">Menu</button>
 
-    <div id="menuPopover" class="menu-popover">
+    <div id="menuPopover" class="menu-popover" role="dialog" aria-label="Menu">
+      <div class="menu-head">
+        <span>Menu</span>
+        <button class="close-options" onclick="closeMenuPopover()">×</button>
+      </div>
       <button onclick="toggleOptionsPopover()">Options</button>
       <button onclick="saveAndQuit()">Save and Quit</button>
       <button onclick="closeMenuPopover()">Close Menu</button>
-    </div>
 
-    <div id="optionsPopover" class="options-popover">
-      <div class="options-head">
-        <span>Options</span>
-        <button class="close-options" onclick="closeOptionsPopover()">×</button>
+      <div id="optionsPopover" class="options-popover">
+        <div class="options-head">
+          <span>Options</span>
+          <button class="close-options" onclick="closeOptionsPopover()">×</button>
+        </div>
+        <label class="options-row">
+          Show Quick Access menu
+          <input id="showQuickAccessToggle" type="checkbox" />
+        </label>
       </div>
-      <label class="options-row">
-        Show Quick Access menu
-        <input id="showQuickAccessToggle" type="checkbox" />
-      </label>
     </div>
   </div>
 
@@ -825,6 +928,24 @@ function appendVirtueGrid(line) {
   return el;
 }
 
+function appendLineWithInlineBold(container, line) {
+  const parts = String(line).split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  if (parts.length === 0) {
+    container.textContent = line;
+    return;
+  }
+
+  for (const part of parts) {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      const strong = document.createElement('strong');
+      strong.textContent = part.slice(2, -2);
+      container.appendChild(strong);
+    } else {
+      container.appendChild(document.createTextNode(part));
+    }
+  }
+}
+
 function append(lines) {
   const log = document.getElementById('log');
   const wasNearBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 24;
@@ -846,7 +967,7 @@ function append(lines) {
 
       const el = document.createElement('div');
       el.className = `entry ${classifyLine(line)}`;
-      el.textContent = line;
+      appendLineWithInlineBold(el, line);
       log.appendChild(el);
     }
   }
@@ -1055,6 +1176,7 @@ async function startSession() {
 
   document.getElementById('sessionModal').classList.add('hidden');
   sessionErrorEl.textContent = '';
+  setInputEnabled(true);
   focusCommandBox();
 }
 
@@ -1257,12 +1379,23 @@ window.addEventListener('resize', () => {
 
 function playIntroSplash() {
   const splash = document.getElementById('introSplash');
-  if (!splash) return;
+  const stageDominican = document.getElementById('introStageDominican');
+  const stageRaikes = document.getElementById('introStageRaikes');
+  if (!splash || !stageDominican || !stageRaikes) return;
 
   setTimeout(() => {
-    splash.classList.add('fade-out');
-    setTimeout(() => splash.classList.add('hidden'), 3050);
-  }, 900);
+    stageDominican.classList.remove('show');
+
+    setTimeout(() => {
+      stageRaikes.classList.add('show');
+
+      setTimeout(() => {
+        stageRaikes.classList.remove('show');
+        splash.classList.add('fade-out');
+        setTimeout(() => splash.classList.add('hidden'), 3050);
+      }, 2400);
+    }, 1000);
+  }, 1900);
 }
 
 const quickAccessToggle = document.getElementById('showQuickAccessToggle');

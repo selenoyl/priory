@@ -1,17 +1,24 @@
 {
   "id": "franciscan_relief_menu",
-  "prompt": "Relief caravan planning:",
+  "prompt": "Relief caravan planning: road raids, dwindling stores, and winter sickness leave no painless option.",
   "options": [
     {
       "text": "Send grain and oil immediately.",
       "response": "The caravan departs before dawn under watch escort.",
-      "prioryDelta": { "food": -2, "relations": 3, "morale": 1 },
+      "prioryDelta": {
+        "food": -2,
+        "relations": 3,
+        "morale": 1
+      },
       "coinDelta": -1
     },
     {
       "text": "Delay one day for better route security.",
       "response": "Fewer losses on the road, but some families wait another night hungry.",
-      "prioryDelta": { "security": 1, "relations": 1 }
+      "prioryDelta": {
+        "security": 1,
+        "relations": 1
+      }
     }
   ]
 }

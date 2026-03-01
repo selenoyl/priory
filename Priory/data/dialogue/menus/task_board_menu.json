@@ -1,6 +1,6 @@
 {
   "id": "task_board_menu",
-  "prompt": "Saint Catherine task board (repeatable):",
+  "prompt": "Saint Catherine task board (repeatable): each duty strengthens one pillar of the priory while another waits.",
   "options": [
     {
       "text": "Preach in Blackpine and roadside chapels.",
