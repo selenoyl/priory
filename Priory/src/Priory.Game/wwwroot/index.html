@@ -1403,7 +1403,17 @@ async function startSession() {
     return;
   }
 
-  const data = await res.json();
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    const fallbackMessage = res.ok
+      ? 'Session started but server returned an unexpected response.'
+      : `Session start failed (${res.status}).`;
+    sessionErrorEl.textContent = fallbackMessage;
+    return;
+  }
+
   if (!res.ok) {
     const message = data.error || 'session start failed';
     const modalOpen = !document.getElementById('sessionModal').classList.contains('hidden');

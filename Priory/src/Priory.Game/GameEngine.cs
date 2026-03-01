@@ -645,7 +645,7 @@ public sealed class GameEngine
             else
             {
                 foreach (var delta in option.VirtueDelta)
-                    AddVirtue(delta.Key, delta.Value)
+                    AddVirtue(delta.Key, delta.Value);
 
                 var virtueSummary = FormatVirtueChanges(option.VirtueDelta);
                 if (!string.IsNullOrWhiteSpace(virtueSummary))
