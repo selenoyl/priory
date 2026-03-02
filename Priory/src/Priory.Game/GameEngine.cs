@@ -552,6 +552,12 @@ public sealed class GameEngine
         return $"You already made this decision earlier ({choiceSlug}). That commitment still stands.";
     }
 
+    private bool HasCommittedMenuDecision(string menuId)
+    {
+        var prefix = $"menu_choice_taken:{NormalizePhrase(menuId).Replace(' ', '_')}:";
+        return _state.Flags.Any(f => f.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    }
+
     private bool IsOptionAvailable(MenuOptionDef option, out string reason, string? sourceContext = null)
     {
         reason = "";
@@ -562,9 +568,9 @@ public sealed class GameEngine
             if (parts.Length >= 2)
             {
                 var menuId = parts[1];
-                if (IsConsequentialDecision(menuId, option) && _state.Flags.Contains(BuildMenuChoiceFlag(menuId, option.Text)))
+                if (IsConsequentialDecision(menuId, option) && HasCommittedMenuDecision(menuId))
                 {
-                    reason = "already chosen";
+                    reason = "decision already made";
                     return false;
                 }
             }
