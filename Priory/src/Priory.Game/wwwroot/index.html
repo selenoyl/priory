@@ -879,8 +879,8 @@
         <span>Music Volume</span>
         <button class="close-options" onclick="closeAudioPopover()">×</button>
       </div>
-      <input id="musicVolume" type="range" min="0" max="0.25" step="0.01" value="0.08" aria-label="Background music volume" />
-      <div id="musicVolumeLabel" class="audio-note">8% (subtle)</div>
+      <input id="musicVolume" type="range" min="0" max="0.25" step="0.01" value="0.10" aria-label="Background music volume" />
+      <div id="musicVolumeLabel" class="audio-note">10%</div>
       <div id="musicStatusNote" class="audio-note">Background music starts after you begin a session.</div>
       <div id="musicDebugPanel" aria-live="polite"></div>
     </div>
@@ -939,10 +939,12 @@ let shouldStickToBottom = true;
 let userNeonColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 let showQuickAccess = false;
 
-const DEFAULT_MUSIC_VOLUME = 0.08;
+const DEFAULT_MUSIC_VOLUME = 0.10;
 const MUSIC_STORAGE_KEY = 'priory_music_volume';
 const MUSIC_BASE_PATH = '/music';
 const MUSIC_LIBRARY_ENDPOINT = '/api/music-tracks';
+const MUSIC_TRACK_FADE_OUT_MS = 180;
+const MUSIC_TRACK_FADE_IN_MS = 240;
 const MUSIC_TRACKS = {
   menu: ['menu.mp3'],
   town: ['towns.mp3'],
@@ -979,7 +981,8 @@ const musicState = {
   catalogLoaded: false,
   allTracks: [],
   debugVisible: false,
-  debugLog: []
+  debugLog: [],
+  transitionId: 0
 };
 
 function normalizeVolume(rawValue) {
@@ -1245,6 +1248,60 @@ function tryPlayAudio(audio) {
   });
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fadeAudioTo(audio, targetVolume, durationMs, transitionId) {
+  const startVolume = Number.isFinite(audio.volume) ? audio.volume : 0;
+  const clampedTarget = normalizeVolume(targetVolume);
+  if (durationMs <= 0) {
+    audio.volume = clampedTarget;
+    return transitionId === musicState.transitionId;
+  }
+
+  const stepMs = 16;
+  const steps = Math.max(1, Math.round(durationMs / stepMs));
+  for (let i = 1; i <= steps; i++) {
+    if (transitionId !== musicState.transitionId) return false;
+    const t = i / steps;
+    audio.volume = startVolume + ((clampedTarget - startVolume) * t);
+    await wait(stepMs);
+  }
+
+  if (transitionId !== musicState.transitionId) return false;
+  audio.volume = clampedTarget;
+  return true;
+}
+
+function transitionMusicTrack(audio, nextSrc) {
+  const transitionId = ++musicState.transitionId;
+
+  (async () => {
+    const hasCurrentTrack = Boolean(audio.src || musicState.currentSrc);
+    if (hasCurrentTrack && !audio.paused) {
+      const fadedOut = await fadeAudioTo(audio, 0, MUSIC_TRACK_FADE_OUT_MS, transitionId);
+      if (!fadedOut) return;
+      audio.pause();
+    }
+
+    if (transitionId !== musicState.transitionId) return;
+
+    audio.src = nextSrc;
+    audio.currentTime = 0;
+    audio.volume = 0;
+    await tryPlayAudio(audio);
+
+    if (transitionId !== musicState.transitionId) return;
+
+    if (!audio.paused) {
+      await fadeAudioTo(audio, getSavedMusicVolume(), MUSIC_TRACK_FADE_IN_MS, transitionId);
+    } else {
+      audio.volume = getSavedMusicVolume();
+    }
+  })();
+}
+
 function playMusicTrack(trackKey) {
   const srcCandidates = resolveTrackSrc(trackKey);
   if (srcCandidates.length === 0) {
@@ -1261,8 +1318,7 @@ function playMusicTrack(trackKey) {
   pushMusicDebug(`play request key=${trackKey} candidates=${srcCandidates.length}`);
   musicState.currentTrackKey = trackKey;
   musicState.currentSrc = srcCandidates[0];
-  audio.src = musicState.currentSrc;
-  tryPlayAudio(audio);
+  transitionMusicTrack(audio, musicState.currentSrc);
 }
 
 function syncMusicFromNarrative(lines, userInput = '') {
