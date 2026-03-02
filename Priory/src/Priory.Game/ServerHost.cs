@@ -177,7 +177,8 @@ public static class ServerHost
                 partyCode,
                 isPartyMode = engine.IsPartyMode,
                 activePartyCode = engine.ActivePartyCode,
-                username = requestedUsername
+                username = requestedUsername,
+                sceneId = engine.GetPlayerOverview().SceneId
             });
         });
 
@@ -221,7 +222,8 @@ public static class ServerHost
             {
                 lines,
                 timedPrompt = output.TimedPrompt,
-                quitToMenu = lines.Any(x => x.Contains("Leaving game.", StringComparison.OrdinalIgnoreCase))
+                quitToMenu = lines.Any(x => x.Contains("Leaving game.", StringComparison.OrdinalIgnoreCase)),
+                sceneId = session.Engine.GetPlayerOverview().SceneId
             });
         });
 
@@ -235,7 +237,8 @@ public static class ServerHost
             return Results.Ok(new
             {
                 output.Lines,
-                timedPrompt = output.TimedPrompt
+                timedPrompt = output.TimedPrompt,
+                sceneId = session.Engine.GetPlayerOverview().SceneId
             });
         });
 
@@ -250,7 +253,8 @@ public static class ServerHost
                 overview.PlayerName,
                 overview.LifePath,
                 overview.Inventory,
-                overview.Coin
+                overview.Coin,
+                overview.SceneId
             });
         });
 

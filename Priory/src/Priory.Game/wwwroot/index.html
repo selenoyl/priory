@@ -945,19 +945,19 @@ const MUSIC_BASE_PATH = '/music';
 const MUSIC_LIBRARY_ENDPOINT = '/api/music-tracks';
 const MUSIC_TRACKS = {
   menu: ['menu.mp3'],
-  town: ['towns.mp3', 'town.mp3'],
+  town: ['towns.mp3'],
   forest: ['forest.mp3'],
   adventure: ['adventure.mp3'],
-  adventure2: ['adventure2.mp3'],
-  church: ['church music default.mp3', 'church_music_default.mp3'],
-  building: ['inside buildings (that arent churches).mp3', 'inside_buildings.mp3']
+  adventure2: ['adventure_2.mp3'],
+  church: ['church_music_default.mp3', 'church_music_sped_up.mp3'],
+  building: ['inside_buildings_(that_arent_churches).mp3']
 };
 const MUSIC_CATEGORY_HINTS = {
   menu: ['menu'],
   town: ['town', 'market', 'village', 'square', 'inn', 'dock', 'quay'],
   forest: ['forest', 'woods', 'wild'],
   adventure: ['adventure', 'journey', 'travel'],
-  adventure2: ['battle', 'danger', 'crisis', 'ambush', 'adventure2'],
+  adventure2: ['battle', 'danger', 'crisis', 'ambush', 'adventure2', 'adventure_2'],
   church: ['church', 'chapel', 'convent', 'friary', 'prayer', 'hymn'],
   building: ['inside', 'hall', 'house', 'scriptorium', 'building']
 };
@@ -979,7 +979,8 @@ const musicState = {
   catalogLoaded: false,
   allTracks: [],
   debugVisible: false,
-  debugLog: []
+  debugLog: [],
+  currentSceneId: ''
 };
 
 function normalizeVolume(rawValue) {
@@ -1032,8 +1033,7 @@ function pushMusicDebug(message) {
 function renderMusicDebugLog() {
   const panel = document.getElementById('musicDebugPanel');
   if (!panel) return;
-  panel.textContent = musicState.debugLog.join('
-');
+  panel.textContent = musicState.debugLog.join('\n');
   panel.scrollTop = panel.scrollHeight;
 }
 
@@ -1097,14 +1097,15 @@ function classifyTrack(fileName) {
 
 function assignMusicLibrary(trackNames) {
   const unique = Array.from(new Set((trackNames || []).filter(Boolean)));
-  if (unique.length === 0) {
-    musicState.allTracks = [];
-    return;
-  }
 
   Object.keys(MUSIC_TRACKS).forEach((key) => {
     MUSIC_TRACKS[key] = [];
   });
+
+  if (unique.length === 0) {
+    musicState.allTracks = [];
+    return;
+  }
 
   unique.forEach((fileName) => {
     const category = classifyTrack(fileName);
@@ -1140,11 +1141,51 @@ async function loadMusicLibrary() {
   }
 }
 
+function buildTrackNameVariants(fileName) {
+  if (!fileName) return [];
+
+  const dotIndex = fileName.lastIndexOf('.');
+  const hasExt = dotIndex > 0;
+  const ext = hasExt ? fileName.slice(dotIndex) : '';
+  const base = hasExt ? fileName.slice(0, dotIndex) : fileName;
+
+  const variants = new Set([fileName]);
+
+  const cleaned = base
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (cleaned) {
+    variants.add(`${cleaned}${ext}`);
+    variants.add(`${cleaned.replace(/\s+/g, '_')}${ext}`);
+    variants.add(`${cleaned.replace(/\s+/g, '-')}${ext}`);
+  }
+
+  const underscoreToSpace = base.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  if (underscoreToSpace) {
+    variants.add(`${underscoreToSpace}${ext}`);
+  }
+
+  return Array.from(variants);
+}
+
 function resolveTrackSrc(trackKey) {
   const names = MUSIC_TRACKS[trackKey] && MUSIC_TRACKS[trackKey].length > 0
     ? MUSIC_TRACKS[trackKey]
     : MUSIC_TRACKS.adventure;
-  return names.map(buildTrackUrl);
+
+  const urls = names.flatMap((name) => buildTrackNameVariants(name).map(buildTrackUrl));
+  return Array.from(new Set(urls));
+}
+
+function normalizeTrackSrc(src) {
+  if (!src) return '';
+  try {
+    return new URL(src, window.location.origin).href;
+  } catch {
+    return src;
+  }
 }
 
 function ensureMusicAudio() {
@@ -1162,13 +1203,25 @@ function ensureMusicAudio() {
   });
   audio.addEventListener('error', () => {
     const candidates = resolveTrackSrc(musicState.currentTrackKey || 'menu');
+    const normalizedCandidates = candidates.map(normalizeTrackSrc);
+    const current = normalizeTrackSrc(audio.currentSrc || audio.src || musicState.currentSrc);
+
     pushMusicDebug(`audio error on ${audio.src || '(none)'}`);
-    const next = candidates.find((src) => src !== audio.src);
-    if (!next) {
+
+    const nextIndex = normalizedCandidates.findIndex((src) => src !== current);
+    if (nextIndex < 0) {
       pushMusicDebug('no fallback candidate available after audio error');
       setMusicStatusNote('Selected track failed to load. Check /music filenames.');
       return;
     }
+
+    const next = candidates[nextIndex];
+    if (!next || normalizeTrackSrc(next) === current) {
+      pushMusicDebug('fallback source resolves to the same URL; stopping retries');
+      setMusicStatusNote('Selected track failed to load. Check /music filenames.');
+      return;
+    }
+
     pushMusicDebug(`trying fallback source: ${next}`);
     audio.src = next;
     musicState.currentSrc = next;
@@ -1193,7 +1246,9 @@ function playMusicTrack(trackKey) {
   }
 
   const audio = ensureMusicAudio();
-  if (srcCandidates.includes(musicState.currentSrc) && !audio.paused) return;
+  const normalizedCurrent = normalizeTrackSrc(musicState.currentSrc);
+  const candidateMatchesCurrent = srcCandidates.some((src) => normalizeTrackSrc(src) === normalizedCurrent);
+  if (candidateMatchesCurrent && !audio.paused) return;
 
   pushMusicDebug(`play request key=${trackKey} candidates=${srcCandidates.length}`);
   musicState.currentTrackKey = trackKey;
@@ -1202,9 +1257,19 @@ function playMusicTrack(trackKey) {
   tryPlayAudio(audio);
 }
 
-function syncMusicFromNarrative(lines, userInput = '') {
-  const joined = [userInput, ...(lines || [])].join(' ').toLowerCase();
-  const trackKey = inferMusicTrackKey(joined);
+function syncMusicForScene(sceneId, lines = []) {
+  if (!musicState.started) return;
+
+  const normalizedSceneId = (sceneId || '').toString().trim().toLowerCase();
+  if (!normalizedSceneId) return;
+
+  if (normalizedSceneId === musicState.currentSceneId) {
+    return;
+  }
+
+  musicState.currentSceneId = normalizedSceneId;
+  const trackKey = inferMusicTrackKey(`${normalizedSceneId} ${(lines || []).join(' ')}`);
+  pushMusicDebug(`scene changed -> ${normalizedSceneId}; track=${trackKey}`);
   playMusicTrack(trackKey);
 }
 
@@ -1502,6 +1567,9 @@ async function resolveTimed(choice, auto = false) {
   if (!timedRes.ok) { append([`ERROR: ${timedData.error || 'timed command failed'}`]); return; }
 
   append(timedData.lines || []);
+  if (musicState.started) {
+    syncMusicForScene(timedData.sceneId, timedData.lines || []);
+  }
   if (timedData.timedPrompt) startTimedPrompt(timedData.timedPrompt);
   else focusCommandBox();
 }
@@ -1594,8 +1662,9 @@ async function startSession() {
   setInputEnabled(true);
   musicState.started = true;
   setMusicStatusNote('Session active. Music should play for current scene.');
-  musicState.pendingTrackKey = inferMusicTrackKey((data.bootstrapLines || []).join(' '));
-  syncMusicFromNarrative(data.bootstrapLines || []);
+  musicState.currentSceneId = '';
+  musicState.pendingTrackKey = inferMusicTrackKey(`${(data.sceneId || '').toString().toLowerCase()} ${(data.bootstrapLines || []).join(' ')}`);
+  syncMusicForScene(data.sceneId, data.bootstrapLines || []);
   tryPlayAudio(ensureMusicAudio());
   focusCommandBox();
 }
@@ -1691,6 +1760,7 @@ async function endSessionAndReturnToStart() {
   panel.classList.remove('fading');
 
   musicState.started = false;
+  musicState.currentSceneId = '';
   setMusicStatusNote('Background music starts after you begin a session.');
   musicState.pendingTrackKey = 'menu';
   playMusicTrack('menu');
@@ -1747,7 +1817,7 @@ async function sendCommand() {
   if (!res.ok) { append([`ERROR: ${data.error || 'command failed'}`]); return; }
   append(data.lines);
   if (musicState.started) {
-    syncMusicFromNarrative(data.lines, input);
+    syncMusicForScene(data.sceneId, data.lines || []);
   }
 
   if (data.timedPrompt) {

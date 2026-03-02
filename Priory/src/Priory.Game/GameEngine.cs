@@ -127,7 +127,7 @@ public sealed class GameEngine
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return new PlayerOverview(_state.PlayerName, _state.Sex, _state.LifePath, inventory, _state.Coin);
+        return new PlayerOverview(_state.PlayerName, _state.Sex, _state.LifePath, inventory, _state.Coin, _state.SceneId);
     }
 
     public void UseSoloMode()
@@ -2982,4 +2982,4 @@ public sealed class GameEngine
 
 public sealed record PartyMemberOverview(string Name, string LastSceneId, DateTimeOffset LastSeenUtc, int SecondsSinceSeen);
 public sealed record PartyOverview(string PartyCode, List<PartyMemberOverview> Members);
-public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, List<string> Inventory, int Coin);
+public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, List<string> Inventory, int Coin, string SceneId);
