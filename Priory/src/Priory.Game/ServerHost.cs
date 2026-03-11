@@ -66,6 +66,7 @@ public static class ServerHost
 
         var sessions = new ConcurrentDictionary<string, SessionState>(StringComparer.OrdinalIgnoreCase);
         var accountRepo = new AccountRepository(saveRoot);
+        var chatChannels = new ConcurrentDictionary<string, ChatChannelState>(StringComparer.OrdinalIgnoreCase);
 
         var buildId = Environment.GetEnvironmentVariable("PRIORY_BUILD_ID") ?? "dev";
         var startedAtUtc = DateTimeOffset.UtcNow;
@@ -258,6 +259,71 @@ public static class ServerHost
             });
         });
 
+        app.MapGet("/api/sessions/{id}/chat", (string id, string? channel, long? since, int? limit) =>
+        {
+            if (!sessions.TryGetValue(id, out var session))
+                return Results.NotFound(new { error = "session not found" });
+
+            var normalizedChannel = NormalizeChatChannel(channel);
+            if (!TryResolveChatScopeKey(session, normalizedChannel, out var scopeKey, out var canPost, out var reason))
+                return Results.BadRequest(new { error = reason ?? "chat unavailable" });
+
+            var state = chatChannels.GetOrAdd(scopeKey, _ => new ChatChannelState());
+            var requestedLimit = Math.Clamp(limit ?? 200, 1, 500);
+            var messages = since.HasValue
+                ? state.GetMessagesSince(DateTimeOffset.FromUnixTimeMilliseconds(Math.Max(0, since.Value)))
+                : state.GetRecent(requestedLimit);
+
+            var payload = messages
+                .Select(x => new
+                {
+                    ts = x.TimestampUtc.ToUnixTimeMilliseconds(),
+                    x.Author,
+                    x.Text
+                })
+                .ToArray();
+
+            return Results.Ok(new
+            {
+                channel = normalizedChannel,
+                canPost,
+                reason,
+                serverNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                messages = payload
+            });
+        });
+
+        app.MapPost("/api/sessions/{id}/chat", (string id, ChatPostRequest request) =>
+        {
+            if (!sessions.TryGetValue(id, out var session))
+                return Results.NotFound(new { error = "session not found" });
+
+            var normalizedChannel = NormalizeChatChannel(request.Channel);
+            if (!TryResolveChatScopeKey(session, normalizedChannel, out var scopeKey, out var canPost, out var reason))
+                return Results.BadRequest(new { error = reason ?? "chat unavailable" });
+
+            if (!canPost)
+                return Results.BadRequest(new { error = reason ?? "You cannot post in this chat right now." });
+
+            var text = (request.Text ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(text))
+                return Results.BadRequest(new { error = "Message cannot be empty." });
+            if (text.Length > 180)
+                text = text[..180];
+
+            var author = session.Engine.GetPlayerOverview().PlayerName;
+            var state = chatChannels.GetOrAdd(scopeKey, _ => new ChatChannelState());
+            var message = new ChatMessage(DateTimeOffset.UtcNow, author, text);
+            state.Add(message);
+
+            return Results.Ok(new
+            {
+                channel = normalizedChannel,
+                ts = message.TimestampUtc.ToUnixTimeMilliseconds(),
+                message = new { author = message.Author, text = message.Text }
+            });
+        });
+
         app.MapDelete("/api/sessions/{id}", (string id) =>
         {
             sessions.TryRemove(id, out _);
@@ -265,6 +331,40 @@ public static class ServerHost
         });
 
         return app.RunAsync();
+    }
+
+    private static string NormalizeChatChannel(string? channel)
+    {
+        return string.Equals(channel?.Trim(), "party", StringComparison.OrdinalIgnoreCase)
+            ? "party"
+            : "global";
+    }
+
+    private static bool TryResolveChatScopeKey(SessionState session, string channel, out string scopeKey, out bool canPost, out string? reason)
+    {
+        reason = null;
+        if (channel == "global")
+        {
+            scopeKey = "global";
+            canPost = true;
+            return true;
+        }
+
+        var partyCode = session.Engine.ActivePartyCode;
+        if (string.IsNullOrWhiteSpace(partyCode))
+            partyCode = session.Engine.GetPartyOverview()?.PartyCode;
+
+        if (string.IsNullOrWhiteSpace(partyCode))
+        {
+            scopeKey = $"party:solo:{session.Engine.GetPlayerOverview().PlayerName}";
+            canPost = false;
+            reason = "Join or create a party to use party chat.";
+            return true;
+        }
+
+        scopeKey = $"party:{partyCode.Trim().ToUpperInvariant()}";
+        canPost = true;
+        return true;
     }
 
     private static PlayerSex ParseSex(string? sex)
@@ -334,4 +434,62 @@ public sealed class CommandRequest
 public sealed class TimedRequest
 {
     public int Choice { get; set; }
+}
+
+public sealed class ChatPostRequest
+{
+    public string? Channel { get; set; }
+    public string? Text { get; set; }
+}
+
+internal sealed record ChatMessage(DateTimeOffset TimestampUtc, string Author, string Text);
+
+internal sealed class ChatChannelState
+{
+    private readonly object _gate = new();
+    private readonly List<ChatMessage> _messages = new();
+    private static readonly TimeSpan MessageTtl = TimeSpan.FromHours(24);
+
+    public void Add(ChatMessage message)
+    {
+        lock (_gate)
+        {
+            PruneExpiredLocked(DateTimeOffset.UtcNow);
+            _messages.Add(message);
+        }
+    }
+
+    public List<ChatMessage> GetMessagesSince(DateTimeOffset sinceUtc)
+    {
+        lock (_gate)
+        {
+            PruneExpiredLocked(DateTimeOffset.UtcNow);
+            return _messages
+                .Where(x => x.TimestampUtc > sinceUtc)
+                .OrderBy(x => x.TimestampUtc)
+                .ToList();
+        }
+    }
+
+    public List<ChatMessage> GetRecent(int limit)
+    {
+        lock (_gate)
+        {
+            PruneExpiredLocked(DateTimeOffset.UtcNow);
+            if (_messages.Count == 0) return [];
+
+            var take = Math.Clamp(limit, 1, 500);
+            return _messages
+                .OrderByDescending(x => x.TimestampUtc)
+                .Take(take)
+                .OrderBy(x => x.TimestampUtc)
+                .ToList();
+        }
+    }
+
+    private void PruneExpiredLocked(DateTimeOffset nowUtc)
+    {
+        var cutoff = nowUtc - MessageTtl;
+        _messages.RemoveAll(x => x.TimestampUtc < cutoff);
+    }
 }
