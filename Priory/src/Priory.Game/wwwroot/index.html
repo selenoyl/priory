@@ -2249,7 +2249,7 @@ async function startSession() {
   startChatPolling();
   startChatStreaming();
   refreshQuestJournal();
-  await refreshPlayerOverview({ includeInventoryText: true });
+  await refreshPlayerOverview();
   startOverviewPolling();
 
   document.getElementById('sessionModal').classList.add('hidden');
@@ -2279,36 +2279,6 @@ function cloakClassForLifePath(lifePath) {
   return 'cloak-lay';
 }
 
-function parseInventoryLine(line) {
-  const raw = String(line || '').trim();
-  if (!raw) return [];
-
-  const match = raw.match(/inventory:\s*(.+)$/i);
-  if (!match) return [];
-
-  const section = match[1].trim().replace(/\.$/, '');
-  if (!section || section.toLowerCase() === '(empty)') return [];
-
-  return section
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean)
-    .map(item => item.replace(/^\d+[.)]\s*/, '').trim())
-    .filter(Boolean);
-}
-
-async function fetchInventoryTextItems() {
-  if (!sessionId) return null;
-  try {
-    const res = await fetch(`/api/sessions/${sessionId}/inventory-text`);
-    const data = await res.json();
-    if (!res.ok) return null;
-    return parseInventoryLine(data.line);
-  } catch {
-    return null;
-  }
-}
-
 function renderInventory(overview) {
   const list = document.getElementById('inventoryList');
   const meta = document.getElementById('inventoryMeta');
@@ -2332,13 +2302,13 @@ function renderInventory(overview) {
   }
 }
 
-function updateCachedPlayerOverview(overview, inventoryTextItems) {
+function updateCachedPlayerOverview(overview) {
   if (!overview) return null;
 
   cachedPlayerOverview = {
     playerName: overview.playerName || 'Pilgrim',
     lifePath: overview.lifePath || 'Unchosen',
-    inventory: inventoryTextItems ?? (overview.inventory || []),
+    inventory: overview.inventory || [],
     coin: overview.coin ?? 0
   };
 
@@ -2366,7 +2336,7 @@ async function openInventory() {
   }
 
   try {
-    await refreshPlayerOverview({ includeInventoryText: true, forceInventoryRender: true });
+    await refreshPlayerOverview({ forceInventoryRender: true });
   } catch {
     renderInventory(cachedPlayerOverview || {
       playerName: 'Pilgrim',
@@ -2384,23 +2354,17 @@ function closeInventory() {
 async function refreshPlayerOverview(options = {}) {
   if (!sessionId) return;
 
-  const includeInventoryText = Boolean(options.includeInventoryText);
   const forceInventoryRender = Boolean(options.forceInventoryRender);
   const modal = document.getElementById('inventoryModal');
   const shouldRenderInventory = Boolean(modal && (modal.classList.contains('show') || forceInventoryRender));
-  const shouldFetchInventoryText = includeInventoryText || shouldRenderInventory;
 
   try {
-    const [res, inventoryTextItems] = await Promise.all([
-      fetch(`/api/sessions/${sessionId}/overview`),
-      shouldFetchInventoryText ? fetchInventoryTextItems() : Promise.resolve(null)
-    ]);
-
+    const res = await fetch(`/api/sessions/${sessionId}/overview`);
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'overview failed');
 
     totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
-    const normalizedOverview = updateCachedPlayerOverview(data, inventoryTextItems);
+    const normalizedOverview = updateCachedPlayerOverview(data);
 
     if (normalizedOverview && shouldRenderInventory) {
       renderInventory(normalizedOverview);
