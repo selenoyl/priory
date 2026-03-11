@@ -283,14 +283,6 @@ public sealed class GameEngine
         return peopleTokens.Any(t => k.Contains(t));
     }
 
-    private static string FormatExitHint(string key)
-    {
-        var k = key.Trim();
-        if (k.StartsWith("leave ", StringComparison.OrdinalIgnoreCase) || k.StartsWith("exit ", StringComparison.OrdinalIgnoreCase))
-            return k.ToLowerInvariant();
-        return $"go {k}";
-    }
-
     private void AddContextTip(List<string> lines)
     {
         if (_state.ActiveMenuId is not null) return;
@@ -310,9 +302,6 @@ public sealed class GameEngine
         {
             actionTips.Add("go outside");
         }
-
-        if (exits.Count > 0)
-            lines.Add($"Available options: {string.Join(" | ", exits.Select(FormatExitHint))}.");
 
         if (actionTips.Count > 0)
             lines.Add($"You can also try: {string.Join(" | ", actionTips)}.");
@@ -435,13 +424,30 @@ public sealed class GameEngine
             return output;
         }
 
-        if (parsed.Intent != Intent.Numeric)
-            return new(new List<string> { "Choose a number.", "Tip: when a menu is open, enter 1, 2, 3... to pick an option.", RenderMenu(menu) });
+        if (menu.Id == "life_path" && TryResolveLifePathSelection(parsed, menu, lines))
+        {
+            PersistParty();
+            return new(lines, MaybeActivateTimed(lines));
+        }
 
         var available = menu.Options
             .Select((o, i) => (o, i))
             .Where(x => IsOptionAvailable(x.o, out _, $"menu:{menu.Id}:{x.i}"))
             .ToList();
+
+        if (available.Count == 0)
+        {
+            _state.ActiveMenuId = null;
+            lines.Add("No valid choices remain in this dialog.");
+            lines.Add("Returning to world commands.");
+            lines.Add(ExitLine(CurrentScene()));
+            AddContextTip(lines);
+            PersistParty();
+            return new(lines, MaybeActivateTimed(lines));
+        }
+
+        if (parsed.Intent != Intent.Numeric)
+            return new(new List<string> { "Choose a number.", "Tip: when a menu is open, enter 1, 2, 3... to pick an option.", RenderMenu(menu) });
 
         var index = parsed.Number - 1;
         if (index < 0 || index >= available.Count)
@@ -466,6 +472,28 @@ public sealed class GameEngine
 
         ProgressCartDepartureTimeline(lines);
         return new(lines, MaybeActivateTimed(lines));
+    }
+
+    private bool TryResolveLifePathSelection(ParsedInput parsed, MenuDef menu, List<string> lines)
+    {
+        if (parsed.Intent == Intent.Numeric)
+            return false;
+
+        var target = parsed.Target;
+        if (string.IsNullOrWhiteSpace(target))
+            return false;
+
+        var available = menu.Options
+            .Select((option, index) => (option, index))
+            .Where(x => IsOptionAvailable(x.option, out _, $"menu:{menu.Id}:{x.index}"))
+            .ToList();
+
+        var displayToIndex = available.ToDictionary(x => LifePathFlavor(x.option.Text), x => x.index);
+        if (!TryResolveKey(displayToIndex.Keys, target, out var resolved) || resolved is null)
+            return false;
+
+        ApplyLifePath(displayToIndex[resolved], lines);
+        return true;
     }
 
     private void ApplyLifePath(int index, List<string> lines)
@@ -2355,6 +2383,51 @@ public sealed class GameEngine
         return sb.ToString();
     }
 
+    private bool TryAmbientConversation(string target, List<string> lines)
+    {
+        var normalized = NormalizePhrase(target);
+        if (string.IsNullOrWhiteSpace(normalized)) return false;
+
+        var scene = CurrentScene().Id.ToLowerInvariant();
+        if (normalized.Contains("cat") || normalized.Contains("dog") || normalized.Contains("goose"))
+        {
+            lines.Add("A lay helper chuckles: 'Even beasts keep better hours than we do at Matins.'");
+            return true;
+        }
+
+        if (scene.Contains("market") || scene.Contains("square") || scene.Contains("lane") || scene.Contains("inn") || scene.Contains("guild"))
+        {
+            lines.Add("A tradesman bows: 'If your purse is thin, good prior, remember that honest weights are cheaper than bad reputations.'");
+            return true;
+        }
+
+        if (scene.Contains("forest") || scene.Contains("road") || scene.Contains("track") || scene.Contains("outskirts"))
+        {
+            lines.Add("A traveler smiles: 'Road mud respects no rank, but it does teach humility quickly.'");
+            return true;
+        }
+
+        if (scene.Contains("dock") || scene.Contains("quay") || scene.Contains("river") || scene.Contains("sea"))
+        {
+            lines.Add("A boatman nods: 'Tides obey the Lord better than merchants obey contracts, but both can be read with patience.'");
+            return true;
+        }
+
+        if (scene.Contains("chapel") || scene.Contains("church") || scene.Contains("convent") || scene.Contains("friary") || scene.Contains("priory"))
+        {
+            lines.Add("A brother whispers with a grin: 'If ink were as plentiful as zeal, we'd copy three psalters before supper.'");
+            return true;
+        }
+
+        if (normalized.Contains("steward") || normalized.Contains("clerk") || normalized.Contains("brother") || normalized.Contains("sister") || normalized.Contains("friar"))
+        {
+            lines.Add("They answer politely and return to their duty; time and bread are both short today.");
+            return true;
+        }
+
+        return false;
+    }
+
     private void HandleMovement(ParsedInput parsed, List<string> lines)
     {
         var scene = CurrentScene();
@@ -2404,6 +2477,9 @@ public sealed class GameEngine
 
         if (!TryResolveKey(actions.Keys, target, out var resolvedAction))
         {
+            if (parsed.Intent == Intent.Talk && TryAmbientConversation(target, lines))
+                return;
+
             lines.Add("Nothing comes of it.");
             if (actions.Count > 0)
                 lines.Add("Try one of: " + string.Join(", ", actions.Keys.Take(5)));
@@ -2651,6 +2727,8 @@ public sealed class GameEngine
         }
 
         _state.PartyId = _partyState.PartyId;
+        _state.Day = _partyState.Day;
+        _state.Segment = _partyState.Segment;
         _state.Priory = _partyState.Priory;
         _state.Counters = _partyState.Counters;
         _state.Flags = _partyState.Flags;
@@ -2672,6 +2750,8 @@ public sealed class GameEngine
     private void PersistParty()
     {
         if (_partyState is null) return;
+        _partyState.Day = _state.Day;
+        _partyState.Segment = _state.Segment;
         RegisterPartyMember();
         _partyRepo.Save(_partyState);
     }
