@@ -180,6 +180,165 @@
       scrollbar-gutter: stable;
       scrollbar-width: thin;
       scrollbar-color: #4e4e4e #1f1f1f;
+      position: relative;
+    }
+
+    .hud-grid {
+      min-height: 0;
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(220px, 24%) minmax(0, 1fr) minmax(230px, 26%);
+      gap: 10px;
+    }
+
+    .hud-panel {
+      border: 1px solid color-mix(in srgb, var(--neon) 25%, #333 75%);
+      background: #141414;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon) 8%, transparent);
+      min-height: 0;
+    }
+
+    .left-hud {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .hud-box {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .hud-head {
+      color: #e2e2e2;
+      border-bottom: 1px solid #2b2b2b;
+      padding: 8px 10px;
+      font-size: 0.84em;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hud-body {
+      padding: 8px;
+      overflow-y: auto;
+      min-height: 0;
+      font-size: 0.88em;
+      color: #cfcfcf;
+    }
+
+    .minimap {
+      border: 1px solid #323232;
+      background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--neon) 12%, transparent), #111 68%);
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 180px;
+      position: relative;
+    }
+
+    .minimap-scene {
+      text-align: center;
+      font-size: 0.86em;
+      margin-bottom: 8px;
+      color: #e6e6e6;
+    }
+
+    .minimap-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--neon);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 75%, transparent);
+      margin: 0 auto 8px;
+    }
+
+    .quest-progress-row {
+      margin-bottom: 8px;
+    }
+
+    .quest-progress-row strong {
+      display: block;
+      font-size: 0.88em;
+      margin-bottom: 3px;
+      color: #dfdfdf;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: #272727;
+      overflow: hidden;
+      border: 1px solid #373737;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--neon) 58%, #4eff9c 42%), var(--neon));
+      box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 40%, transparent);
+    }
+
+    .chat-shell {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 0;
+      gap: 8px;
+      padding: 8px;
+    }
+
+    .chat-log {
+      border: 1px solid #343434;
+      background: #181818;
+      padding: 8px;
+      min-height: 0;
+      overflow-y: auto;
+      font-size: 0.85em;
+      display: grid;
+      align-content: start;
+      gap: 6px;
+    }
+
+    .chat-entry { color: #ddd; }
+    .chat-entry small { color: #9f9f9f; }
+
+    .chat-row { display: flex; gap: 6px; }
+    .chat-row input { flex: 1; min-width: 0; }
+
+    .activity-feed {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: grid;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .activity-card {
+      border: 1px solid color-mix(in srgb, var(--neon) 40%, #555 60%);
+      background: color-mix(in srgb, var(--neon) 11%, #171717 89%);
+      padding: 6px 8px;
+      font-size: 0.84em;
+      color: #f1f1f1;
+      opacity: 1;
+      transition: opacity 700ms ease;
+    }
+
+    .activity-card.fade {
+      opacity: 0;
+    }
+
+    @media (max-width: 1080px) {
+      .hud-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(260px, 1fr) auto;
+      }
+
+      .left-hud {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr;
+      }
     }
 
     #commandRow {
@@ -857,7 +1016,43 @@
     <h1>PRIORY</h1>
   </div>
 
-  <div id="log" class="log" aria-live="polite"></div>
+  <div class="hud-grid">
+    <div class="left-hud">
+      <div class="hud-panel hud-box">
+        <div class="hud-head">Minimap</div>
+        <div class="hud-body">
+          <div class="minimap">
+            <div id="minimapScene" class="minimap-scene">Unknown location</div>
+            <div class="minimap-dot" aria-hidden="true"></div>
+            <div id="minimapParty">Party: none</div>
+          </div>
+        </div>
+      </div>
+      <div class="hud-panel hud-box">
+        <div class="hud-head">Quest Journal</div>
+        <div id="questJournal" class="hud-body"></div>
+      </div>
+    </div>
+
+    <div id="log" class="log" aria-live="polite">
+      <div id="activityFeed" class="activity-feed" aria-live="polite"></div>
+    </div>
+
+    <div class="hud-panel">
+      <div class="chat-shell">
+        <div class="hud-head" style="padding:0;border:0;">Community Chat</div>
+        <select id="chatChannel" aria-label="Chat channel selector">
+          <option value="global">Global chat (24h)</option>
+          <option value="party">Party chat (24h)</option>
+        </select>
+        <div id="chatLog" class="chat-log"></div>
+        <div class="chat-row">
+          <input id="chatInput" maxlength="180" placeholder="Write a short message..." />
+          <button onclick="sendChatMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="timedPanel" class="timed-panel hidden">
     <div class="timed-header">
@@ -938,6 +1133,19 @@ let timedInterval = null;
 let shouldStickToBottom = true;
 let userNeonColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 let showQuickAccess = false;
+let currentSceneId = '';
+const activityTimers = new Map();
+const majorActivityPatterns = [
+  { pattern: /\[Quest Started\]/i, label: 'started a quest objective' },
+  { pattern: /\[Quest Completed\]/i, label: 'completed a quest milestone' },
+  { pattern: /leave|depart|travel to|arrive in/i, label: 'traveled to another region' },
+  { pattern: /decision|commitment still stands|world/i, label: 'made a world-shaping decision' }
+];
+const chatState = {
+  global: [],
+  party: [],
+  ttlMs: 24 * 60 * 60 * 1000
+};
 
 const DEFAULT_MUSIC_VOLUME = 0.08;
 const MUSIC_STORAGE_KEY = 'priory_music_volume';
@@ -1373,7 +1581,7 @@ function appendVirtueGrid(line) {
   grid.className = 'virtue-grid';
 
   for (const row of rows) {
-    const match = row.match(/^(\S+)\s+([A-Za-z]+)\s+\[([^\]]+)\]\s+([+\-0-9]+)/);
+    const match = row.match(/^(\S+)\s+([A-Za-z]+)\s+\[[^\]]+\]\s+([+\-0-9]+)\/(\d+)/);
     const card = document.createElement('div');
     card.className = 'virtue-card';
 
@@ -1382,8 +1590,11 @@ function appendVirtueGrid(line) {
     bar.className = 'virtue-bar';
 
     if (match) {
-      head.textContent = `${match[1]} ${match[2]} ${match[4]}`;
-      bar.textContent = `[${match[3]}]`;
+      const raw = Number(match[3]);
+      const max = Math.max(Number(match[4]) || 100, 1);
+      const bars = Math.max(0, Math.min(10, Math.round((Math.max(raw, 0) / max) * 10)));
+      head.textContent = `${stripDecorativeGlyphs(match[1])} ${match[2]} ${raw}/${max}`;
+      bar.textContent = `[${'█'.repeat(bars)}${'░'.repeat(10 - bars)}]`;
     } else {
       head.textContent = row;
     }
@@ -1415,6 +1626,102 @@ function appendLineWithInlineBold(container, line) {
   }
 }
 
+function stripDecorativeGlyphs(value) {
+  return String(value || '').replace(/[🔴🟢🟣🔵🟡⚪]/g, '').trim();
+}
+
+function renderQuestJournal(lines) {
+  const panel = document.getElementById('questJournal');
+  if (!panel) return;
+
+  const all = (lines || []).flatMap(line => String(line).split('\n'));
+  const active = all.filter(x => x.trim().startsWith('-') && x.includes(':'));
+  const completedHeader = all.findIndex(x => x.trim().toLowerCase().startsWith('completed quests'));
+  const completed = completedHeader >= 0
+    ? all.slice(completedHeader + 1).filter(x => x.trim().startsWith('-'))
+    : [];
+
+  const total = Math.max(active.length + completed.length, 1);
+  const worldPct = Math.round((completed.length / total) * 100);
+
+  const rows = [];
+  rows.push(`<div class="quest-progress-row"><strong>World Progress ${worldPct}%</strong><div class="progress-track"><div class="progress-fill" style="width:${worldPct}%"></div></div></div>`);
+
+  if (active.length === 0) {
+    rows.push('<div>No active quests right now.</div>');
+  } else {
+    for (const quest of active) {
+      const hash = Array.from(quest).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+      const progress = 15 + (hash % 71);
+      rows.push(`<div class="quest-progress-row"><strong>${quest.replace(/^\s*-\s*/, '')}</strong><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div></div>`);
+    }
+  }
+
+  panel.innerHTML = rows.join('');
+}
+
+function updateMinimap(sceneId) {
+  const scene = (sceneId || currentSceneId || 'unknown').toString().replaceAll('_', ' ');
+  document.getElementById('minimapScene').textContent = `Location: ${scene}`;
+  const partyCode = document.getElementById('currentPartyCode').textContent.replace('Party Code: ', '').trim();
+  const partyLabel = partyCode && partyCode !== '-' ? `Party members linked to ${partyCode}` : 'Party: none';
+  document.getElementById('minimapParty').textContent = partyLabel;
+}
+
+function pruneExpiredChat(channel) {
+  const now = Date.now();
+  chatState[channel] = chatState[channel].filter(x => now - x.ts < chatState.ttlMs);
+}
+
+function renderChat() {
+  const channel = document.getElementById('chatChannel').value;
+  pruneExpiredChat(channel);
+  const log = document.getElementById('chatLog');
+  const rows = chatState[channel].slice(-40).map(msg => `<div class="chat-entry"><small>[${new Date(msg.ts).toLocaleTimeString()}]</small> ${msg.author}: ${msg.text}</div>`);
+  log.innerHTML = rows.join('') || '<div class="chat-entry">No messages yet.</div>';
+  log.scrollTop = log.scrollHeight;
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const channel = document.getElementById('chatChannel').value;
+  pruneExpiredChat(channel);
+  chatState[channel].push({
+    ts: Date.now(),
+    author: document.getElementById('currentUser').textContent.replace('Current User: ', '') || 'Pilgrim',
+    text
+  });
+  input.value = '';
+  renderChat();
+}
+
+function pushPartyActivity(message) {
+  const feed = document.getElementById('activityFeed');
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const card = document.createElement('div');
+  card.className = 'activity-card';
+  card.dataset.id = id;
+  card.textContent = message;
+  feed.prepend(card);
+
+  const fadeTimer = setTimeout(() => card.classList.add('fade'), 4300);
+  const removeTimer = setTimeout(() => {
+    card.remove();
+    activityTimers.delete(id);
+  }, 5000);
+
+  activityTimers.set(id, [fadeTimer, removeTimer]);
+}
+
+function detectMajorPartyActivity(line) {
+  const matched = majorActivityPatterns.find(x => x.pattern.test(line || ''));
+  if (!matched) return;
+  pushPartyActivity(`Party update: ${matched.label}.`);
+}
+
 function append(lines) {
   const log = document.getElementById('log');
   const wasNearBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 24;
@@ -1424,6 +1731,8 @@ function append(lines) {
     if (subLines.length === 0) continue;
 
     for (const line of subLines) {
+      detectMajorPartyActivity(line);
+
       if (line.startsWith('Virtues')) {
         log.appendChild(appendVirtueGrid(rawLine));
         break;
@@ -1656,6 +1965,10 @@ async function startSession() {
 
   const activePartyCode = data.partyCode || data.activePartyCode || (mode === 'join' ? partyCode : '');
   setSessionDetails(data.username || playerName || 'Guest', activePartyCode);
+  currentSceneId = data.sceneId || '';
+  updateMinimap(currentSceneId);
+  renderChat();
+  refreshQuestJournal();
 
   document.getElementById('sessionModal').classList.add('hidden');
   sessionErrorEl.textContent = '';
@@ -1729,7 +2042,7 @@ async function openInventory() {
   } catch {
     renderInventory({
       playerName: 'Pilgrim',
-      lifePath: 'Lay Aspirant',
+      lifePath: 'Unchosen',
       inventory: ['Psalter (worn)', 'Small wooden rosary', 'Plain tunic'],
       coin: 0
     });
@@ -1738,6 +2051,27 @@ async function openInventory() {
 
 function closeInventory() {
   document.getElementById('inventoryModal').classList.remove('show');
+}
+
+async function refreshQuestJournal() {
+  if (!sessionId) {
+    renderQuestJournal([]);
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: 'quests' })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      renderQuestJournal(data.lines || []);
+    }
+  } catch {
+    renderQuestJournal([]);
+  }
 }
 
 
@@ -1772,7 +2106,11 @@ async function endSessionAndReturnToStart() {
   document.getElementById('setupStep1').classList.remove('hidden');
   document.getElementById('sessionModal').classList.remove('hidden');
   setSessionDetails('', '');
+  currentSceneId = '';
+  updateMinimap('');
+  renderQuestJournal([]);
 }
+
 
 async function saveAndQuit() {
   closeMenuPopover();
@@ -1816,8 +2154,13 @@ async function sendCommand() {
   const data = await res.json();
   if (!res.ok) { append([`ERROR: ${data.error || 'command failed'}`]); return; }
   append(data.lines);
+  currentSceneId = data.sceneId || currentSceneId;
+  updateMinimap(currentSceneId);
   if (musicState.started) {
     syncMusicForScene(data.sceneId, data.lines || []);
+  }
+  if ((data.lines || []).some(x => String(x).includes('Quest'))) {
+    refreshQuestJournal();
   }
 
   if (data.timedPrompt) {
@@ -1914,6 +2257,13 @@ quickAccessToggle.addEventListener('change', () => {
 document.querySelectorAll('input[name="mode"]').forEach(el => el.addEventListener('change', updatePartyCodeVisibility));
 document.querySelectorAll('input[name="authMode"]').forEach(el => el.addEventListener('change', syncSessionDetailFields));
 document.getElementById('neonColor').addEventListener('change', () => applyNeon(resolveNeonSelection()));
+document.getElementById('chatChannel').addEventListener('change', renderChat);
+document.getElementById('chatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendChatMessage();
+  }
+});
 
 initNeonPicker();
 initMusicControls();
@@ -1921,6 +2271,9 @@ applyNeon(userNeonColor);
 updateQuickPanelVisibility();
 syncSessionDetailFields();
 playIntroSplash();
+renderChat();
+updateMinimap('');
+renderQuestJournal([]);
 setSessionDetails('', '');
 setInputEnabled(false);
 </script>
