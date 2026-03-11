@@ -2203,12 +2203,15 @@ public sealed class GameEngine
         };
 
         const int maxBars = 10;
+        const int maxVirtue = 100;
         var rows = spec.Select(v =>
         {
             var raw = _state.Virtues.GetValueOrDefault(v.Key);
-            var bars = Math.Clamp(raw + 5, 0, maxBars);
+            var clamped = Math.Clamp(raw, 0, maxVirtue);
+            var bars = (int)Math.Round((clamped / (double)maxVirtue) * maxBars, MidpointRounding.AwayFromZero);
+            bars = Math.Clamp(bars, 0, maxBars);
             var bar = new string('█', bars) + new string('░', maxBars - bars);
-            return $"{v.ColorDot} {v.Label,-10} [{bar}] {raw:+#;-#;0}";
+            return $"{v.ColorDot} {v.Label,-10} [{bar}] {raw:+#;-#;0}/{maxVirtue}";
         });
 
         return "Virtues\n" + string.Join("\n", rows);
