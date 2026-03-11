@@ -435,13 +435,30 @@ public sealed class GameEngine
             return output;
         }
 
-        if (parsed.Intent != Intent.Numeric)
-            return new(new List<string> { "Choose a number.", "Tip: when a menu is open, enter 1, 2, 3... to pick an option.", RenderMenu(menu) });
+        if (menu.Id == "life_path" && TryResolveLifePathSelection(parsed, menu, lines))
+        {
+            PersistParty();
+            return new(lines, MaybeActivateTimed(lines));
+        }
 
         var available = menu.Options
             .Select((o, i) => (o, i))
             .Where(x => IsOptionAvailable(x.o, out _, $"menu:{menu.Id}:{x.i}"))
             .ToList();
+
+        if (available.Count == 0)
+        {
+            _state.ActiveMenuId = null;
+            lines.Add("No valid choices remain in this dialog.");
+            lines.Add("Returning to world commands.");
+            lines.Add(ExitLine(CurrentScene()));
+            AddContextTip(lines);
+            PersistParty();
+            return new(lines, MaybeActivateTimed(lines));
+        }
+
+        if (parsed.Intent != Intent.Numeric)
+            return new(new List<string> { "Choose a number.", "Tip: when a menu is open, enter 1, 2, 3... to pick an option.", RenderMenu(menu) });
 
         var index = parsed.Number - 1;
         if (index < 0 || index >= available.Count)
@@ -466,6 +483,28 @@ public sealed class GameEngine
 
         ProgressCartDepartureTimeline(lines);
         return new(lines, MaybeActivateTimed(lines));
+    }
+
+    private bool TryResolveLifePathSelection(ParsedInput parsed, MenuDef menu, List<string> lines)
+    {
+        if (parsed.Intent == Intent.Numeric)
+            return false;
+
+        var target = parsed.Target;
+        if (string.IsNullOrWhiteSpace(target))
+            return false;
+
+        var available = menu.Options
+            .Select((option, index) => (option, index))
+            .Where(x => IsOptionAvailable(x.option, out _, $"menu:{menu.Id}:{x.index}"))
+            .ToList();
+
+        var displayToIndex = available.ToDictionary(x => LifePathFlavor(x.option.Text), x => x.index);
+        if (!TryResolveKey(displayToIndex.Keys, target, out var resolved) || resolved is null)
+            return false;
+
+        ApplyLifePath(displayToIndex[resolved], lines);
+        return true;
     }
 
     private void ApplyLifePath(int index, List<string> lines)
