@@ -61,6 +61,8 @@ public sealed class PartyState
 {
     public string PartyId { get; set; } = "";
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public int Day { get; set; } = 1;
+    public TimeSegment Segment { get; set; } = TimeSegment.Prime;
     public Dictionary<string, int> Priory { get; set; } = new()
     {
         ["food"] = 50,
