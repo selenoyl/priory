@@ -236,6 +236,10 @@
       padding: 10px;
       min-height: 180px;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 8px;
     }
 
     .minimap-scene {
@@ -251,7 +255,14 @@
       border-radius: 999px;
       background: var(--neon);
       box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 75%, transparent);
-      margin: 0 auto 8px;
+      margin: 0 auto;
+    }
+
+    #minimapParty {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.82em;
+      color: #c6c6c6;
     }
 
     .quest-progress-row {
@@ -280,12 +291,19 @@
       box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 40%, transparent);
     }
 
+    .chat-panel {
+      display: flex;
+      min-height: 0;
+    }
+
     .chat-shell {
       display: grid;
       grid-template-rows: auto auto 1fr auto;
       min-height: 0;
+      height: 100%;
       gap: 8px;
       padding: 8px;
+      flex: 1;
     }
 
     .chat-log {
@@ -1038,7 +1056,7 @@
       <div id="activityFeed" class="activity-feed" aria-live="polite"></div>
     </div>
 
-    <div class="hud-panel">
+    <div class="hud-panel chat-panel">
       <div class="chat-shell">
         <div class="hud-head" style="padding:0;border:0;">Community Chat</div>
         <select id="chatChannel" aria-label="Chat channel selector">
@@ -1144,7 +1162,12 @@ const majorActivityPatterns = [
 const chatState = {
   global: [],
   party: [],
-  ttlMs: 24 * 60 * 60 * 1000
+  seen: { global: new Set(), party: new Set() },
+  lastTs: { global: 0, party: 0 },
+  pollIntervalMs: 2500,
+  pollTimer: null,
+  streamSource: null,
+  streamReconnectTimer: null
 };
 
 const DEFAULT_MUSIC_VOLUME = 0.08;
@@ -1634,15 +1657,29 @@ function renderQuestJournal(lines) {
   const panel = document.getElementById('questJournal');
   if (!panel) return;
 
-  const all = (lines || []).flatMap(line => String(line).split('\n'));
-  const active = all.filter(x => x.trim().startsWith('-') && x.includes(':'));
-  const completedHeader = all.findIndex(x => x.trim().toLowerCase().startsWith('completed quests'));
-  const completed = completedHeader >= 0
-    ? all.slice(completedHeader + 1).filter(x => x.trim().startsWith('-'))
-    : [];
+  const all = (lines || []).flatMap(line => String(line).split('\n')).map(x => x.trim()).filter(Boolean);
+  const active = [];
+  const completed = [];
+  let section = '';
 
-  const total = Math.max(active.length + completed.length, 1);
-  const worldPct = Math.round((completed.length / total) * 100);
+  for (const line of all) {
+    const lower = line.toLowerCase();
+    if (lower.startsWith('active quests')) {
+      section = 'active';
+      continue;
+    }
+    if (lower.startsWith('completed quests')) {
+      section = 'completed';
+      continue;
+    }
+    if (!line.startsWith('-')) continue;
+
+    if (section === 'active') active.push(line.replace(/^\-\s*/, ''));
+    if (section === 'completed') completed.push(line.replace(/^\-\s*/, ''));
+  }
+
+  const totalKnown = active.length + completed.length;
+  const worldPct = totalKnown === 0 ? 0 : Math.round((completed.length / totalKnown) * 100);
 
   const rows = [];
   rows.push(`<div class="quest-progress-row"><strong>World Progress ${worldPct}%</strong><div class="progress-track"><div class="progress-fill" style="width:${worldPct}%"></div></div></div>`);
@@ -1651,9 +1688,7 @@ function renderQuestJournal(lines) {
     rows.push('<div>No active quests right now.</div>');
   } else {
     for (const quest of active) {
-      const hash = Array.from(quest).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-      const progress = 15 + (hash % 71);
-      rows.push(`<div class="quest-progress-row"><strong>${quest.replace(/^\s*-\s*/, '')}</strong><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div></div>`);
+      rows.push(`<div class="quest-progress-row"><strong>${quest}</strong><div class="progress-track"><div class="progress-fill" style="width:0%"></div></div></div>`);
     }
   }
 
@@ -1668,34 +1703,151 @@ function updateMinimap(sceneId) {
   document.getElementById('minimapParty').textContent = partyLabel;
 }
 
-function pruneExpiredChat(channel) {
-  const now = Date.now();
-  chatState[channel] = chatState[channel].filter(x => now - x.ts < chatState.ttlMs);
+function stopChatPolling() {
+  if (chatState.pollTimer) {
+    clearInterval(chatState.pollTimer);
+    chatState.pollTimer = null;
+  }
+}
+
+function stopChatStreaming() {
+  if (chatState.streamReconnectTimer) {
+    clearTimeout(chatState.streamReconnectTimer);
+    chatState.streamReconnectTimer = null;
+  }
+
+  if (chatState.streamSource) {
+    chatState.streamSource.close();
+    chatState.streamSource = null;
+  }
+}
+
+function startChatStreaming() {
+  stopChatStreaming();
+  if (!sessionId) return;
+
+  const channel = document.getElementById('chatChannel').value;
+  const streamUrl = `/api/sessions/${sessionId}/chat/stream?channel=${encodeURIComponent(channel)}`;
+  const source = new EventSource(streamUrl);
+  chatState.streamSource = source;
+
+  source.addEventListener('message', (event) => {
+    try {
+      const payload = JSON.parse(event.data || '{}');
+      mergeChatMessages(channel, [payload]);
+      chatState.lastTs[channel] = Math.max(chatState.lastTs[channel] || 0, Number(payload.ts) || 0);
+      renderChat();
+    } catch {}
+  });
+
+  source.onerror = () => {
+    stopChatStreaming();
+    if (!sessionId) return;
+    chatState.streamReconnectTimer = setTimeout(() => {
+      startChatStreaming();
+      refreshChat().catch(() => {});
+    }, 1500);
+  };
+}
+
+function startChatPolling() {
+  stopChatPolling();
+  stopChatStreaming();
+  if (!sessionId) return;
+
+  chatState.pollTimer = setInterval(() => {
+    refreshChat().catch(() => {});
+  }, chatState.pollIntervalMs);
+}
+
+function chatMessageKey(message) {
+  return `${message.ts}|${message.author}|${message.text}`;
+}
+
+function mergeChatMessages(channel, incoming) {
+  if (!Array.isArray(incoming) || incoming.length === 0) return;
+
+  for (const msg of incoming) {
+    const normalized = {
+      ts: Number(msg.ts) || Date.now(),
+      author: msg.author || 'Pilgrim',
+      text: msg.text || ''
+    };
+    const key = chatMessageKey(normalized);
+    if (chatState.seen[channel].has(key)) continue;
+
+    chatState.seen[channel].add(key);
+    chatState[channel].push(normalized);
+  }
+
+  if (chatState[channel].length > 300) {
+    chatState[channel] = chatState[channel].slice(-300);
+    chatState.seen[channel] = new Set(chatState[channel].map(chatMessageKey));
+  }
 }
 
 function renderChat() {
   const channel = document.getElementById('chatChannel').value;
-  pruneExpiredChat(channel);
   const log = document.getElementById('chatLog');
-  const rows = chatState[channel].slice(-40).map(msg => `<div class="chat-entry"><small>[${new Date(msg.ts).toLocaleTimeString()}]</small> ${msg.author}: ${msg.text}</div>`);
+  const rows = chatState[channel]
+    .slice(-60)
+    .map(msg => `<div class="chat-entry"><small>[${new Date(msg.ts).toLocaleTimeString()}]</small> ${msg.author}: ${msg.text}</div>`);
   log.innerHTML = rows.join('') || '<div class="chat-entry">No messages yet.</div>';
   log.scrollTop = log.scrollHeight;
 }
 
-function sendChatMessage() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
+async function refreshChat() {
+  if (!sessionId) {
+    renderChat();
+    return;
+  }
 
   const channel = document.getElementById('chatChannel').value;
-  pruneExpiredChat(channel);
-  chatState[channel].push({
-    ts: Date.now(),
-    author: document.getElementById('currentUser').textContent.replace('Current User: ', '') || 'Pilgrim',
-    text
-  });
-  input.value = '';
+  const res = await fetch(`/api/sessions/${sessionId}/chat?channel=${encodeURIComponent(channel)}&limit=200`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'chat refresh failed');
+  }
+
+  if (Array.isArray(data.messages) && data.messages.length > 0) {
+    mergeChatMessages(channel, data.messages);
+    const newestTs = Math.max(...data.messages.map(x => Number(x.ts) || 0));
+    chatState.lastTs[channel] = Math.max(chatState.lastTs[channel] || 0, newestTs);
+  }
+
   renderChat();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !sessionId) return;
+
+  const channel = document.getElementById('chatChannel').value;
+  const res = await fetch(`/api/sessions/${sessionId}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel, text })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    append([`ERROR: ${data.error || 'chat send failed'}`]);
+    return;
+  }
+
+  input.value = '';
+
+  const postedTs = Number(data.ts) || Date.now();
+  mergeChatMessages(channel, [{
+    ts: postedTs,
+    author: data.message?.author || document.getElementById('currentUser').textContent.replace('Current User: ', '') || 'Pilgrim',
+    text: data.message?.text || text
+  }]);
+  chatState.lastTs[channel] = Math.max(chatState.lastTs[channel] || 0, postedTs);
+  renderChat();
+
+  await refreshChat();
 }
 
 function pushPartyActivity(message) {
@@ -1967,7 +2119,9 @@ async function startSession() {
   setSessionDetails(data.username || playerName || 'Guest', activePartyCode);
   currentSceneId = data.sceneId || '';
   updateMinimap(currentSceneId);
-  renderChat();
+  refreshChat().catch(() => {});
+  startChatPolling();
+  startChatStreaming();
   refreshQuestJournal();
 
   document.getElementById('sessionModal').classList.add('hidden');
@@ -2083,6 +2237,13 @@ async function endSessionAndReturnToStart() {
   }
 
   sessionId = null;
+  stopChatPolling();
+  stopChatStreaming();
+  chatState.global = [];
+  chatState.party = [];
+  chatState.seen = { global: new Set(), party: new Set() };
+  chatState.lastTs = { global: 0, party: 0 };
+  renderChat();
   activeTimedPrompt = null;
   if (timedInterval) {
     clearInterval(timedInterval);
@@ -2159,9 +2320,7 @@ async function sendCommand() {
   if (musicState.started) {
     syncMusicForScene(data.sceneId, data.lines || []);
   }
-  if ((data.lines || []).some(x => String(x).includes('Quest'))) {
-    refreshQuestJournal();
-  }
+  refreshQuestJournal();
 
   if (data.timedPrompt) {
     startTimedPrompt(data.timedPrompt);
@@ -2257,7 +2416,11 @@ quickAccessToggle.addEventListener('change', () => {
 document.querySelectorAll('input[name="mode"]').forEach(el => el.addEventListener('change', updatePartyCodeVisibility));
 document.querySelectorAll('input[name="authMode"]').forEach(el => el.addEventListener('change', syncSessionDetailFields));
 document.getElementById('neonColor').addEventListener('change', () => applyNeon(resolveNeonSelection()));
-document.getElementById('chatChannel').addEventListener('change', renderChat);
+document.getElementById('chatChannel').addEventListener('change', () => {
+  renderChat();
+  refreshChat().catch(() => {});
+  startChatStreaming();
+});
 document.getElementById('chatInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
