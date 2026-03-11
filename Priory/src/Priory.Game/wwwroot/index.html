@@ -2249,7 +2249,7 @@ async function startSession() {
   startChatPolling();
   startChatStreaming();
   refreshQuestJournal();
-  await refreshPlayerOverview({ includeInventoryText: true });
+  await refreshPlayerOverview();
   startOverviewPolling();
 
   document.getElementById('sessionModal').classList.add('hidden');
@@ -2297,13 +2297,13 @@ function parseInventoryLine(line) {
     .filter(Boolean);
 }
 
-async function fetchInventoryTextItems() {
+async function fetchInventoryTextLine() {
   if (!sessionId) return null;
   try {
     const res = await fetch(`/api/sessions/${sessionId}/inventory-text`);
     const data = await res.json();
     if (!res.ok) return null;
-    return parseInventoryLine(data.line);
+    return String(data.line || '').trim();
   } catch {
     return null;
   }
@@ -2332,13 +2332,13 @@ function renderInventory(overview) {
   }
 }
 
-function updateCachedPlayerOverview(overview, inventoryTextItems) {
+function updateCachedPlayerOverview(overview) {
   if (!overview) return null;
 
   cachedPlayerOverview = {
     playerName: overview.playerName || 'Pilgrim',
     lifePath: overview.lifePath || 'Unchosen',
-    inventory: inventoryTextItems ?? (overview.inventory || []),
+    inventory: overview.inventory || [],
     coin: overview.coin ?? 0
   };
 
@@ -2354,26 +2354,36 @@ async function openInventory() {
   const modal = document.getElementById('inventoryModal');
   modal.classList.add('show');
 
-  if (cachedPlayerOverview) {
-    renderInventory(cachedPlayerOverview);
-  } else {
-    renderInventory({
-      playerName: 'Pilgrim',
-      lifePath: 'Unchosen',
-      inventory: [],
-      coin: 0
-    });
-  }
+  const placeholder = cachedPlayerOverview || {
+    playerName: 'Loading...',
+    lifePath: 'Unchosen',
+    inventory: [],
+    coin: 0
+  };
+  renderInventory(placeholder);
 
   try {
-    await refreshPlayerOverview({ includeInventoryText: true, forceInventoryRender: true });
+    await refreshPlayerOverview({ forceInventoryRender: true });
   } catch {
-    renderInventory(cachedPlayerOverview || {
-      playerName: 'Pilgrim',
-      lifePath: 'Unchosen',
-      inventory: ['Psalter (worn)', 'Small wooden rosary', 'Plain tunic'],
-      coin: 0
-    });
+    const line = await fetchInventoryTextLine();
+    if (line) {
+      const parsedItems = parseInventoryLine(line);
+      if (cachedPlayerOverview) {
+        cachedPlayerOverview.inventory = parsedItems;
+        renderInventory(cachedPlayerOverview);
+      } else {
+        renderInventory({
+          playerName: 'Pilgrim',
+          lifePath: 'Unchosen',
+          inventory: parsedItems,
+          coin: 0
+        });
+      }
+      append(['Inventory overview refresh failed; used inventory command snapshot.']);
+      return;
+    }
+
+    append(['ERROR: Could not refresh inventory from server.']);
   }
 }
 
@@ -2384,23 +2394,17 @@ function closeInventory() {
 async function refreshPlayerOverview(options = {}) {
   if (!sessionId) return;
 
-  const includeInventoryText = Boolean(options.includeInventoryText);
   const forceInventoryRender = Boolean(options.forceInventoryRender);
   const modal = document.getElementById('inventoryModal');
   const shouldRenderInventory = Boolean(modal && (modal.classList.contains('show') || forceInventoryRender));
-  const shouldFetchInventoryText = includeInventoryText || shouldRenderInventory;
 
   try {
-    const [res, inventoryTextItems] = await Promise.all([
-      fetch(`/api/sessions/${sessionId}/overview`),
-      shouldFetchInventoryText ? fetchInventoryTextItems() : Promise.resolve(null)
-    ]);
-
+    const res = await fetch(`/api/sessions/${sessionId}/overview`);
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'overview failed');
 
     totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
-    const normalizedOverview = updateCachedPlayerOverview(data, inventoryTextItems);
+    const normalizedOverview = updateCachedPlayerOverview(data);
 
     if (normalizedOverview && shouldRenderInventory) {
       renderInventory(normalizedOverview);
