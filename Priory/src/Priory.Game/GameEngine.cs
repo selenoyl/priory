@@ -435,6 +435,12 @@ public sealed class GameEngine
             return output;
         }
 
+        if (menu.Id == "life_path" && TryResolveLifePathSelection(parsed, menu, lines))
+        {
+            PersistParty();
+            return new(lines, MaybeActivateTimed(lines));
+        }
+
         if (parsed.Intent != Intent.Numeric)
             return new(new List<string> { "Choose a number.", "Tip: when a menu is open, enter 1, 2, 3... to pick an option.", RenderMenu(menu) });
 
@@ -466,6 +472,28 @@ public sealed class GameEngine
 
         ProgressCartDepartureTimeline(lines);
         return new(lines, MaybeActivateTimed(lines));
+    }
+
+    private bool TryResolveLifePathSelection(ParsedInput parsed, MenuDef menu, List<string> lines)
+    {
+        if (parsed.Intent == Intent.Numeric)
+            return false;
+
+        var target = parsed.Target;
+        if (string.IsNullOrWhiteSpace(target))
+            return false;
+
+        var available = menu.Options
+            .Select((option, index) => (option, index))
+            .Where(x => IsOptionAvailable(x.option, out _, $"menu:{menu.Id}:{x.index}"))
+            .ToList();
+
+        var displayToIndex = available.ToDictionary(x => LifePathFlavor(x.option.Text), x => x.index);
+        if (!TryResolveKey(displayToIndex.Keys, target, out var resolved) || resolved is null)
+            return false;
+
+        ApplyLifePath(displayToIndex[resolved], lines);
+        return true;
     }
 
     private void ApplyLifePath(int index, List<string> lines)
