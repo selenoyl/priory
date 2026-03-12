@@ -1972,7 +1972,7 @@ async function refreshChat() {
 
   const channel = document.getElementById('chatChannel').value;
   const partyCode = currentPartyCodeValue();
-  const res = await fetch(`/api/sessions/${sessionId}/chat?channel=${encodeURIComponent(channel)}&limit=200&partyCode=${encodeURIComponent(partyCode)}`);
+  const res = await fetch(`/api/sessions/${sessionId}/chat?channel=${encodeURIComponent(channel)}&limit=5000&partyCode=${encodeURIComponent(partyCode)}`);
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || 'chat refresh failed');
