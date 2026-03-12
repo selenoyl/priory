@@ -1604,7 +1604,9 @@ function classifyLine(line) {
   if (line.includes('Former Man-at-Arms')) return 'system lp-arms';
   if (line.includes("Merchant's Apprentice")) return 'system lp-merchant';
   if (line.includes("Farmer's Son")) return 'system lp-farmer';
+  if (line.startsWith('Welcome back,') || line.startsWith('Loaded your most recent account save.') || line.startsWith('Resumed saved journey for') || line.startsWith('Day ') || line.startsWith('You can also try:') || line.startsWith('Quick refresher:') || line.startsWith("Type 'help'")) return 'system';
   if (line.startsWith('Go where?') || line.startsWith('Be specific.') || line.startsWith('Start a session first.') || line.startsWith('Choose a number.')) return 'system';
+  if (line.startsWith('Blackpine village green sits between mill road and inn lane. Petitioners seek help, judgment, and sometimes advantage.')) return 'narrative';
   return 'narrative';
 }
 
@@ -2279,31 +2281,48 @@ function cloakClassForLifePath(lifePath) {
   return 'cloak-lay';
 }
 
-function parseInventoryLine(line) {
+function parseInventorySnapshot(line) {
   const raw = String(line || '').trim();
-  if (!raw) return [];
+  if (!raw) return null;
 
-  const match = raw.match(/inventory:\s*(.+)$/i);
-  if (!match) return [];
+  const match = raw.match(/^([^|]+)\|\s*Purse:\s*([^.]*)\.\s*Inventory:\s*(.*)$/i);
+  if (!match) return null;
 
-  const section = match[1].trim().replace(/\.$/, '');
-  if (!section || section.toLowerCase() === '(empty)') return [];
+  const playerName = (match[1] || '').trim() || 'Pilgrim';
+  const purseText = (match[2] || '').trim() || '0d';
+  const inventorySection = (match[3] || '').trim().replace(/\.$/, '');
 
-  return section
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean)
-    .map(item => item.replace(/^\d+[.)]\s*/, '').trim())
-    .filter(Boolean);
+  const inventory = !inventorySection || inventorySection.toLowerCase() === '(empty)'
+    ? []
+    : inventorySection
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+      .map(item => item.replace(/^\d+[.)]\s*/, '').trim())
+      .filter(Boolean);
+
+  return { playerName, purseText, inventory };
 }
 
-async function fetchInventoryTextLine() {
+async function runHiddenCommand(input) {
   if (!sessionId) return null;
   try {
-    const res = await fetch(`/api/sessions/${sessionId}/inventory-text`);
+    const res = await fetch(`/api/sessions/${sessionId}/command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input })
+    });
     const data = await res.json();
     if (!res.ok) return null;
-    return String(data.line || '').trim();
+    totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
+    if (data.sceneId) {
+      currentSceneId = data.sceneId;
+      updateMinimap(currentSceneId);
+    }
+    if (musicState.started) {
+      syncMusicForScene(data.sceneId, data.lines || []);
+    }
+    return data;
   } catch {
     return null;
   }
@@ -2317,7 +2336,8 @@ function renderInventory(overview) {
 
   spritePane.className = `sprite-pane ${cloakClassForLifePath(overview.lifePath)}`;
   classLabel.textContent = `Life Path: ${overview.lifePath || 'Unchosen'}`;
-  meta.textContent = `${overview.playerName || 'Pilgrim'} • Coin: ${overview.coin ?? 0}`;
+  const purse = overview.purseText ? ` • Purse: ${overview.purseText}` : ` • Coin: ${overview.coin ?? 0}`;
+  meta.textContent = `${overview.playerName || 'Pilgrim'}${purse}`;
 
   list.innerHTML = '';
   if (!overview.inventory || overview.inventory.length === 0) {
@@ -2339,7 +2359,8 @@ function updateCachedPlayerOverview(overview) {
     playerName: overview.playerName || 'Pilgrim',
     lifePath: overview.lifePath || 'Unchosen',
     inventory: overview.inventory || [],
-    coin: overview.coin ?? 0
+    coin: overview.coin ?? 0,
+    purseText: overview.purseText || ''
   };
 
   return cachedPlayerOverview;
@@ -2362,29 +2383,39 @@ async function openInventory() {
   };
   renderInventory(placeholder);
 
-  try {
-    await refreshPlayerOverview({ forceInventoryRender: true });
-  } catch {
-    const line = await fetchInventoryTextLine();
-    if (line) {
-      const parsedItems = parseInventoryLine(line);
-      if (cachedPlayerOverview) {
-        cachedPlayerOverview.inventory = parsedItems;
-        renderInventory(cachedPlayerOverview);
-      } else {
-        renderInventory({
-          playerName: 'Pilgrim',
-          lifePath: 'Unchosen',
-          inventory: parsedItems,
-          coin: 0
-        });
-      }
-      append(['Inventory overview refresh failed; used inventory command snapshot.']);
-      return;
-    }
+  const hiddenInventory = await runHiddenCommand('inventory');
+  const inventoryLine = Array.isArray(hiddenInventory?.lines)
+    ? hiddenInventory.lines.find(line => String(line).includes('Purse:') && String(line).includes('Inventory:'))
+    : null;
 
+  if (!inventoryLine) {
     append(['ERROR: Could not refresh inventory from server.']);
+    return;
   }
+
+  const parsed = parseInventorySnapshot(inventoryLine);
+  if (!parsed) {
+    append(['ERROR: Could not parse inventory output.']);
+    return;
+  }
+
+  const liveOverview = cachedPlayerOverview || {
+    playerName: parsed.playerName,
+    lifePath: 'Unchosen',
+    inventory: [],
+    coin: 0,
+    purseText: parsed.purseText
+  };
+
+  liveOverview.playerName = parsed.playerName;
+  liveOverview.inventory = parsed.inventory;
+  liveOverview.purseText = parsed.purseText;
+  cachedPlayerOverview = liveOverview;
+
+  try {
+    await refreshPlayerOverview({ forceInventoryRender: false });
+  } catch {}
+  renderInventory(cachedPlayerOverview);
 }
 
 function closeInventory() {
@@ -2437,14 +2468,8 @@ async function refreshQuestJournal() {
   }
 
   try {
-    const res = await fetch(`/api/sessions/${sessionId}/command`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: 'quests' })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
+    const data = await runHiddenCommand('quests');
+    if (data) {
       renderQuestJournal(data.lines || []);
     }
   } catch {

@@ -275,6 +275,7 @@ public static class ServerHost
             {
                 playerName = overview.PlayerName,
                 lifePath = overview.LifePath,
+                classKey = overview.ClassKey,
                 inventory = overview.Inventory,
                 coin = overview.Coin,
                 sceneId = overview.SceneId,

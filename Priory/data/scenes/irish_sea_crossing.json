@@ -1,0 +1,11 @@
+{
+  "id": "irish_sea_crossing",
+  "text": "You board a westbound cog over the Irish Sea, where friars, sailors, and merchants share cramped decks, salt bread, and the Hours under rough weather.",
+  "exits": {
+    "quay": "ravenscar_quay",
+    "galway": "galway_quay"
+  },
+  "actions": {
+    "crossing": "menu:irish_convoy_menu"
+  }
+}

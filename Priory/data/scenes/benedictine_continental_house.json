@@ -1,0 +1,11 @@
+{
+  "id": "benedictine_continental_house",
+  "text": "A continental Benedictine abbey receives you with ordered silence, lectio divina, and careful reform of customs according to the Rule of Saint Benedict and local chapter statutes.",
+  "exits": {
+    "studium": "cologne_studium"
+  },
+  "actions": {
+    "observance": "menu:benedictine_observance_menu",
+    "scriptorium": "menu:benedictine_observance_menu"
+  }
+}
