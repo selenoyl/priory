@@ -2504,7 +2504,7 @@ function renderInventory(overview) {
 
       const stashBtn = document.createElement('button');
       stashBtn.textContent = 'Store';
-      stashBtn.title = 'Put away at priory/home';
+      stashBtn.title = 'Put away in priory chest or your owned home chest';
       stashBtn.onclick = () => performInventoryAction(item, 'stash');
       actions.appendChild(stashBtn);
 
@@ -2519,6 +2519,26 @@ function renderInventory(overview) {
       list.appendChild(el);
     });
   }
+
+  const storedItems = Array.isArray(overview.partyStoredItems) ? overview.partyStoredItems : [];
+  if (storedItems.length > 0) {
+    const divider = document.createElement('div');
+    divider.className = 'inventory-item';
+    divider.textContent = '— Party Chest —';
+    list.appendChild(divider);
+
+    storedItems.forEach((entry) => {
+      const item = entry?.itemName || '';
+      if (!item) return;
+      const owner = entry?.ownerName || 'Unknown';
+      const el = document.createElement('div');
+      el.className = 'inventory-item';
+      const label = document.createElement('span');
+      label.textContent = `${owner}: ${item}`;
+      el.appendChild(label);
+      list.appendChild(el);
+    });
+  }
 }
 
 function updateCachedPlayerOverview(overview) {
@@ -2529,6 +2549,8 @@ function updateCachedPlayerOverview(overview) {
     lifePath: resolveDisplayedLifePath(overview),
     classKey: overview.classKey || '',
     inventory: overview.inventory || [],
+    storedItems: overview.storedItems || [],
+    partyStoredItems: overview.partyStoredItems || [],
     coin: overview.coin ?? 0,
     purseText: overview.purseText || '',
     sceneId: overview.sceneId || currentSceneId || ''
@@ -2547,7 +2569,7 @@ async function performInventoryAction(item, action) {
   }
 
   if (action === 'stash') {
-    const ok = window.confirm(`Put away '${item}' in storage? (Priory or home only)`);
+    const ok = window.confirm(`Put away '${item}' in storage? (Priory or your owned home)`);
     if (!ok) return;
   }
 
@@ -2589,6 +2611,8 @@ async function openInventory() {
     lifePath: cachedPlayerOverview?.lifePath || 'Unchosen',
     classKey: cachedPlayerOverview?.classKey || '',
     inventory: [],
+    storedItems: [],
+    partyStoredItems: [],
     coin: 0
   };
   renderInventory(placeholder);

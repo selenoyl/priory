@@ -124,6 +124,8 @@ public sealed class GameEngine
         if (!_partyRepo.TryLoadByCode(partyCode, out var party, out message) || party is null)
             return false;
 
+        LeaveCurrentParty(retainPersonalStorage: true);
+
         var playerName = string.IsNullOrWhiteSpace(prospectivePlayerName) ? _state.PlayerName : prospectivePlayerName.Trim();
         if (party.Members.Count >= 6 && !party.Members.ContainsKey(playerName))
         {
@@ -133,6 +135,7 @@ public sealed class GameEngine
 
         _partyState = party;
         ActivePartyCode = _codec.MakePartyCode(party.PartyId);
+        SyncPersonalStorageToParty();
         return true;
     }
 
@@ -154,10 +157,14 @@ public sealed class GameEngine
         var inventory = _state.Inventory
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var stored = _state.StoredItems
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var partyStored = GetVisiblePartyStoredItems();
 
         var classKey = ResolveClassKeyForOverview();
         var lifePath = ResolveLifePathNameForOverview(classKey);
-        return new PlayerOverview(_state.PlayerName, _state.Sex, lifePath, classKey, inventory, _state.Coin, _state.SceneId);
+        return new PlayerOverview(_state.PlayerName, _state.Sex, lifePath, classKey, inventory, stored, partyStored, _state.Coin, _state.SceneId);
     }
 
 
@@ -219,9 +226,7 @@ public sealed class GameEngine
     public bool TryStashInventoryItem(string itemName, out string message)
     {
         message = "";
-        var scene = _state.SceneId ?? "";
-        var canStash = scene.StartsWith("priory_", StringComparison.OrdinalIgnoreCase)
-            || scene.StartsWith("home_", StringComparison.OrdinalIgnoreCase);
+        var canStash = CanAccessStorageAtCurrentLocation();
 
         if (!canStash)
         {
@@ -239,8 +244,9 @@ public sealed class GameEngine
         _state.Inventory.Remove(match);
         if (!_state.StoredItems.Contains(match, StringComparer.OrdinalIgnoreCase))
             _state.StoredItems.Add(match);
+        SyncPersonalStorageToParty();
         PersistParty();
-        message = $"Stored item at {(_state.SceneId.StartsWith("home_", StringComparison.OrdinalIgnoreCase) ? "home" : "priory")}: {match}.";
+        message = $"Stored item in {(IsAtOwnedHome() ? "home chest" : "priory chest")}: {match}.";
         return true;
     }
 
@@ -249,6 +255,7 @@ public sealed class GameEngine
 
     public void UseSoloMode()
     {
+        LeaveCurrentParty(retainPersonalStorage: true);
         _partyState = null;
         ActivePartyCode = null;
     }
@@ -281,6 +288,7 @@ public sealed class GameEngine
                 _partyState = shared;
                 ActivePartyCode = _codec.MakePartyCode(shared.PartyId);
                 AttachSharedState();
+                SyncPersonalStorageToParty();
             }
             else
             {
@@ -2927,6 +2935,7 @@ public sealed class GameEngine
         _state.Flags = _partyState.Flags;
         _state.ActiveQuests = _partyState.ActiveQuests;
         _state.CompletedQuests = _partyState.CompletedQuests;
+        EnsurePartyStorageShape();
     }
 
     private void SyncPartyState()
@@ -2936,6 +2945,7 @@ public sealed class GameEngine
         {
             _partyState = latest;
             AttachSharedState();
+            SyncPersonalStorageFromParty();
             RegisterPartyMember();
         }
     }
@@ -2945,6 +2955,7 @@ public sealed class GameEngine
         if (_partyState is null) return;
         _partyState.Day = _state.Day;
         _partyState.Segment = _state.Segment;
+        SyncPersonalStorageToParty();
         RegisterPartyMember();
         _partyRepo.Save(_partyState);
     }
@@ -2960,6 +2971,92 @@ public sealed class GameEngine
             LastSceneId = _state.SceneId,
             LastSeenUtc = DateTimeOffset.UtcNow
         };
+
+        EnsurePartyStorageShape();
+    }
+
+    private bool CanAccessStorageAtCurrentLocation()
+    {
+        var scene = _state.SceneId ?? "";
+        return scene.StartsWith("priory_", StringComparison.OrdinalIgnoreCase) || IsAtOwnedHome();
+    }
+
+    private bool IsAtOwnedHome()
+    {
+        var scene = _state.SceneId ?? "";
+        if (!scene.StartsWith("home_", StringComparison.OrdinalIgnoreCase))
+            return false;
+        return HasFlag($"home_owned:{scene}");
+    }
+
+    private void EnsurePartyStorageShape()
+    {
+        if (_partyState is null)
+            return;
+
+        _partyState.StoredItemsByMember ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void SyncPersonalStorageToParty()
+    {
+        if (_partyState is null)
+            return;
+
+        EnsurePartyStorageShape();
+        _partyState.StoredItemsByMember[_state.PlayerName] = _state.StoredItems
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void SyncPersonalStorageFromParty()
+    {
+        if (_partyState is null)
+            return;
+
+        EnsurePartyStorageShape();
+        if (_partyState.StoredItemsByMember.TryGetValue(_state.PlayerName, out var items) && items is not null)
+        {
+            _state.StoredItems = items
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return;
+        }
+
+        SyncPersonalStorageToParty();
+    }
+
+    private void LeaveCurrentParty(bool retainPersonalStorage)
+    {
+        if (_partyState is null)
+            return;
+
+        EnsurePartyStorageShape();
+        if (retainPersonalStorage)
+            SyncPersonalStorageFromParty();
+
+        _partyState.Members.Remove(_state.PlayerName);
+        _partyState.StoredItemsByMember.Remove(_state.PlayerName);
+        _partyRepo.Save(_partyState);
+    }
+
+    private List<PartyStoredItemOverview> GetVisiblePartyStoredItems()
+    {
+        if (_partyState is null)
+        {
+            return _state.StoredItems
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .Select(item => new PartyStoredItemOverview(_state.PlayerName, item))
+                .ToList();
+        }
+
+        EnsurePartyStorageShape();
+        return _partyState.StoredItemsByMember
+            .SelectMany(kv => (kv.Value ?? []).Select(item => new PartyStoredItemOverview(kv.Key, item)))
+            .OrderBy(x => x.OwnerName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.ItemName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private void SetWorldFlag(string flag)
@@ -3707,4 +3804,5 @@ public sealed class GameEngine
 
 public sealed record PartyMemberOverview(string Name, string LastSceneId, DateTimeOffset LastSeenUtc, int SecondsSinceSeen);
 public sealed record PartyOverview(string PartyCode, List<PartyMemberOverview> Members);
-public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, int Coin, string SceneId);
+public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, List<string> StoredItems, List<PartyStoredItemOverview> PartyStoredItems, int Coin, string SceneId);
+public sealed record PartyStoredItemOverview(string OwnerName, string ItemName);

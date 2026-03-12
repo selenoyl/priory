@@ -298,6 +298,8 @@ public static class ServerHost
                 lifePath = overview.LifePath,
                 classKey = overview.ClassKey,
                 inventory = overview.Inventory,
+                storedItems = overview.StoredItems,
+                partyStoredItems = overview.PartyStoredItems,
                 coin = overview.Coin,
                 sceneId = overview.SceneId,
                 totalQuestCount = story.Quests.Count
@@ -340,6 +342,8 @@ public static class ServerHost
             {
                 message,
                 inventory = overview.Inventory,
+                storedItems = overview.StoredItems,
+                partyStoredItems = overview.PartyStoredItems,
                 lifePath = overview.LifePath,
                 classKey = overview.ClassKey,
                 coin = overview.Coin,

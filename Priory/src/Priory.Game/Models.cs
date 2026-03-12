@@ -80,6 +80,7 @@ public sealed class PartyState
     public HashSet<string> CompletedQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<LoreEvent> LoreEvents { get; set; } = new();
     public Dictionary<string, PartyMemberProfile> Members { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, List<string>> StoredItemsByMember { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class LoreEvent
