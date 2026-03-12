@@ -17,6 +17,8 @@
     "reports": "You hear of tax pressure, a missing cart, and new pamphlets in York.",
     "orders": "menu:orders_overview_menu",
     "hanse factor": "menu:hanse_packet_menu",
-    "harbor rates": "menu:currency_exchange_menu"
+    "harbor rates": "menu:currency_exchange_menu",
+    "foragers": "menu:field_pouch_menu",
+    "crowd line": "script:minigame:queue"
   }
 }

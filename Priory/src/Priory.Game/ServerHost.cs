@@ -78,6 +78,22 @@ public static class ServerHost
 
         app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
         app.MapGet("/version", () => Results.Ok(new { buildId, startedAtUtc }));
+        app.MapGet("/api/sessions/{id}/online-users", (string id) =>
+        {
+            if (!sessions.TryGetValue(id, out var current))
+                return Results.NotFound(new { error = "session not found" });
+
+            var cutoff = DateTimeOffset.UtcNow.AddMinutes(-20);
+            var activeNames = sessions.Values
+                .Where(x => x.LastActivityUtc >= cutoff)
+                .Select(x => x.Engine.GetPlayerOverview().PlayerName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            return Results.Ok(new { count = activeNames.Length, users = activeNames });
+        });
         app.MapGet("/api/music-tracks", () =>
         {
             var tracks = musicRoots
@@ -185,6 +201,7 @@ public static class ServerHost
 
             var sessionId = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12));
             var createdSession = new SessionState(engine, requestedUsername, authMode);
+            createdSession.Touch();
             createdSession.SyncPartyCodeFromEngine();
             sessions[sessionId] = createdSession;
 
@@ -206,6 +223,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var input = request.Input ?? string.Empty;
             var output = session.Engine.HandleInput(input);
             var lines = output.Lines;
@@ -254,6 +272,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var output = session.Engine.ResolveTimed(request.Choice);
             session.LastTimedPrompt = output.TimedPrompt;
             session.SyncPartyCodeFromEngine();
@@ -322,6 +341,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var normalizedChannel = NormalizeChatChannel(channel);
             if (!TryResolveChatScopeKey(session, normalizedChannel, partyCode, out var scopeKey, out var canPost, out var reason))
                 return Results.BadRequest(new { error = reason ?? "chat unavailable" });
@@ -356,6 +376,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var normalizedChannel = NormalizeChatChannel(request.Channel);
             if (!TryResolveChatScopeKey(session, normalizedChannel, request.PartyCode, out var scopeKey, out var canPost, out var reason))
                 return Results.BadRequest(new { error = reason ?? "chat unavailable" });
@@ -393,6 +414,7 @@ public static class ServerHost
                 return;
             }
 
+            session.Touch();
             var normalizedChannel = NormalizeChatChannel(channel);
             if (!TryResolveChatScopeKey(session, normalizedChannel, partyCode, out var scopeKey, out _, out var reason))
             {
@@ -546,6 +568,10 @@ public static class ServerHost
         public string AuthMode { get; } = authMode;
         public TimedPrompt? LastTimedPrompt { get; set; }
         public string? LastKnownPartyCode { get; private set; }
+        public DateTimeOffset LastActivityUtc { get; private set; } = DateTimeOffset.UtcNow;
+
+        public void Touch()
+            => LastActivityUtc = DateTimeOffset.UtcNow;
 
         public void SyncPartyCodeFromEngine()
         {

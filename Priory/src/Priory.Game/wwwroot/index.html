@@ -1177,6 +1177,7 @@
   <div class="status">
     <div id="currentUser">Current User: -</div>
     <div id="currentPartyCode">Party Code: -</div>
+    <div id="usersOnline">Users online: 0</div>
   </div>
 </div>
 
@@ -1190,6 +1191,7 @@ let sessionId = null;
 let activeTimedPrompt = null;
 let timedInterval = null;
 let shouldStickToBottom = true;
+let onlineUsersTimer = null;
 let userNeonColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 let showQuickAccess = false;
 let currentSceneId = '';
@@ -1920,6 +1922,7 @@ function startChatPolling() {
   stopChatPolling();
   stopChatStreaming();
   stopOverviewPolling();
+  stopOnlineUsersPolling();
   if (!sessionId) return;
 
   chatState.pollTimer = setInterval(() => {
@@ -2098,9 +2101,47 @@ function focusCommandBox() {
   cmd.setSelectionRange(cmd.value.length, cmd.value.length);
 }
 
+
+async function refreshOnlineUsers() {
+  if (!sessionId) {
+    document.getElementById('usersOnline').textContent = 'Users online: 0';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/online-users`);
+    const data = await res.json();
+    if (!res.ok) return;
+
+    const names = Array.isArray(data.users) ? data.users : [];
+    const count = Number(data.count) || names.length || 0;
+    const line = count > 0 ? `Users online: ${count} (${names.slice(0, 6).join(', ')})` : 'Users online: 0';
+    document.getElementById('usersOnline').textContent = line;
+  } catch {
+    document.getElementById('usersOnline').textContent = 'Users online: ?';
+  }
+}
+
+function stopOnlineUsersPolling() {
+  if (onlineUsersTimer) {
+    clearInterval(onlineUsersTimer);
+    onlineUsersTimer = null;
+  }
+}
+
+function startOnlineUsersPolling() {
+  stopOnlineUsersPolling();
+  if (!sessionId) return;
+  refreshOnlineUsers().catch(() => {});
+  onlineUsersTimer = setInterval(() => {
+    refreshOnlineUsers().catch(() => {});
+  }, 10000);
+}
+
 function setSessionDetails(playerName, partyCode) {
   document.getElementById('currentUser').textContent = `Current User: ${playerName || '-'}`;
   document.getElementById('currentPartyCode').textContent = `Party Code: ${partyCode || '-'}`;
+  if (!playerName) document.getElementById('usersOnline').textContent = 'Users online: 0';
 }
 
 function setInputEnabled(enabled) {
@@ -2308,6 +2349,7 @@ async function startSession() {
   refreshChat().catch(() => {});
   startChatPolling();
   startChatStreaming();
+  startOnlineUsersPolling();
   refreshQuestJournal();
   await refreshPlayerOverview();
   startOverviewPolling();
@@ -2576,6 +2618,7 @@ async function endSessionAndReturnToStart() {
   stopChatPolling();
   stopChatStreaming();
   stopOverviewPolling();
+  stopOnlineUsersPolling();
   chatState.global = [];
   chatState.party = [];
   chatState.seen = { global: new Set(), party: new Set() };
@@ -2762,6 +2805,7 @@ document.getElementById('chatChannel').addEventListener('change', () => {
   renderChat();
   refreshChat().catch(() => {});
   startChatStreaming();
+  startOnlineUsersPolling();
 });
 document.getElementById('chatInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {

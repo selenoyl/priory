@@ -8,6 +8,8 @@
     "carters": "menu:inn_carters_menu",
     "keeper": "The innkeeper trusts coin, then consistency, and only later piety.",
     "dice": "script:minigame:tavern_dice",
-    "cards": "script:minigame:tavern_dice"
+    "cards": "script:minigame:tavern_dice",
+    "dice table": "script:minigame:tavern_dice",
+    "back pantry": "menu:field_pouch_menu"
   }
 }

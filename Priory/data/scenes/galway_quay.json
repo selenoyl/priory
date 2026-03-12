@@ -7,6 +7,8 @@
   },
   "actions": {
     "harbor dispute": "menu:galway_harbor_menu",
-    "chapter letter": "menu:irish_franciscan_chapter_menu"
+    "chapter letter": "menu:irish_franciscan_chapter_menu",
+    "harbor queue": "script:minigame:queue",
+    "fish crates": "menu:field_pouch_menu"
   }
 }

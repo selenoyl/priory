@@ -12,6 +12,8 @@
     "exchange table": "menu:currency_exchange_menu",
     "hanse packet": "menu:hanse_packet_menu",
     "safe conduct": "menu:safe_conduct_menu",
-    "irish convoy": "menu:irish_convoy_menu"
+    "irish convoy": "menu:irish_convoy_menu",
+    "night watch": "script:minigame:stealth",
+    "rope chest": "menu:field_pouch_menu"
   }
 }

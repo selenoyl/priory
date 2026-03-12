@@ -8,6 +8,8 @@
   "actions": {
     "factors": "menu:river_factors_menu",
     "cargo": "menu:river_cargo_menu",
-    "fishing": "script:minigame:fishing"
+    "fishing": "script:minigame:fishing",
+    "cargo tallies": "script:minigame:ledger",
+    "slipway cache": "menu:field_pouch_menu"
   }
 }

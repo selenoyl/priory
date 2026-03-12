@@ -9,6 +9,8 @@
     "disputation": "menu:cologne_disputation_menu",
     "letters": "menu:reich_letters_menu",
     "return": "scene:ravenscar_quay",
-    "benedictine observance": "menu:benedictine_observance_menu"
+    "benedictine observance": "menu:benedictine_observance_menu",
+    "quaestio hall": "script:minigame:dispute",
+    "archive scraps": "menu:field_pouch_menu"
   }
 }

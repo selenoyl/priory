@@ -41,6 +41,8 @@
     "build plan": "script:rebuild:plan",
     "assign labor": "script:rebuild:assign/balanced",
     "upgrade chapel": "script:rebuild:upgrade/N-CHAPEL",
-    "upgrade gatehouse": "script:rebuild:upgrade/N-GATEHOUSE"
+    "upgrade gatehouse": "script:rebuild:upgrade/N-GATEHOUSE",
+    "stone plans": "script:minigame:masonry",
+    "alms desk": "script:minigame:alms"
   }
 }

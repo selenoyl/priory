@@ -1,0 +1,33 @@
+{
+  "id": "field_pouch_menu",
+  "prompt": "You search carefully for useful small finds. Choose your focus:",
+  "options": [
+    {
+      "text": "Sort through dropped scraps and salvage for useful bits.",
+      "response": "You gather serviceable odds and ends for future use.",
+      "addItems": [
+        "Twine bundle",
+        "Worn needle kit"
+      ],
+      "coinDelta": 1
+    },
+    {
+      "text": "Gather herbs and wax remnants from nearby shrines and hedges.",
+      "response": "You collect small practical supplies with permission and care.",
+      "addItems": [
+        "Dried nettle pouch",
+        "Beeswax stub"
+      ],
+      "coinDelta": 0
+    },
+    {
+      "text": "Check for written notices, tally slips, and marker tags.",
+      "response": "You recover overlooked notes and tags that may aid planning.",
+      "addItems": [
+        "Dock tally scrap",
+        "Way-marker ribbon"
+      ],
+      "coinDelta": 0
+    }
+  ]
+}
