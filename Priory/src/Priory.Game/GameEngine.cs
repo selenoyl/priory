@@ -164,7 +164,7 @@ public sealed class GameEngine
 
         var classKey = ResolveClassKeyForOverview();
         var lifePath = ResolveLifePathNameForOverview(classKey);
-        return new PlayerOverview(_state.PlayerName, _state.Sex, lifePath, classKey, inventory, stored, partyStored, _state.Coin, _state.SceneId);
+        return new PlayerOverview(_state.PlayerName, _state.Sex, lifePath, classKey, inventory, stored, partyStored, _state.Coin, _state.SceneId, CanAccessStorageAtCurrentLocation());
     }
 
 
@@ -3804,5 +3804,5 @@ public sealed class GameEngine
 
 public sealed record PartyMemberOverview(string Name, string LastSceneId, DateTimeOffset LastSeenUtc, int SecondsSinceSeen);
 public sealed record PartyOverview(string PartyCode, List<PartyMemberOverview> Members);
-public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, List<string> StoredItems, List<PartyStoredItemOverview> PartyStoredItems, int Coin, string SceneId);
+public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, List<string> StoredItems, List<PartyStoredItemOverview> PartyStoredItems, int Coin, string SceneId, bool CanStashHere);
 public sealed record PartyStoredItemOverview(string OwnerName, string ItemName);
