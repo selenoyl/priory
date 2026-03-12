@@ -23,9 +23,9 @@
       "startQuest": "virtue_arc_burial_excommunicate"
     },
     {
-      "text": "Open case #5: The Sacred Oak",
-      "response": "Quest logged: The Sacred Oak (Oak Hollow). Virtue focus: Faith.",
-      "startQuest": "virtue_arc_sacred_oak"
+      "text": "Open case #5: The Chapel Bell",
+      "response": "Quest logged: The Chapel Bell (Oak Hollow). Virtue focus: Faith.",
+      "startQuest": "virtue_arc_chapel_bell"
     },
     {
       "text": "Open case #6: The Relic Merchant",

@@ -7,7 +7,7 @@
     "village green": "village_green"
   },
   "actions": {
-    "sacred oak": "Villagers tie prayer ribbons to a broad oak, arguing whether custom or doctrine should guide them.",
+    "chapel bell": "A cracked chapel bell hangs silent while villagers debate how to fund its repair before the next holy day.",
     "charcoal pit": "Burners tend the mound carefully; one spark too soon ruins a week of labor.",
     "elders": "menu:petition_menu"
   }
