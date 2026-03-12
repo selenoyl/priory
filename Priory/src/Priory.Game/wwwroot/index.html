@@ -249,13 +249,36 @@
       color: #e6e6e6;
     }
 
+    .minimap-dots-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 2px;
+      min-height: 14px;
+    }
+
     .minimap-dot {
       width: 12px;
       height: 12px;
       border-radius: 999px;
       background: var(--neon);
       box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 75%, transparent);
-      margin: 0 auto;
+      flex: 0 0 auto;
+    }
+
+    .minimap-party-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 12px;
+    }
+
+    .minimap-dot.party {
+      width: 9px;
+      height: 9px;
+      box-shadow: 0 0 8px color-mix(in srgb, currentColor 45%, transparent);
+      opacity: 0.95;
     }
 
     .minimap-decor {
@@ -1056,8 +1079,11 @@
         <div class="hud-body">
           <div class="minimap">
             <div id="minimapScene" class="minimap-scene">Unknown location</div>
-            <div class="minimap-dot" aria-hidden="true"></div>
             <div id="minimapDecor" class="minimap-decor" aria-hidden="true">✦</div>
+            <div class="minimap-dots-row" aria-hidden="true">
+              <div id="minimapPlayerDot" class="minimap-dot"></div>
+              <div id="minimapPartyDots" class="minimap-party-dots"></div>
+            </div>
           </div>
           <div id="minimapNearby" class="minimap-nearby">Nearby: none</div>
         </div>
@@ -1747,12 +1773,40 @@ function minimapDecorForScene(sceneId) {
   return '✦';
 }
 
+function colorForPartyMember(name) {
+  const source = String(name || 'member');
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) hash = ((hash << 5) - hash + source.charCodeAt(i)) | 0;
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 90% 64%)`;
+}
+
+function renderPartyDots(nearby) {
+  const host = document.getElementById('minimapPartyDots');
+  if (!host) return;
+  host.innerHTML = '';
+
+  const visible = (nearby || []).slice(0, 4);
+  visible.forEach(member => {
+    const dot = document.createElement('div');
+    dot.className = 'minimap-dot party';
+    dot.style.background = colorForPartyMember(member.name);
+    dot.style.color = colorForPartyMember(member.name);
+    dot.title = member.name || 'Party member';
+    host.appendChild(dot);
+  });
+}
+
 async function refreshPartyPresence(sceneId) {
   const nearbyEl = document.getElementById('minimapNearby');
   if (!nearbyEl) return;
 
+  const playerDot = document.getElementById('minimapPlayerDot');
+  if (playerDot) playerDot.style.background = 'var(--neon)';
+
   if (!sessionId) {
     nearbyEl.textContent = 'Nearby: none';
+    renderPartyDots([]);
     return;
   }
 
@@ -1761,6 +1815,7 @@ async function refreshPartyPresence(sceneId) {
     const data = await res.json();
     if (!res.ok || !Array.isArray(data.members)) {
       nearbyEl.textContent = 'Nearby: none';
+      renderPartyDots([]);
       return;
     }
 
@@ -1776,12 +1831,15 @@ async function refreshPartyPresence(sceneId) {
 
     if (nearby.length === 0) {
       nearbyEl.textContent = 'Nearby: none';
+      renderPartyDots([]);
       return;
     }
 
     nearbyEl.textContent = `Nearby: ${nearby.map(x => x.name).join(', ')}`;
+    renderPartyDots(nearby);
   } catch {
     nearbyEl.textContent = 'Nearby: none';
+    renderPartyDots([]);
   }
 }
 
