@@ -921,6 +921,17 @@
       font-size: 0.72em;
       padding: 2px 6px;
       min-width: auto;
+      border-color: color-mix(in srgb, var(--neon) 15%, #3a3a3a 85%);
+      background: color-mix(in srgb, var(--neon) 5%, #1b1b1b 95%);
+      opacity: 0.84;
+      transition: border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+    }
+
+    .inventory-item-actions button:hover,
+    .inventory-item-actions button:focus-visible {
+      border-color: color-mix(in srgb, var(--neon) 42%, #4a4a4a 58%);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--neon) 18%, transparent);
+      opacity: 1;
     }
 
     .inventory-item-actions .delete-btn {
@@ -2475,6 +2486,15 @@ function resolveDisplayedLifePath(overview) {
   return 'Unchosen';
 }
 
+function isInventoryStashAllowed(overview) {
+  if (typeof overview?.canStashHere === 'boolean') {
+    return overview.canStashHere;
+  }
+
+  const sceneId = (overview?.sceneId || currentSceneId || '').toString().toLowerCase();
+  return sceneId.startsWith('priory_');
+}
+
 function renderInventory(overview) {
   const list = document.getElementById('inventoryList');
   const meta = document.getElementById('inventoryMeta');
@@ -2502,11 +2522,13 @@ function renderInventory(overview) {
       const actions = document.createElement('div');
       actions.className = 'inventory-item-actions';
 
-      const stashBtn = document.createElement('button');
-      stashBtn.textContent = 'Store';
-      stashBtn.title = 'Put away in priory chest or your owned home chest';
-      stashBtn.onclick = () => performInventoryAction(item, 'stash');
-      actions.appendChild(stashBtn);
+      if (isInventoryStashAllowed(overview)) {
+        const stashBtn = document.createElement('button');
+        stashBtn.textContent = 'Store';
+        stashBtn.title = 'Put away in priory chest or your owned home chest';
+        stashBtn.onclick = () => performInventoryAction(item, 'stash');
+        actions.appendChild(stashBtn);
+      }
 
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
@@ -2553,7 +2575,8 @@ function updateCachedPlayerOverview(overview) {
     partyStoredItems: overview.partyStoredItems || [],
     coin: overview.coin ?? 0,
     purseText: overview.purseText || '',
-    sceneId: overview.sceneId || currentSceneId || ''
+    sceneId: overview.sceneId || currentSceneId || '',
+    canStashHere: typeof overview.canStashHere === 'boolean' ? overview.canStashHere : undefined
   };
 
   return cachedPlayerOverview;
@@ -2613,7 +2636,8 @@ async function openInventory() {
     inventory: [],
     storedItems: [],
     partyStoredItems: [],
-    coin: 0
+    coin: 0,
+    canStashHere: false
   };
   renderInventory(placeholder);
 
