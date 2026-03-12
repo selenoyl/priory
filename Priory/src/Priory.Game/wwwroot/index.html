@@ -902,6 +902,33 @@
       color: #e4e4e4;
     }
 
+    
+    .inventory-item {
+      position: relative;
+      padding-right: 78px;
+    }
+
+    .inventory-item-actions {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .inventory-item-actions button {
+      font-size: 0.72em;
+      padding: 2px 6px;
+      min-width: auto;
+    }
+
+    .inventory-item-actions .delete-btn {
+      width: 22px;
+      padding: 2px 0;
+      font-weight: 700;
+    }
+
     .inventory-controls {
       display: flex;
       justify-content: flex-end;
@@ -2467,7 +2494,28 @@ function renderInventory(overview) {
     overview.inventory.forEach((item, idx) => {
       const el = document.createElement('div');
       el.className = 'inventory-item';
-      el.textContent = `${idx + 1}. ${item}`;
+
+      const label = document.createElement('span');
+      label.textContent = `${idx + 1}. ${item}`;
+      el.appendChild(label);
+
+      const actions = document.createElement('div');
+      actions.className = 'inventory-item-actions';
+
+      const stashBtn = document.createElement('button');
+      stashBtn.textContent = 'Store';
+      stashBtn.title = 'Put away at priory/home';
+      stashBtn.onclick = () => performInventoryAction(item, 'stash');
+      actions.appendChild(stashBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.textContent = '×';
+      delBtn.title = 'Delete item';
+      delBtn.onclick = () => performInventoryAction(item, 'delete');
+      actions.appendChild(delBtn);
+
+      el.appendChild(actions);
       list.appendChild(el);
     });
   }
@@ -2482,10 +2530,49 @@ function updateCachedPlayerOverview(overview) {
     classKey: overview.classKey || '',
     inventory: overview.inventory || [],
     coin: overview.coin ?? 0,
-    purseText: overview.purseText || ''
+    purseText: overview.purseText || '',
+    sceneId: overview.sceneId || currentSceneId || ''
   };
 
   return cachedPlayerOverview;
+}
+
+
+async function performInventoryAction(item, action) {
+  if (!sessionId) return;
+
+  if (action === 'delete') {
+    const ok = window.confirm(`Are you sure you want to delete '${item}'? This cannot be undone.`);
+    if (!ok) return;
+  }
+
+  if (action === 'stash') {
+    const ok = window.confirm(`Put away '${item}' in storage? (Priory or home only)`);
+    if (!ok) return;
+  }
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/inventory-action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, item })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      append([`ERROR: ${data.error || 'inventory action failed'}`]);
+      return;
+    }
+
+    append([data.message || 'Inventory updated.']);
+    updateCachedPlayerOverview(data);
+    if (cachedPlayerOverview) {
+      currentSceneId = data.sceneId || currentSceneId;
+      renderInventory(cachedPlayerOverview);
+    }
+  } catch {
+    append(['ERROR: Inventory action failed.']);
+  }
 }
 
 async function openInventory() {

@@ -304,6 +304,50 @@ public static class ServerHost
             });
         });
 
+
+        app.MapPost("/api/sessions/{id}/inventory-action", (string id, InventoryActionRequest request) =>
+        {
+            if (!sessions.TryGetValue(id, out var session))
+                return Results.NotFound(new { error = "session not found" });
+
+            session.Touch();
+            var item = (request.Item ?? "").Trim();
+            var action = (request.Action ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(item))
+                return Results.BadRequest(new { error = "item is required" });
+
+            bool ok;
+            string message;
+            switch (action)
+            {
+                case "delete":
+                    ok = session.Engine.TryDeleteInventoryItem(item, out message);
+                    break;
+                case "stash":
+                    ok = session.Engine.TryStashInventoryItem(item, out message);
+                    break;
+                default:
+                    ok = false;
+                    message = "Unknown inventory action.";
+                    break;
+            }
+
+            if (!ok)
+                return Results.BadRequest(new { error = message });
+
+            var overview = session.Engine.GetPlayerOverview();
+            return Results.Ok(new
+            {
+                message,
+                inventory = overview.Inventory,
+                lifePath = overview.LifePath,
+                classKey = overview.ClassKey,
+                coin = overview.Coin,
+                playerName = overview.PlayerName,
+                sceneId = overview.SceneId
+            });
+        });
+
         app.MapGet("/api/sessions/{id}/inventory-text", (string id) =>
         {
             if (!sessions.TryGetValue(id, out var session))
@@ -597,6 +641,12 @@ public sealed class CreateSessionRequest
 public sealed class CommandRequest
 {
     public string? Input { get; set; }
+}
+
+public sealed class InventoryActionRequest
+{
+    public string? Action { get; set; }
+    public string? Item { get; set; }
 }
 
 public sealed class TimedRequest

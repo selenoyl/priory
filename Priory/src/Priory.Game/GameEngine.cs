@@ -199,6 +199,51 @@ public sealed class GameEngine
         return null;
     }
 
+
+    public bool TryDeleteInventoryItem(string itemName, out string message)
+    {
+        message = "";
+        var match = _state.Inventory.FirstOrDefault(x => string.Equals(x, itemName, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(match))
+        {
+            message = "That item is not currently in your carried inventory.";
+            return false;
+        }
+
+        _state.Inventory.Remove(match);
+        PersistParty();
+        message = $"Deleted item: {match}.";
+        return true;
+    }
+
+    public bool TryStashInventoryItem(string itemName, out string message)
+    {
+        message = "";
+        var scene = _state.SceneId ?? "";
+        var canStash = scene.StartsWith("priory_", StringComparison.OrdinalIgnoreCase)
+            || scene.StartsWith("home_", StringComparison.OrdinalIgnoreCase);
+
+        if (!canStash)
+        {
+            message = "You can only put items away while at the priory or your home.";
+            return false;
+        }
+
+        var match = _state.Inventory.FirstOrDefault(x => string.Equals(x, itemName, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(match))
+        {
+            message = "That item is not currently in your carried inventory.";
+            return false;
+        }
+
+        _state.Inventory.Remove(match);
+        if (!_state.StoredItems.Contains(match, StringComparer.OrdinalIgnoreCase))
+            _state.StoredItems.Add(match);
+        PersistParty();
+        message = $"Stored item at {(_state.SceneId.StartsWith("home_", StringComparison.OrdinalIgnoreCase) ? "home" : "priory")}: {match}.";
+        return true;
+    }
+
     public string GetInventorySnapshotLine()
         => InventoryLine();
 

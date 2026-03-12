@@ -49,6 +49,7 @@ public sealed class GameState
     public Dictionary<string, int> Counters { get; set; } = new();
     public HashSet<string> Flags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Inventory { get; set; } = new();
+    public List<string> StoredItems { get; set; } = new();
     public HashSet<string> ActiveQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> CompletedQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string? ActiveMenuId { get; set; }
