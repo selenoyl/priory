@@ -921,12 +921,23 @@
       font-size: 0.72em;
       padding: 2px 6px;
       min-width: auto;
+      color: #c6c6c6;
+      background: #1a1a1a;
+      border-color: #343434;
+      opacity: 0.8;
+    }
+
+    .inventory-item-actions button:hover {
+      opacity: 1;
+      border-color: #4b4b4b;
+      box-shadow: none;
     }
 
     .inventory-item-actions .delete-btn {
       width: 22px;
       padding: 2px 0;
       font-weight: 700;
+      color: #b8b8b8;
     }
 
     .inventory-controls {
@@ -1727,9 +1738,38 @@ function stripDecorativeGlyphs(value) {
   return String(value || '').replace(/[🔴🟢🟣🔵🟡⚪]/g, '').trim();
 }
 
-function renderQuestJournal(lines) {
+function renderQuestJournal(lines, structured = null) {
   const panel = document.getElementById('questJournal');
   if (!panel) return;
+
+  const structuredActive = Array.isArray(structured?.activeQuestProgress)
+    ? structured.activeQuestProgress
+      .map(x => ({
+        title: String(x?.title || '').trim(),
+        progressPercent: Math.max(0, Math.min(100, Number(x?.progressPercent) || 0))
+      }))
+      .filter(x => x.title.length > 0)
+    : [];
+
+  const structuredWorldPercent = Math.max(0, Math.min(100, Number(structured?.worldProgressPercent) || 0));
+  const structuredWorldCompleted = Math.max(0, Number(structured?.worldProgressCompleted) || 0);
+  const structuredWorldTotal = Math.max(1, Number(structured?.worldProgressTotal) || 0);
+
+  if (structuredActive.length > 0 || structured) {
+    const rows = [];
+    rows.push(`<div class="quest-progress-row"><strong>World Progress ${structuredWorldPercent}% (${structuredWorldCompleted}/${structuredWorldTotal})</strong><div class="progress-track"><div class="progress-fill" style="width:${structuredWorldPercent}%"></div></div></div>`);
+
+    if (structuredActive.length === 0) {
+      rows.push('<div>No active quests right now.</div>');
+    } else {
+      for (const quest of structuredActive) {
+        rows.push(`<div class="quest-progress-row"><strong>${quest.title}</strong><div class="progress-track"><div class="progress-fill" style="width:${quest.progressPercent}%"></div></div></div>`);
+      }
+    }
+
+    panel.innerHTML = rows.join('');
+    return;
+  }
 
   const all = (lines || []).flatMap(line => String(line).split('\n')).map(x => x.trim()).filter(Boolean);
   const active = [];
@@ -1763,7 +1803,7 @@ function renderQuestJournal(lines) {
     rows.push('<div>No active quests right now.</div>');
   } else {
     for (const quest of active) {
-      rows.push(`<div class="quest-progress-row"><strong>${quest}</strong><div class="progress-track"><div class="progress-fill" style="width:0%"></div></div></div>`);
+      rows.push(`<div class="quest-progress-row"><strong>${quest}</strong><div class="progress-track"><div class="progress-fill" style="width:50%"></div></div></div>`);
     }
   }
 
@@ -2502,11 +2542,13 @@ function renderInventory(overview) {
       const actions = document.createElement('div');
       actions.className = 'inventory-item-actions';
 
-      const stashBtn = document.createElement('button');
-      stashBtn.textContent = 'Store';
-      stashBtn.title = 'Put away in priory chest or your owned home chest';
-      stashBtn.onclick = () => performInventoryAction(item, 'stash');
-      actions.appendChild(stashBtn);
+      if (overview.canStashHere) {
+        const stashBtn = document.createElement('button');
+        stashBtn.textContent = 'Store';
+        stashBtn.title = 'Put away in priory chest or your owned home chest';
+        stashBtn.onclick = () => performInventoryAction(item, 'stash');
+        actions.appendChild(stashBtn);
+      }
 
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
@@ -2553,7 +2595,12 @@ function updateCachedPlayerOverview(overview) {
     partyStoredItems: overview.partyStoredItems || [],
     coin: overview.coin ?? 0,
     purseText: overview.purseText || '',
-    sceneId: overview.sceneId || currentSceneId || ''
+    sceneId: overview.sceneId || currentSceneId || '',
+    canStashHere: Boolean(overview.canStashHere),
+    activeQuestProgress: Array.isArray(overview.activeQuestProgress) ? overview.activeQuestProgress : [],
+    worldProgressCompleted: Number(overview.worldProgressCompleted) || 0,
+    worldProgressTotal: Math.max(1, Number(overview.worldProgressTotal) || 0),
+    worldProgressPercent: Math.max(0, Math.min(100, Number(overview.worldProgressPercent) || 0))
   };
 
   return cachedPlayerOverview;
@@ -2613,7 +2660,8 @@ async function openInventory() {
     inventory: [],
     storedItems: [],
     partyStoredItems: [],
-    coin: 0
+    coin: 0,
+    canStashHere: false
   };
   renderInventory(placeholder);
 
@@ -2645,7 +2693,8 @@ async function openInventory() {
     classKey: '',
     inventory: [],
     coin: 0,
-    purseText: parsed.purseText
+    purseText: parsed.purseText,
+    canStashHere: false
   };
 
   liveOverview.playerName = parsed.playerName;
@@ -2675,6 +2724,7 @@ async function refreshPlayerOverview(options = {}) {
 
     totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
     const normalizedOverview = updateCachedPlayerOverview(data);
+    renderQuestJournal([], normalizedOverview);
 
     if (normalizedOverview && shouldRenderInventory) {
       renderInventory(normalizedOverview);
@@ -2703,6 +2753,11 @@ function startOverviewPolling() {
 async function refreshQuestJournal() {
   if (!sessionId) {
     renderQuestJournal([]);
+    return;
+  }
+
+  if (cachedPlayerOverview) {
+    renderQuestJournal([], cachedPlayerOverview);
     return;
   }
 

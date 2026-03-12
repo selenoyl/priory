@@ -161,10 +161,42 @@ public sealed class GameEngine
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
         var partyStored = GetVisiblePartyStoredItems();
+        var activeQuestProgress = BuildActiveQuestProgress();
+        var knownQuestTotal = Math.Max(1, _state.ActiveQuests.Count + _state.CompletedQuests.Count);
+        var worldProgressPercent = (int)Math.Round((_state.CompletedQuests.Count / (double)knownQuestTotal) * 100.0, MidpointRounding.AwayFromZero);
 
         var classKey = ResolveClassKeyForOverview();
         var lifePath = ResolveLifePathNameForOverview(classKey);
-        return new PlayerOverview(_state.PlayerName, _state.Sex, lifePath, classKey, inventory, stored, partyStored, _state.Coin, _state.SceneId);
+        return new PlayerOverview(
+            _state.PlayerName,
+            _state.Sex,
+            lifePath,
+            classKey,
+            inventory,
+            stored,
+            partyStored,
+            _state.Coin,
+            _state.SceneId,
+            CanAccessStorageAtCurrentLocation(),
+            activeQuestProgress,
+            _state.CompletedQuests.Count,
+            knownQuestTotal,
+            worldProgressPercent);
+    }
+
+    private List<QuestProgressOverview> BuildActiveQuestProgress()
+    {
+        var list = new List<QuestProgressOverview>();
+        foreach (var questId in _state.ActiveQuests.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+        {
+            var title = _story.Quests.TryGetValue(questId, out var def)
+                ? def.Title
+                : questId;
+
+            list.Add(new QuestProgressOverview(questId, title, 50));
+        }
+
+        return list;
     }
 
 
@@ -426,7 +458,7 @@ public sealed class GameEngine
         var exits = AvailableExits(scene).Keys.OrderBy(x => x).ToList();
         var actionTips = AvailableActions(scene)
             .OrderBy(kv => kv.Key)
-            .Take(5)
+            .Take(8)
             .Select(kv => SuggestActionPhrase(kv.Key, kv.Value))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -456,7 +488,15 @@ public sealed class GameEngine
         if (result.StartsWith("timed:"))
             return $"examine {key}";
         if (result.StartsWith("script:"))
+        {
+            if (result.StartsWith("script:npc:", StringComparison.OrdinalIgnoreCase))
+                return $"talk {key}";
+
+            if (result.StartsWith("script:minigame:", StringComparison.OrdinalIgnoreCase))
+                return $"examine {key}";
+
             return string.Empty;
+        }
 
         return $"examine {key}";
     }
@@ -3804,5 +3844,6 @@ public sealed class GameEngine
 
 public sealed record PartyMemberOverview(string Name, string LastSceneId, DateTimeOffset LastSeenUtc, int SecondsSinceSeen);
 public sealed record PartyOverview(string PartyCode, List<PartyMemberOverview> Members);
-public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, List<string> StoredItems, List<PartyStoredItemOverview> PartyStoredItems, int Coin, string SceneId);
+public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, List<string> StoredItems, List<PartyStoredItemOverview> PartyStoredItems, int Coin, string SceneId, bool CanStashHere, List<QuestProgressOverview> ActiveQuestProgress, int WorldProgressCompleted, int WorldProgressTotal, int WorldProgressPercent);
 public sealed record PartyStoredItemOverview(string OwnerName, string ItemName);
+public sealed record QuestProgressOverview(string QuestId, string Title, int ProgressPercent);
