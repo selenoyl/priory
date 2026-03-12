@@ -17,7 +17,7 @@
     },
     {
       "text": "Conceal details entirely and issue a vague statement.",
-      "response": "Scandal quiets briefly, yet rumor eventually grows sharper.",
+      "response": "Scandal quiets briefly, yet report eventually grows sharper.",
       "prioryDelta": { "security": -1, "relations": -2 },
       "completeQuest": "sealed_room"
     }

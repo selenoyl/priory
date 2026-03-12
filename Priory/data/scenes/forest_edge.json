@@ -9,6 +9,8 @@
     "chapel": "pilgrim_road_chapel"
   },
   "actions": {
-    "patrol": "menu:forest_patrol_menu"
+    "patrol": "menu:forest_patrol_menu",
+    "tracking signs": "script:minigame:hunt",
+    "hedgerow satchel": "menu:field_pouch_menu"
   }
 }

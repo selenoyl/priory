@@ -1,10 +1,10 @@
 {
   "id": "rumor_not_started_menu",
-  "prompt": "A rumor spreads that Saint Catherine takes 'foreign coin' to buy influence. Response must be immediate.",
+  "prompt": "A report spreads that Saint Catherine takes 'foreign coin' to buy influence. Response must be immediate.",
   "options": [
     {
       "text": "Publish ledgers and invite York clerk review.",
-      "response": "You open the books. Painful, but rumor loses force.",
+      "response": "You open the books. Painful, but report loses force.",
       "virtueDelta": { "justice": 1, "fortitude": 1 },
       "startQuest": "york_clerk_inquiry"
     },

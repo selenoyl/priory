@@ -1,0 +1,14 @@
+{
+  "id": "galway_quay",
+  "text": "Galway's quay rings with Irish, Latin, and Norman French as mendicants collect alms and guild clerks bargain over fish, wool, and safe passage west.",
+  "exits": {
+    "crossing": "irish_sea_crossing",
+    "friary": "kilkenny_franciscan_house"
+  },
+  "actions": {
+    "harbor dispute": "menu:galway_harbor_menu",
+    "chapter letter": "menu:irish_franciscan_chapter_menu",
+    "harbor queue": "script:minigame:queue",
+    "fish crates": "menu:field_pouch_menu"
+  }
+}

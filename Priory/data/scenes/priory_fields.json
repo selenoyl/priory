@@ -7,6 +7,8 @@
   },
   "actions": {
     "labor": "menu:fields_labor_menu",
-    "survey": "You see drainage trouble near the lower strip and grazing damage near the boundary stones."
+    "survey": "You see drainage trouble near the lower strip and grazing damage near the boundary stones.",
+    "wood lot": "script:minigame:woodcut",
+    "field satchel": "menu:field_pouch_menu"
   }
 }

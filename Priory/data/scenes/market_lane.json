@@ -7,6 +7,8 @@
   "actions": {
     "dispute": "menu:market_dispute_menu",
     "stalls": "You note grain prices rising faster than wool prices. Winter could hurt.",
-    "cart": "timed:catch_cart"
+    "cart": "timed:catch_cart",
+    "weighing table": "script:minigame:ledger",
+    "alley finds": "menu:field_pouch_menu"
   }
 }

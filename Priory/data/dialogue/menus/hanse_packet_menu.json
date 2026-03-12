@@ -12,7 +12,7 @@
     },
     {
       "text": "Accept quietly through private ledgers.",
-      "response": "The packet is entered in a side book. Repairs quicken, but rumor gains a shadow.",
+      "response": "The packet is entered in a side book. Repairs quicken, but report gains a shadow.",
       "prioryDelta": { "treasury": 5, "security": 1, "relations": -2 },
       "setFlags": ["hanse_quiet_accept"],
       "startQuest": "hanse_letters_packet",

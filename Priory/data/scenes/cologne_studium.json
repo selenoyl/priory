@@ -2,11 +2,15 @@
   "id": "cologne_studium",
   "text": "At Cologne's Dominican studium, masters cite Augustine and Thomas against novelty. Reform is urged as holiness and discipline, not rebellion against the Church's sacramental life.",
   "exits": {
-    "kontor": "lubeck_kontor"
+    "kontor": "lubeck_kontor",
+    "abbey road": "benedictine_continental_house"
   },
   "actions": {
     "disputation": "menu:cologne_disputation_menu",
     "letters": "menu:reich_letters_menu",
-    "return": "scene:ravenscar_quay"
+    "return": "scene:ravenscar_quay",
+    "benedictine observance": "menu:benedictine_observance_menu",
+    "quaestio hall": "script:minigame:dispute",
+    "archive scraps": "menu:field_pouch_menu"
   }
 }

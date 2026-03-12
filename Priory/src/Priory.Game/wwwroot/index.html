@@ -249,13 +249,36 @@
       color: #e6e6e6;
     }
 
+    .minimap-dots-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 2px;
+      min-height: 14px;
+    }
+
     .minimap-dot {
       width: 12px;
       height: 12px;
       border-radius: 999px;
       background: var(--neon);
       box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 75%, transparent);
-      margin: 0 auto;
+      flex: 0 0 auto;
+    }
+
+    .minimap-party-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 12px;
+    }
+
+    .minimap-dot.party {
+      width: 9px;
+      height: 9px;
+      box-shadow: 0 0 8px color-mix(in srgb, currentColor 45%, transparent);
+      opacity: 0.95;
     }
 
     .minimap-decor {
@@ -879,6 +902,33 @@
       color: #e4e4e4;
     }
 
+    
+    .inventory-item {
+      position: relative;
+      padding-right: 78px;
+    }
+
+    .inventory-item-actions {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .inventory-item-actions button {
+      font-size: 0.72em;
+      padding: 2px 6px;
+      min-width: auto;
+    }
+
+    .inventory-item-actions .delete-btn {
+      width: 22px;
+      padding: 2px 0;
+      font-weight: 700;
+    }
+
     .inventory-controls {
       display: flex;
       justify-content: flex-end;
@@ -1056,8 +1106,11 @@
         <div class="hud-body">
           <div class="minimap">
             <div id="minimapScene" class="minimap-scene">Unknown location</div>
-            <div class="minimap-dot" aria-hidden="true"></div>
             <div id="minimapDecor" class="minimap-decor" aria-hidden="true">✦</div>
+            <div class="minimap-dots-row" aria-hidden="true">
+              <div id="minimapPlayerDot" class="minimap-dot"></div>
+              <div id="minimapPartyDots" class="minimap-party-dots"></div>
+            </div>
           </div>
           <div id="minimapNearby" class="minimap-nearby">Nearby: none</div>
         </div>
@@ -1151,6 +1204,7 @@
   <div class="status">
     <div id="currentUser">Current User: -</div>
     <div id="currentPartyCode">Party Code: -</div>
+    <div id="usersOnline">Users online: 0</div>
   </div>
 </div>
 
@@ -1164,6 +1218,7 @@ let sessionId = null;
 let activeTimedPrompt = null;
 let timedInterval = null;
 let shouldStickToBottom = true;
+let onlineUsersTimer = null;
 let userNeonColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 let showQuickAccess = false;
 let currentSceneId = '';
@@ -1604,7 +1659,9 @@ function classifyLine(line) {
   if (line.includes('Former Man-at-Arms')) return 'system lp-arms';
   if (line.includes("Merchant's Apprentice")) return 'system lp-merchant';
   if (line.includes("Farmer's Son")) return 'system lp-farmer';
+  if (line.startsWith('Welcome back,') || line.startsWith('Loaded your most recent account save.') || line.startsWith('Resumed saved journey for') || line.startsWith('Day ') || line.startsWith('You can also try:') || line.startsWith('Quick refresher:') || line.startsWith("Type 'help'")) return 'system';
   if (line.startsWith('Go where?') || line.startsWith('Be specific.') || line.startsWith('Start a session first.') || line.startsWith('Choose a number.')) return 'system';
+  if (line.startsWith('Blackpine village green sits between mill road and inn lane. Petitioners seek help, judgment, and sometimes advantage.')) return 'narrative';
   return 'narrative';
 }
 
@@ -1745,12 +1802,40 @@ function minimapDecorForScene(sceneId) {
   return '✦';
 }
 
+function colorForPartyMember(name) {
+  const source = String(name || 'member');
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) hash = ((hash << 5) - hash + source.charCodeAt(i)) | 0;
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 90% 64%)`;
+}
+
+function renderPartyDots(nearby) {
+  const host = document.getElementById('minimapPartyDots');
+  if (!host) return;
+  host.innerHTML = '';
+
+  const visible = (nearby || []).slice(0, 4);
+  visible.forEach(member => {
+    const dot = document.createElement('div');
+    dot.className = 'minimap-dot party';
+    dot.style.background = colorForPartyMember(member.name);
+    dot.style.color = colorForPartyMember(member.name);
+    dot.title = member.name || 'Party member';
+    host.appendChild(dot);
+  });
+}
+
 async function refreshPartyPresence(sceneId) {
   const nearbyEl = document.getElementById('minimapNearby');
   if (!nearbyEl) return;
 
+  const playerDot = document.getElementById('minimapPlayerDot');
+  if (playerDot) playerDot.style.background = 'var(--neon)';
+
   if (!sessionId) {
     nearbyEl.textContent = 'Nearby: none';
+    renderPartyDots([]);
     return;
   }
 
@@ -1759,6 +1844,7 @@ async function refreshPartyPresence(sceneId) {
     const data = await res.json();
     if (!res.ok || !Array.isArray(data.members)) {
       nearbyEl.textContent = 'Nearby: none';
+      renderPartyDots([]);
       return;
     }
 
@@ -1774,12 +1860,15 @@ async function refreshPartyPresence(sceneId) {
 
     if (nearby.length === 0) {
       nearbyEl.textContent = 'Nearby: none';
+      renderPartyDots([]);
       return;
     }
 
     nearbyEl.textContent = `Nearby: ${nearby.map(x => x.name).join(', ')}`;
+    renderPartyDots(nearby);
   } catch {
     nearbyEl.textContent = 'Nearby: none';
+    renderPartyDots([]);
   }
 }
 
@@ -1860,6 +1949,7 @@ function startChatPolling() {
   stopChatPolling();
   stopChatStreaming();
   stopOverviewPolling();
+  stopOnlineUsersPolling();
   if (!sessionId) return;
 
   chatState.pollTimer = setInterval(() => {
@@ -1912,7 +2002,7 @@ async function refreshChat() {
 
   const channel = document.getElementById('chatChannel').value;
   const partyCode = currentPartyCodeValue();
-  const res = await fetch(`/api/sessions/${sessionId}/chat?channel=${encodeURIComponent(channel)}&limit=200&partyCode=${encodeURIComponent(partyCode)}`);
+  const res = await fetch(`/api/sessions/${sessionId}/chat?channel=${encodeURIComponent(channel)}&limit=5000&partyCode=${encodeURIComponent(partyCode)}`);
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || 'chat refresh failed');
@@ -2038,9 +2128,57 @@ function focusCommandBox() {
   cmd.setSelectionRange(cmd.value.length, cmd.value.length);
 }
 
+
+async function refreshOnlineUsers() {
+  if (!sessionId) {
+    document.getElementById('usersOnline').textContent = 'Users online: 0';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/online-users`);
+    const data = await res.json();
+    if (!res.ok) return;
+
+    const names = Array.isArray(data.users) ? data.users : [];
+    const count = Number(data.count) || names.length || 0;
+    const partyNames = Array.isArray(data.partyUsers) ? data.partyUsers : [];
+    const partyCount = Number(data.partyCount) || partyNames.length || 0;
+
+    const globalPart = count > 0
+      ? `Users online: ${count} (${names.slice(0, 6).join(', ')})`
+      : 'Users online: 0';
+
+    const partyPart = partyCount > 0
+      ? ` | Party online: ${partyCount} (${partyNames.slice(0, 6).join(', ')})`
+      : '';
+
+    document.getElementById('usersOnline').textContent = `${globalPart}${partyPart}`;
+  } catch {
+    document.getElementById('usersOnline').textContent = 'Users online: ?';
+  }
+}
+
+function stopOnlineUsersPolling() {
+  if (onlineUsersTimer) {
+    clearInterval(onlineUsersTimer);
+    onlineUsersTimer = null;
+  }
+}
+
+function startOnlineUsersPolling() {
+  stopOnlineUsersPolling();
+  if (!sessionId) return;
+  refreshOnlineUsers().catch(() => {});
+  onlineUsersTimer = setInterval(() => {
+    refreshOnlineUsers().catch(() => {});
+  }, 10000);
+}
+
 function setSessionDetails(playerName, partyCode) {
   document.getElementById('currentUser').textContent = `Current User: ${playerName || '-'}`;
   document.getElementById('currentPartyCode').textContent = `Party Code: ${partyCode || '-'}`;
+  if (!playerName) document.getElementById('usersOnline').textContent = 'Users online: 0';
 }
 
 function setInputEnabled(enabled) {
@@ -2248,6 +2386,7 @@ async function startSession() {
   refreshChat().catch(() => {});
   startChatPolling();
   startChatStreaming();
+  startOnlineUsersPolling();
   refreshQuestJournal();
   await refreshPlayerOverview();
   startOverviewPolling();
@@ -2279,34 +2418,71 @@ function cloakClassForLifePath(lifePath) {
   return 'cloak-lay';
 }
 
-function parseInventoryLine(line) {
+function parseInventorySnapshot(line) {
   const raw = String(line || '').trim();
-  if (!raw) return [];
+  if (!raw) return null;
 
-  const match = raw.match(/inventory:\s*(.+)$/i);
-  if (!match) return [];
+  const match = raw.match(/^([^|]+)\|\s*Purse:\s*([^.]*)\.\s*Inventory:\s*(.*)$/i);
+  if (!match) return null;
 
-  const section = match[1].trim().replace(/\.$/, '');
-  if (!section || section.toLowerCase() === '(empty)') return [];
+  const playerName = (match[1] || '').trim() || 'Pilgrim';
+  const purseText = (match[2] || '').trim() || '0d';
+  const inventorySection = (match[3] || '').trim().replace(/\.$/, '');
 
-  return section
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean)
-    .map(item => item.replace(/^\d+[.)]\s*/, '').trim())
-    .filter(Boolean);
+  const inventory = !inventorySection || inventorySection.toLowerCase() === '(empty)'
+    ? []
+    : inventorySection
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+      .map(item => item.replace(/^\d+[.)]\s*/, '').trim())
+      .filter(Boolean);
+
+  return { playerName, purseText, inventory };
 }
 
-async function fetchInventoryTextLine() {
+async function runHiddenCommand(input) {
   if (!sessionId) return null;
   try {
-    const res = await fetch(`/api/sessions/${sessionId}/inventory-text`);
+    const res = await fetch(`/api/sessions/${sessionId}/command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input })
+    });
     const data = await res.json();
     if (!res.ok) return null;
-    return String(data.line || '').trim();
+    totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
+    if (data.sceneId) {
+      currentSceneId = data.sceneId;
+      updateMinimap(currentSceneId);
+    }
+    if (musicState.started) {
+      syncMusicForScene(data.sceneId, data.lines || []);
+    }
+    return data;
   } catch {
     return null;
   }
+}
+
+
+function lifePathFromClassKey(classKey) {
+  const key = String(classKey || '').toLowerCase();
+  if (!key) return '';
+  if (key.includes('lay_aspirant')) return 'Lay Aspirant';
+  if (key.includes('scholar_son')) return "Scholar's Son";
+  if (key.includes('former_man_at_arms')) return 'Former Man-at-Arms';
+  if (key.includes('merchant_apprentice')) return "Merchant's Apprentice";
+  if (key.includes('farmer_son')) return "Farmer's Son";
+  return '';
+}
+
+function resolveDisplayedLifePath(overview) {
+  const direct = String(overview?.lifePath || '').trim();
+  if (direct) return direct;
+  const mapped = lifePathFromClassKey(overview?.classKey);
+  if (mapped) return mapped;
+  return 'Unchosen';
 }
 
 function renderInventory(overview) {
@@ -2315,9 +2491,11 @@ function renderInventory(overview) {
   const classLabel = document.getElementById('spriteClassLabel');
   const spritePane = document.getElementById('spritePane');
 
-  spritePane.className = `sprite-pane ${cloakClassForLifePath(overview.lifePath)}`;
-  classLabel.textContent = `Life Path: ${overview.lifePath || 'Unchosen'}`;
-  meta.textContent = `${overview.playerName || 'Pilgrim'} • Coin: ${overview.coin ?? 0}`;
+  const displayLifePath = resolveDisplayedLifePath(overview);
+  spritePane.className = `sprite-pane ${cloakClassForLifePath(displayLifePath)}`;
+  classLabel.textContent = `Life Path: ${displayLifePath}`;
+  const purse = overview.purseText ? ` • Purse: ${overview.purseText}` : ` • Coin: ${overview.coin ?? 0}`;
+  meta.textContent = `${overview.playerName || 'Pilgrim'}${purse}`;
 
   list.innerHTML = '';
   if (!overview.inventory || overview.inventory.length === 0) {
@@ -2326,7 +2504,48 @@ function renderInventory(overview) {
     overview.inventory.forEach((item, idx) => {
       const el = document.createElement('div');
       el.className = 'inventory-item';
-      el.textContent = `${idx + 1}. ${item}`;
+
+      const label = document.createElement('span');
+      label.textContent = `${idx + 1}. ${item}`;
+      el.appendChild(label);
+
+      const actions = document.createElement('div');
+      actions.className = 'inventory-item-actions';
+
+      const stashBtn = document.createElement('button');
+      stashBtn.textContent = 'Store';
+      stashBtn.title = 'Put away in priory chest or your owned home chest';
+      stashBtn.onclick = () => performInventoryAction(item, 'stash');
+      actions.appendChild(stashBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.textContent = '×';
+      delBtn.title = 'Delete item';
+      delBtn.onclick = () => performInventoryAction(item, 'delete');
+      actions.appendChild(delBtn);
+
+      el.appendChild(actions);
+      list.appendChild(el);
+    });
+  }
+
+  const storedItems = Array.isArray(overview.partyStoredItems) ? overview.partyStoredItems : [];
+  if (storedItems.length > 0) {
+    const divider = document.createElement('div');
+    divider.className = 'inventory-item';
+    divider.textContent = '— Party Chest —';
+    list.appendChild(divider);
+
+    storedItems.forEach((entry) => {
+      const item = entry?.itemName || '';
+      if (!item) return;
+      const owner = entry?.ownerName || 'Unknown';
+      const el = document.createElement('div');
+      el.className = 'inventory-item';
+      const label = document.createElement('span');
+      label.textContent = `${owner}: ${item}`;
+      el.appendChild(label);
       list.appendChild(el);
     });
   }
@@ -2337,12 +2556,55 @@ function updateCachedPlayerOverview(overview) {
 
   cachedPlayerOverview = {
     playerName: overview.playerName || 'Pilgrim',
-    lifePath: overview.lifePath || 'Unchosen',
+    lifePath: resolveDisplayedLifePath(overview),
+    classKey: overview.classKey || '',
     inventory: overview.inventory || [],
-    coin: overview.coin ?? 0
+    storedItems: overview.storedItems || [],
+    partyStoredItems: overview.partyStoredItems || [],
+    coin: overview.coin ?? 0,
+    purseText: overview.purseText || '',
+    sceneId: overview.sceneId || currentSceneId || ''
   };
 
   return cachedPlayerOverview;
+}
+
+
+async function performInventoryAction(item, action) {
+  if (!sessionId) return;
+
+  if (action === 'delete') {
+    const ok = window.confirm(`Are you sure you want to delete '${item}'? This cannot be undone.`);
+    if (!ok) return;
+  }
+
+  if (action === 'stash') {
+    const ok = window.confirm(`Put away '${item}' in storage? (Priory or your owned home)`);
+    if (!ok) return;
+  }
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/inventory-action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, item })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      append([`ERROR: ${data.error || 'inventory action failed'}`]);
+      return;
+    }
+
+    append([data.message || 'Inventory updated.']);
+    updateCachedPlayerOverview(data);
+    if (cachedPlayerOverview) {
+      currentSceneId = data.sceneId || currentSceneId;
+      renderInventory(cachedPlayerOverview);
+    }
+  } catch {
+    append(['ERROR: Inventory action failed.']);
+  }
 }
 
 async function openInventory() {
@@ -2356,8 +2618,11 @@ async function openInventory() {
 
   const placeholder = cachedPlayerOverview || {
     playerName: 'Loading...',
-    lifePath: 'Unchosen',
+    lifePath: cachedPlayerOverview?.lifePath || 'Unchosen',
+    classKey: cachedPlayerOverview?.classKey || '',
     inventory: [],
+    storedItems: [],
+    partyStoredItems: [],
     coin: 0
   };
   renderInventory(placeholder);
@@ -2365,26 +2630,41 @@ async function openInventory() {
   try {
     await refreshPlayerOverview({ forceInventoryRender: true });
   } catch {
-    const line = await fetchInventoryTextLine();
-    if (line) {
-      const parsedItems = parseInventoryLine(line);
-      if (cachedPlayerOverview) {
-        cachedPlayerOverview.inventory = parsedItems;
-        renderInventory(cachedPlayerOverview);
-      } else {
-        renderInventory({
-          playerName: 'Pilgrim',
-          lifePath: 'Unchosen',
-          inventory: parsedItems,
-          coin: 0
-        });
-      }
-      append(['Inventory overview refresh failed; used inventory command snapshot.']);
-      return;
-    }
-
-    append(['ERROR: Could not refresh inventory from server.']);
+    // Fall through to hidden inventory command fallback below.
   }
+
+  const hiddenInventory = await runHiddenCommand('inventory');
+  const inventoryLine = Array.isArray(hiddenInventory?.lines)
+    ? hiddenInventory.lines.find(line => String(line).includes('Purse:') && String(line).includes('Inventory:'))
+    : null;
+
+  if (!inventoryLine) {
+    append(['ERROR: Could not refresh inventory from server.']);
+    return;
+  }
+
+  const parsed = parseInventorySnapshot(inventoryLine);
+  if (!parsed) {
+    append(['ERROR: Could not parse inventory output.']);
+    return;
+  }
+
+  const liveOverview = cachedPlayerOverview || {
+    playerName: parsed.playerName,
+    lifePath: 'Unchosen',
+    classKey: '',
+    inventory: [],
+    coin: 0,
+    purseText: parsed.purseText
+  };
+
+  liveOverview.playerName = parsed.playerName;
+  liveOverview.inventory = parsed.inventory;
+  liveOverview.purseText = parsed.purseText;
+  liveOverview.lifePath = resolveDisplayedLifePath(liveOverview);
+  cachedPlayerOverview = liveOverview;
+
+  renderInventory(cachedPlayerOverview);
 }
 
 function closeInventory() {
@@ -2437,14 +2717,8 @@ async function refreshQuestJournal() {
   }
 
   try {
-    const res = await fetch(`/api/sessions/${sessionId}/command`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: 'quests' })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      totalQuestCount = Number(data.totalQuestCount) || totalQuestCount || 0;
+    const data = await runHiddenCommand('quests');
+    if (data) {
       renderQuestJournal(data.lines || []);
     }
   } catch {
@@ -2465,6 +2739,7 @@ async function endSessionAndReturnToStart() {
   stopChatPolling();
   stopChatStreaming();
   stopOverviewPolling();
+  stopOnlineUsersPolling();
   chatState.global = [];
   chatState.party = [];
   chatState.seen = { global: new Set(), party: new Set() };
@@ -2651,6 +2926,7 @@ document.getElementById('chatChannel').addEventListener('change', () => {
   renderChat();
   refreshChat().catch(() => {});
   startChatStreaming();
+  startOnlineUsersPolling();
 });
 document.getElementById('chatInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {

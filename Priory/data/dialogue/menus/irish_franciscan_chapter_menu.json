@@ -1,0 +1,38 @@
+{
+  "id": "irish_franciscan_chapter_menu",
+  "prompt": "Franciscan ministers in Ireland seek your counsel: how can strict poverty, preaching, and obedience to bishops remain united amid political pressure?",
+  "options": [
+    {
+      "text": "Back disciplined poverty with clear obedience to bishop and papal teaching.",
+      "response": "You uphold Franciscan poverty as evangelical witness within full Catholic obedience.",
+      "startQuest": "irish_franciscan_chapter_major",
+      "completeQuest": "irish_franciscan_storm_relief",
+      "prioryDelta": {
+        "piety": 2,
+        "relations": 1
+      }
+    },
+    {
+      "text": "Send trained confessors and preachers to storm-struck ports immediately.",
+      "response": "You dispatch confessors and preachers, pairing doctrine with corporal works of mercy.",
+      "script": "minigame:queue",
+      "startQuest": "irish_franciscan_chapter_major",
+      "completeQuest": "irish_franciscan_storm_relief",
+      "prioryDelta": {
+        "morale": 2,
+        "piety": 1
+      }
+    },
+    {
+      "text": "Draft a chapter memorandum citing Bonaventure on unity and charity.",
+      "response": "Your memorandum ties reform to charity, fraternity, and sacramental fidelity.",
+      "script": "minigame:dispute",
+      "startQuest": "irish_franciscan_chapter_major",
+      "completeQuest": "irish_franciscan_storm_relief",
+      "virtueDelta": {
+        "prudence": 1,
+        "charity": 1
+      }
+    }
+  ]
+}

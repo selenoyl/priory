@@ -1,6 +1,7 @@
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -69,6 +70,7 @@ public static class ServerHost
         var sessions = new ConcurrentDictionary<string, SessionState>(StringComparer.OrdinalIgnoreCase);
         var accountRepo = new AccountRepository(saveRoot);
         var chatChannels = new ConcurrentDictionary<string, ChatChannelState>(StringComparer.OrdinalIgnoreCase);
+        var chatStore = new ChatTranscriptStore(Path.Combine(saveRoot, "chat"));
         var chatBroadcaster = new ChatBroadcaster();
 
         var buildId = Environment.GetEnvironmentVariable("PRIORY_BUILD_ID") ?? "dev";
@@ -76,6 +78,47 @@ public static class ServerHost
 
         app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
         app.MapGet("/version", () => Results.Ok(new { buildId, startedAtUtc }));
+        app.MapGet("/api/sessions/{id}/online-users", (string id) =>
+        {
+            if (!sessions.TryGetValue(id, out var current))
+                return Results.NotFound(new { error = "session not found" });
+
+            current.SyncPartyCodeFromEngine();
+            var currentPartyCode = (current.LastKnownPartyCode ?? string.Empty).Trim().ToUpperInvariant();
+
+            var cutoff = DateTimeOffset.UtcNow.AddMinutes(-20);
+            var activeSessions = sessions.Values
+                .Where(x => x.LastActivityUtc >= cutoff)
+                .ToArray();
+
+            foreach (var session in activeSessions)
+                session.SyncPartyCodeFromEngine();
+
+            var activeNames = activeSessions
+                .Select(x => x.Engine.GetPlayerOverview().PlayerName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var partyNames = string.IsNullOrWhiteSpace(currentPartyCode)
+                ? Array.Empty<string>()
+                : activeSessions
+                    .Where(x => string.Equals((x.LastKnownPartyCode ?? string.Empty).Trim(), currentPartyCode, StringComparison.OrdinalIgnoreCase))
+                    .Select(x => x.Engine.GetPlayerOverview().PlayerName)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+            return Results.Ok(new
+            {
+                count = activeNames.Length,
+                users = activeNames,
+                partyCount = partyNames.Length,
+                partyUsers = partyNames
+            });
+        });
         app.MapGet("/api/music-tracks", () =>
         {
             var tracks = musicRoots
@@ -183,6 +226,7 @@ public static class ServerHost
 
             var sessionId = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12));
             var createdSession = new SessionState(engine, requestedUsername, authMode);
+            createdSession.Touch();
             createdSession.SyncPartyCodeFromEngine();
             sessions[sessionId] = createdSession;
 
@@ -204,6 +248,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var input = request.Input ?? string.Empty;
             var output = session.Engine.HandleInput(input);
             var lines = output.Lines;
@@ -252,6 +297,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var output = session.Engine.ResolveTimed(request.Choice);
             session.LastTimedPrompt = output.TimedPrompt;
             session.SyncPartyCodeFromEngine();
@@ -275,10 +321,59 @@ public static class ServerHost
             {
                 playerName = overview.PlayerName,
                 lifePath = overview.LifePath,
+                classKey = overview.ClassKey,
                 inventory = overview.Inventory,
+                storedItems = overview.StoredItems,
+                partyStoredItems = overview.PartyStoredItems,
                 coin = overview.Coin,
                 sceneId = overview.SceneId,
                 totalQuestCount = story.Quests.Count
+            });
+        });
+
+
+        app.MapPost("/api/sessions/{id}/inventory-action", (string id, InventoryActionRequest request) =>
+        {
+            if (!sessions.TryGetValue(id, out var session))
+                return Results.NotFound(new { error = "session not found" });
+
+            session.Touch();
+            var item = (request.Item ?? "").Trim();
+            var action = (request.Action ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(item))
+                return Results.BadRequest(new { error = "item is required" });
+
+            bool ok;
+            string message;
+            switch (action)
+            {
+                case "delete":
+                    ok = session.Engine.TryDeleteInventoryItem(item, out message);
+                    break;
+                case "stash":
+                    ok = session.Engine.TryStashInventoryItem(item, out message);
+                    break;
+                default:
+                    ok = false;
+                    message = "Unknown inventory action.";
+                    break;
+            }
+
+            if (!ok)
+                return Results.BadRequest(new { error = message });
+
+            var overview = session.Engine.GetPlayerOverview();
+            return Results.Ok(new
+            {
+                message,
+                inventory = overview.Inventory,
+                storedItems = overview.StoredItems,
+                partyStoredItems = overview.PartyStoredItems,
+                lifePath = overview.LifePath,
+                classKey = overview.ClassKey,
+                coin = overview.Coin,
+                playerName = overview.PlayerName,
+                sceneId = overview.SceneId
             });
         });
 
@@ -319,12 +414,13 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var normalizedChannel = NormalizeChatChannel(channel);
             if (!TryResolveChatScopeKey(session, normalizedChannel, partyCode, out var scopeKey, out var canPost, out var reason))
                 return Results.BadRequest(new { error = reason ?? "chat unavailable" });
 
-            var state = chatChannels.GetOrAdd(scopeKey, _ => new ChatChannelState());
-            var requestedLimit = Math.Clamp(limit ?? 200, 1, 500);
+            var state = GetOrCreateChatChannel(chatChannels, chatStore, scopeKey);
+            var requestedLimit = Math.Clamp(limit ?? 5000, 1, 5000);
             var messages = since.HasValue
                 ? state.GetMessagesSince(DateTimeOffset.FromUnixTimeMilliseconds(Math.Max(0, since.Value)))
                 : state.GetRecent(requestedLimit);
@@ -353,6 +449,7 @@ public static class ServerHost
             if (!sessions.TryGetValue(id, out var session))
                 return Results.NotFound(new { error = "session not found" });
 
+            session.Touch();
             var normalizedChannel = NormalizeChatChannel(request.Channel);
             if (!TryResolveChatScopeKey(session, normalizedChannel, request.PartyCode, out var scopeKey, out var canPost, out var reason))
                 return Results.BadRequest(new { error = reason ?? "chat unavailable" });
@@ -367,7 +464,7 @@ public static class ServerHost
                 text = text[..180];
 
             var author = session.Engine.GetPlayerOverview().PlayerName;
-            var state = chatChannels.GetOrAdd(scopeKey, _ => new ChatChannelState());
+            var state = GetOrCreateChatChannel(chatChannels, chatStore, scopeKey);
             var message = new ChatMessage(DateTimeOffset.UtcNow, author, text);
             state.Add(message);
             chatBroadcaster.Publish(scopeKey, message);
@@ -390,6 +487,7 @@ public static class ServerHost
                 return;
             }
 
+            session.Touch();
             var normalizedChannel = NormalizeChatChannel(channel);
             if (!TryResolveChatScopeKey(session, normalizedChannel, partyCode, out var scopeKey, out _, out var reason))
             {
@@ -402,7 +500,7 @@ public static class ServerHost
             context.Response.Headers.Append("X-Accel-Buffering", "no");
             context.Response.ContentType = "text/event-stream";
 
-            var state = chatChannels.GetOrAdd(scopeKey, _ => new ChatChannelState());
+            var state = GetOrCreateChatChannel(chatChannels, chatStore, scopeKey);
             foreach (var message in state.GetRecent(100))
             {
                 var payload = JsonSerializer.Serialize(new
@@ -447,6 +545,16 @@ public static class ServerHost
         });
 
         return app.RunAsync();
+    }
+
+
+    private static ChatChannelState GetOrCreateChatChannel(ConcurrentDictionary<string, ChatChannelState> channels, ChatTranscriptStore store, string scopeKey)
+    {
+        return channels.GetOrAdd(scopeKey, key =>
+        {
+            var seeded = store.Load(key);
+            return new ChatChannelState(seeded, snapshot => store.Save(key, snapshot));
+        });
     }
 
     private static string NormalizeChatChannel(string? channel)
@@ -533,6 +641,10 @@ public static class ServerHost
         public string AuthMode { get; } = authMode;
         public TimedPrompt? LastTimedPrompt { get; set; }
         public string? LastKnownPartyCode { get; private set; }
+        public DateTimeOffset LastActivityUtc { get; private set; } = DateTimeOffset.UtcNow;
+
+        public void Touch()
+            => LastActivityUtc = DateTimeOffset.UtcNow;
 
         public void SyncPartyCodeFromEngine()
         {
@@ -560,6 +672,12 @@ public sealed class CommandRequest
     public string? Input { get; set; }
 }
 
+public sealed class InventoryActionRequest
+{
+    public string? Action { get; set; }
+    public string? Item { get; set; }
+}
+
 public sealed class TimedRequest
 {
     public int Choice { get; set; }
@@ -578,7 +696,16 @@ internal sealed class ChatChannelState
 {
     private readonly object _gate = new();
     private readonly List<ChatMessage> _messages = new();
+    private readonly Action<IReadOnlyList<ChatMessage>>? _persistSnapshot;
     private static readonly TimeSpan MessageTtl = TimeSpan.FromHours(24);
+
+    public ChatChannelState(IEnumerable<ChatMessage>? seed = null, Action<IReadOnlyList<ChatMessage>>? persistSnapshot = null)
+    {
+        _persistSnapshot = persistSnapshot;
+        if (seed is not null)
+            _messages.AddRange(seed.OrderBy(x => x.TimestampUtc));
+        PruneExpiredLocked(DateTimeOffset.UtcNow);
+    }
 
     public void Add(ChatMessage message)
     {
@@ -586,6 +713,7 @@ internal sealed class ChatChannelState
         {
             PruneExpiredLocked(DateTimeOffset.UtcNow);
             _messages.Add(message);
+            PersistLocked();
         }
     }
 
@@ -608,7 +736,7 @@ internal sealed class ChatChannelState
             PruneExpiredLocked(DateTimeOffset.UtcNow);
             if (_messages.Count == 0) return [];
 
-            var take = Math.Clamp(limit, 1, 500);
+            var take = Math.Clamp(limit, 1, 5000);
             return _messages
                 .OrderByDescending(x => x.TimestampUtc)
                 .Take(take)
@@ -620,7 +748,64 @@ internal sealed class ChatChannelState
     private void PruneExpiredLocked(DateTimeOffset nowUtc)
     {
         var cutoff = nowUtc - MessageTtl;
-        _messages.RemoveAll(x => x.TimestampUtc < cutoff);
+        var removed = _messages.RemoveAll(x => x.TimestampUtc < cutoff);
+        if (removed > 0)
+            PersistLocked();
+    }
+
+    private void PersistLocked()
+        => _persistSnapshot?.Invoke(_messages.ToList());
+}
+
+internal sealed class ChatTranscriptStore
+{
+    private readonly string _root;
+    private readonly object _ioGate = new();
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    public ChatTranscriptStore(string root)
+    {
+        _root = root;
+        Directory.CreateDirectory(_root);
+    }
+
+    public List<ChatMessage> Load(string scopeKey)
+    {
+        var path = PathFor(scopeKey);
+        if (!File.Exists(path)) return [];
+
+        lock (_ioGate)
+        {
+            try
+            {
+                var json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<List<ChatMessage>>(json, JsonOptions) ?? [];
+            }
+            catch
+            {
+                return [];
+            }
+        }
+    }
+
+    public void Save(string scopeKey, IReadOnlyList<ChatMessage> messages)
+    {
+        var path = PathFor(scopeKey);
+        var tmp = path + ".tmp";
+
+        lock (_ioGate)
+        {
+            Directory.CreateDirectory(_root);
+            var json = JsonSerializer.Serialize(messages, JsonOptions);
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, path, true);
+        }
+    }
+
+    private string PathFor(string scopeKey)
+    {
+        var hash = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(scopeKey))).ToLowerInvariant();
+        return Path.Combine(_root, hash + ".json");
     }
 }
 

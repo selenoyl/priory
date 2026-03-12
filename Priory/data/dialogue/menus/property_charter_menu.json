@@ -1,0 +1,34 @@
+{
+  "id": "property_charter_menu",
+  "prompt": "Guild clerks present available charters. Marriage requires an established home.",
+  "options": [
+    {
+      "text": "Review owned properties and active home.",
+      "script": "property:list"
+    },
+    {
+      "text": "Buy Blackpine Cottage (120d).",
+      "script": "property:buy:home_blackpine_cottage"
+    },
+    {
+      "text": "Buy Galway Townhouse (220d).",
+      "script": "property:buy:home_galway_townhouse"
+    },
+    {
+      "text": "Buy Cologne Rowhouse (260d).",
+      "script": "property:buy:home_cologne_rowhouse"
+    },
+    {
+      "text": "Set active home: Blackpine Cottage.",
+      "script": "property:sethome:home_blackpine_cottage"
+    },
+    {
+      "text": "Set active home: Galway Townhouse.",
+      "script": "property:sethome:home_galway_townhouse"
+    },
+    {
+      "text": "Set active home: Cologne Rowhouse.",
+      "script": "property:sethome:home_cologne_rowhouse"
+    }
+  ]
+}

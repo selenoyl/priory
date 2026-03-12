@@ -24,6 +24,7 @@ public sealed class GameState
     public string SceneId { get; set; } = "intro";
     public string? PreviousSceneId { get; set; }
     public string? LifePath { get; set; }
+    public string? SelectedClassKey { get; set; }
     public int Coin { get; set; }
     public int Day { get; set; } = 1;
     public TimeSegment Segment { get; set; } = TimeSegment.Prime;
@@ -48,6 +49,7 @@ public sealed class GameState
     public Dictionary<string, int> Counters { get; set; } = new();
     public HashSet<string> Flags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> Inventory { get; set; } = new();
+    public List<string> StoredItems { get; set; } = new();
     public HashSet<string> ActiveQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> CompletedQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string? ActiveMenuId { get; set; }
@@ -78,6 +80,7 @@ public sealed class PartyState
     public HashSet<string> CompletedQuests { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<LoreEvent> LoreEvents { get; set; } = new();
     public Dictionary<string, PartyMemberProfile> Members { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, List<string>> StoredItemsByMember { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class LoreEvent

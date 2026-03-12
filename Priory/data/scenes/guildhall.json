@@ -7,6 +7,9 @@
   },
   "actions": {
     "masters": "menu:guild_masters_menu",
-    "charter": "menu:guild_charter_menu"
+    "charter": "menu:guild_charter_menu",
+    "property charters": "menu:property_charter_menu",
+    "disputation bench": "script:minigame:dispute",
+    "scrivener tray": "menu:field_pouch_menu"
   }
 }

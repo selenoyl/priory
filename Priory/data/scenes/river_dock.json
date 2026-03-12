@@ -1,6 +1,6 @@
 {
   "id": "river_dock",
-  "text": "At the York river dock, wool, grain, and rumor unload together. Prices change by the hour.",
+  "text": "At the York river dock, wool, grain, and report unload together. Prices change by the hour.",
   "exits": {
     "outskirts": "york_outskirts",
     "road": "york_road"
@@ -8,6 +8,8 @@
   "actions": {
     "factors": "menu:river_factors_menu",
     "cargo": "menu:river_cargo_menu",
-    "fishing": "script:minigame:fishing"
+    "fishing": "script:minigame:fishing",
+    "cargo tallies": "script:minigame:ledger",
+    "slipway cache": "menu:field_pouch_menu"
   }
 }

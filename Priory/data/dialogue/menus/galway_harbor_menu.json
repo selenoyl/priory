@@ -1,0 +1,34 @@
+{
+  "id": "galway_harbor_menu",
+  "prompt": "Galway's guilds dispute who must feed displaced families after a storm. The friars ask Saint Catherine for a ruling and aid.",
+  "options": [
+    {
+      "text": "Fund a shared alms rota supervised by friars and guild reeves.",
+      "response": "A common rota eases resentment and keeps aid transparent.",
+      "script": "minigame:alms",
+      "startQuest": "irish_franciscan_storm_relief",
+      "prioryDelta": {
+        "morale": 2,
+        "relations": 2
+      }
+    },
+    {
+      "text": "Require each guild to post its own relief account publicly.",
+      "response": "Public accounting curbs abuse but slows immediate relief.",
+      "script": "minigame:ledger",
+      "virtueDelta": {
+        "justice": 1
+      },
+      "startQuest": "irish_franciscan_storm_relief"
+    },
+    {
+      "text": "Prioritize sacramental life first, then ration aid through parish networks.",
+      "response": "You insist that confession, Mass, and ordered charity stand together in crisis.",
+      "script": "minigame:sermon",
+      "prioryDelta": {
+        "piety": 2
+      },
+      "startQuest": "irish_franciscan_storm_relief"
+    }
+  ]
+}
