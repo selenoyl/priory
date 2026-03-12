@@ -919,14 +919,31 @@
 
     .inventory-item-actions button {
       font-size: 0.72em;
-      padding: 2px 6px;
+      padding: 2px 7px;
       min-width: auto;
+      min-height: 24px;
+      margin: 0;
+      border: 1px solid color-mix(in srgb, var(--neon) 18%, #474747 82%);
+      background: color-mix(in srgb, var(--neon) 4%, #232323 96%);
+      color: #dddddd;
+      box-shadow: none;
+      transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+    }
+
+    .inventory-item-actions button:hover,
+    .inventory-item-actions button:focus-visible {
+      border-color: color-mix(in srgb, var(--neon) 30%, #5a5a5a 70%);
+      background: color-mix(in srgb, var(--neon) 10%, #2a2a2a 90%);
+      color: #f2f2f2;
+      outline: none;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--neon) 14%, transparent);
     }
 
     .inventory-item-actions .delete-btn {
       width: 22px;
       padding: 2px 0;
       font-weight: 700;
+      line-height: 1;
     }
 
     .inventory-controls {
@@ -2485,6 +2502,13 @@ function resolveDisplayedLifePath(overview) {
   return 'Unchosen';
 }
 
+function canStashAtOverviewLocation(overview) {
+  if (!overview) return false;
+  if (typeof overview.canStashHere === 'boolean') return overview.canStashHere;
+  const sceneId = String(overview.sceneId || currentSceneId || '').toLowerCase();
+  return sceneId.startsWith('priory_');
+}
+
 function renderInventory(overview) {
   const list = document.getElementById('inventoryList');
   const meta = document.getElementById('inventoryMeta');
@@ -2496,6 +2520,7 @@ function renderInventory(overview) {
   classLabel.textContent = `Life Path: ${displayLifePath}`;
   const purse = overview.purseText ? ` • Purse: ${overview.purseText}` : ` • Coin: ${overview.coin ?? 0}`;
   meta.textContent = `${overview.playerName || 'Pilgrim'}${purse}`;
+  const allowStash = canStashAtOverviewLocation(overview);
 
   list.innerHTML = '';
   if (!overview.inventory || overview.inventory.length === 0) {
@@ -2512,11 +2537,13 @@ function renderInventory(overview) {
       const actions = document.createElement('div');
       actions.className = 'inventory-item-actions';
 
-      const stashBtn = document.createElement('button');
-      stashBtn.textContent = 'Store';
-      stashBtn.title = 'Put away in priory chest or your owned home chest';
-      stashBtn.onclick = () => performInventoryAction(item, 'stash');
-      actions.appendChild(stashBtn);
+      if (allowStash) {
+        const stashBtn = document.createElement('button');
+        stashBtn.textContent = 'Store';
+        stashBtn.title = 'Put away in priory chest or your owned home chest';
+        stashBtn.onclick = () => performInventoryAction(item, 'stash');
+        actions.appendChild(stashBtn);
+      }
 
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
@@ -2563,7 +2590,8 @@ function updateCachedPlayerOverview(overview) {
     partyStoredItems: overview.partyStoredItems || [],
     coin: overview.coin ?? 0,
     purseText: overview.purseText || '',
-    sceneId: overview.sceneId || currentSceneId || ''
+    sceneId: overview.sceneId || currentSceneId || '',
+    canStashHere: typeof overview.canStashHere === 'boolean' ? overview.canStashHere : undefined
   };
 
   return cachedPlayerOverview;

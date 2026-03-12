@@ -327,6 +327,7 @@ public static class ServerHost
                 partyStoredItems = overview.PartyStoredItems,
                 coin = overview.Coin,
                 sceneId = overview.SceneId,
+                canStashHere = overview.CanStashHere,
                 totalQuestCount = story.Quests.Count
             });
         });
@@ -373,7 +374,8 @@ public static class ServerHost
                 classKey = overview.ClassKey,
                 coin = overview.Coin,
                 playerName = overview.PlayerName,
-                sceneId = overview.SceneId
+                sceneId = overview.SceneId,
+                canStashHere = overview.CanStashHere
             });
         });
 
