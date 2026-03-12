@@ -14,7 +14,7 @@
       }
     },
     {
-      "text": "Challenge a slanderous rumor publicly.",
+      "text": "Challenge a slanderous report publicly.",
       "response": "You defend Saint Catherine in front of the room.",
       "prioryDelta": {
         "morale": 1,

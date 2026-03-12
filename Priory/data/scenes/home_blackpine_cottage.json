@@ -1,0 +1,13 @@
+{
+  "id": "home_blackpine_cottage",
+  "text": "Your Blackpine cottage stands just beyond the green, with whitewashed walls, a small icon corner, and a chest for household records.",
+  "exits": {
+    "green": "village_green",
+    "guildhall": "guildhall"
+  },
+  "actions": {
+    "hearth": "You bank the coals and whisper evening prayers.",
+    "ledger": "You review household accounts and alms obligations.",
+    "furnishings": "menu:home_furnishings_menu"
+  }
+}

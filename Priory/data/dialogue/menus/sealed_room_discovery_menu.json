@@ -4,7 +4,7 @@
   "options": [
     {
       "text": "Tell the prior immediately and seal records.",
-      "response": "Authority is respected; rumor is delayed.",
+      "response": "Authority is respected; report is delayed.",
       "virtueDelta": { "prudence": 1, "justice": 1 },
       "startQuest": "sealed_room"
     },
@@ -17,7 +17,7 @@
     },
     {
       "text": "Confront the accused privately.",
-      "response": "He breaks into tears, and truth grows more complicated than rumor.",
+      "response": "He breaks into tears, and truth grows more complicated than report.",
       "virtueDelta": { "temperance": 1 },
       "startQuest": "sealed_room"
     }

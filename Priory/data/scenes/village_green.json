@@ -14,7 +14,7 @@
   },
   "actions": {
     "petitioners": "menu:petition_menu",
-    "rumors": "You hear of tax pressure, a missing cart, and new pamphlets in York.",
+    "reports": "You hear of tax pressure, a missing cart, and new pamphlets in York.",
     "orders": "menu:orders_overview_menu",
     "hanse factor": "menu:hanse_packet_menu",
     "harbor rates": "menu:currency_exchange_menu"

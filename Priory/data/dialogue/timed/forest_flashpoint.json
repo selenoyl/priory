@@ -29,7 +29,7 @@
     },
     {
       "text": "Signal retreat and preserve manpower.",
-      "response": "No one is hurt, but rumors of weakness spread.",
+      "response": "No one is hurt, but reports of weakness spread.",
       "virtueDelta": {
         "prudence": 1
       },

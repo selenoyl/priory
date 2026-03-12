@@ -1,0 +1,30 @@
+{
+  "id": "vocation_reflection_menu",
+  "prompt": "In the dormitory silence you examine your conscience: are you discerning priestly celibacy, or serving as a lay Dominican helper who may marry?",
+  "options": [
+    {
+      "text": "I will discern priestly vocation and embrace celibacy.",
+      "response": "You resolve, before God, to keep celibacy while you discern priestly life.",
+      "setFlags": [
+        "vocation_celibate"
+      ],
+      "clearFlags": [
+        "vocation_lay"
+      ]
+    },
+    {
+      "text": "I will serve as a lay Dominican helper and may pursue holy marriage.",
+      "response": "You resolve to serve the priory as a lay helper; marriage remains a lawful vocation.",
+      "setFlags": [
+        "vocation_lay"
+      ],
+      "clearFlags": [
+        "vocation_celibate"
+      ]
+    },
+    {
+      "text": "I am not ready. I will pray and decide later.",
+      "response": "You postpone a final decision, asking for light and honesty."
+    }
+  ]
+}

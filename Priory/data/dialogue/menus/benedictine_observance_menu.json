@@ -1,0 +1,34 @@
+{
+  "id": "benedictine_observance_menu",
+  "prompt": "Continental Benedictines ask whether their reform should emphasize enclosure discipline, scholarship, or expanded hospitality to refugees and pilgrims.",
+  "options": [
+    {
+      "text": "Reaffirm the Rule: ora et labora with stable enclosure and common office.",
+      "response": "You defend the Benedictine balance of prayer, work, and communal obedience.",
+      "startQuest": "benedictine_rule_and_reform",
+      "prioryDelta": {
+        "piety": 2
+      }
+    },
+    {
+      "text": "Strengthen schools and scriptoria to form clergy against doctrinal confusion.",
+      "response": "You support careful study under orthodox masters and chapter oversight.",
+      "script": "minigame:ledger",
+      "startQuest": "benedictine_rule_and_reform",
+      "prioryDelta": {
+        "relations": 1,
+        "treasury": 1
+      }
+    },
+    {
+      "text": "Open guesthouses wider while keeping discipline under the abbot.",
+      "response": "You expand hospitality without relaxing monastic governance.",
+      "script": "minigame:alms",
+      "startQuest": "benedictine_rule_and_reform",
+      "prioryDelta": {
+        "morale": 2,
+        "security": -1
+      }
+    }
+  ]
+}

@@ -7,7 +7,7 @@
     "forest track": "forest_edge"
   },
   "actions": {
-    "lake": "Thin ice rims the water; fishers whisper that catches fail when rumors grow loud.",
+    "lake": "Thin ice rims the water; fishers whisper that catches fail when reports grow loud.",
     "hermit trail": "A narrow path circles toward a weathered hut above the shore.",
     "winter stores": "menu:winter_council_menu"
   }

@@ -1,0 +1,11 @@
+{
+  "id": "kilkenny_franciscan_house",
+  "text": "At Kilkenny's Franciscan house, brothers preach penance and mercy among the poor, insisting that evangelical poverty must still serve sacramental unity and obedience.",
+  "exits": {
+    "galway": "galway_quay"
+  },
+  "actions": {
+    "chapter": "menu:irish_franciscan_chapter_menu",
+    "relief rota": "menu:galway_harbor_menu"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "home_cologne_rowhouse",
+  "text": "Your Cologne rowhouse is modest but refined, near scribes and river traders, with room for guests, prayer, and honest hospitality.",
+  "exits": {
+    "studium": "cologne_studium",
+    "kontor": "lubeck_kontor"
+  },
+  "actions": {
+    "study table": "You organize letters, receipts, and spiritual notes.",
+    "guest room": "Fresh linen is kept ready for pilgrims or clergy in transit.",
+    "furnishings": "menu:home_furnishings_menu"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "home_galway_townhouse",
+  "text": "A narrow Galway townhouse overlooks a lane of fishmongers and chandlers, yet keeps a quiet upper room for prayer and study.",
+  "exits": {
+    "quay": "galway_quay",
+    "crossing": "irish_sea_crossing"
+  },
+  "actions": {
+    "window": "You watch the harbor and note weather, tides, and charity queues.",
+    "chapel shelf": "A crucifix and psalter remind you that domestic life is still ordered toward God.",
+    "furnishings": "menu:home_furnishings_menu"
+  }
+}

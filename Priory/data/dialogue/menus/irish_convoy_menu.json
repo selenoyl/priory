@@ -1,0 +1,27 @@
+{
+  "id": "irish_convoy_menu",
+  "prompt": "A shipmaster offers guarded passage toward Ireland if you help settle freight and charity allotments before departure.",
+  "options": [
+    {
+      "text": "Audit the cargo list and reserve grain for friary kitchens.",
+      "response": "You reconcile cargo marks and reserve sacks for the friars' poor table.",
+      "script": "minigame:ledger",
+      "prioryDelta": {
+        "relations": 1,
+        "treasury": 1
+      }
+    },
+    {
+      "text": "Negotiate convoy watches with sailors and armed escorts.",
+      "response": "You establish watches at Matins and Compline, reducing theft and panic.",
+      "script": "minigame:investigate",
+      "virtueDelta": {
+        "fortitude": 1
+      }
+    },
+    {
+      "text": "Decline and keep to local waters.",
+      "response": "You stay in Yorkshire, postponing western obligations."
+    }
+  ]
+}
