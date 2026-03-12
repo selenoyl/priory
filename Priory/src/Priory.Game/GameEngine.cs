@@ -29,6 +29,33 @@ public sealed class GameEngine
         ["steward"] = ["reeve", "bursar"]
     };
 
+    private sealed record NpcDef(string Id, string Name, string Profession, PlayerSex? CourtsSex, string[] RouteScenes, int ProgressIntervalDays, string[] Hints, string[] HomeDialog);
+
+    private static readonly Dictionary<string, NpcDef> NpcDefs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["alisoun"] = new("alisoun", "Alisoun Weaver", "Wool Mercer", PlayerSex.Male,
+            ["village_green", "village_inn", "market_lane", "guildhall"],
+            7,
+            ["Catch me tomorrow night at the inn, and I'll show you the new Flemish bolts.", "If you come by after Vespers, I may be at the guildhall weighing cloth."],
+            ["Alisoun smooths a folded cloth runner and asks how your rounds at Saint Catherine have gone.", "She reads aloud a household account and asks your counsel before setting a market price.", "She lights a small lamp before an image of Our Lady and thanks God for a peaceful evening.", "She asks whether the priory infirmary needs linen and sets aside a bolt quietly.", "She speaks of apprentices and insists justice in wages is part of Christian witness.", "She asks you to pray Compline together before discussing the next market week.", "She wonders if a widow's son can be placed honestly in the guild books.", "She asks whether your sermons still emphasize restitution and truthful weights.", "She points out careful mending done by hand and laughs softly at her own perfectionism.", "She asks if travelers need spare cloaks and marks a chest for alms cloth.", "She reads a letter from her aunt and asks your advice about a disputed dowry.", "She asks whether your conscience is clear after today's judgments.", "She prepares simple soup and asks about the poor at the gate.", "She asks if you can visit neighbors who lost work after the storm.", "She recounts old village stories and asks what hope means in hard seasons.", "She reminds you to keep Sunday free from needless bargaining.", "She asks your thoughts on training girls to read account marks fairly.", "She wonders how to balance prudence with generosity this month.", "She tidies the icon corner and asks for a short evening psalm.", "She asks where the household should give alms next."]),
+        ["tomas"] = new("tomas", "Tomas Ferryman", "Quay Pilot", PlayerSex.Female,
+            ["ravenscar_quay", "village_inn", "river_dock", "village_green"],
+            4,
+            ["Find me next market day by the quay cranes; I hear everything first there.", "Tomorrow after Compline I'll be at the inn mending rope and talking tides."],
+            ["Tomas oils a knot-board and quietly recounts the day's river hazards.", "He offers warm broth and asks whether your conscience is at peace after today's judgments.", "He spreads a hand-drawn chart and asks you to bless tomorrow's crossing.", "He checks lantern wicks and asks whether ferry widows received enough aid.", "He asks how to discipline deckhands without humiliating them publicly.", "He asks you to read a psalm before dawn departure.", "He compares toll records and asks if one collector is cheating the poor.", "He asks whether to hire a young orphan as apprentice pilot.", "He asks your counsel on patience when merchants shout at delays.", "He lays out dried fish and rye bread and thanks God for plain meals.", "He asks how to keep feast days holy in a busy harbor schedule.", "He asks if your latest ruling strained village peace.", "He asks about storm repairs and whether timber costs are fair.", "He asks if he should forgive an old rival who lied about cargo.", "He asks you to bless a new rope before first use.", "He wonders whether to sponsor a pilgrim crossing at his own expense.", "He says routine honesty is harder than heroic moments.", "He asks where to direct next week's alms chest.", "He asks about setting family prayer times despite irregular tides.", "He quietly thanks you for remaining steady in public disputes."]),
+        ["ciaran"] = new("ciaran", "Brother Ciaran", "Franciscan Preacher", null,
+            ["kilkenny_franciscan_house", "galway_quay", "kilkenny_franciscan_house"],
+            7,
+            ["I'll preach near the quay this Friday; come hear the poor men's petitions.", "If storms hold, find me in Kilkenny at chapter."],
+            ["Brother Ciaran is not a spouse candidate."]),
+        ["ysabel"] = new("ysabel", "Ysabel Notary", "Guild Notary", null,
+            ["cologne_studium", "lubeck_kontor", "guildhall"],
+            7,
+            ["Come next week to the kontor; the contracts will have changed by then.", "When the chapter letters arrive, you may find me in Cologne again."],
+            ["Ysabel is not a spouse candidate."])
+    };
+
+
     private readonly StoryData _story;
     private readonly string _saveRoot;
     private readonly SaveCodec _codec;
@@ -66,6 +93,7 @@ public sealed class GameEngine
         IsEnded = false;
         _state.SceneId = "intro";
         _state.ActiveMenuId = "life_path";
+        _state.SelectedClassKey = null;
         RegisterPartyMember();
         PersistParty();
         foreach (var line in OpeningLoreBrief())
@@ -127,7 +155,48 @@ public sealed class GameEngine
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return new PlayerOverview(_state.PlayerName, _state.Sex, _state.LifePath, inventory, _state.Coin, _state.SceneId);
+        var classKey = ResolveClassKeyForOverview();
+        var lifePath = ResolveLifePathNameForOverview(classKey);
+        return new PlayerOverview(_state.PlayerName, _state.Sex, lifePath, classKey, inventory, _state.Coin, _state.SceneId);
+    }
+
+
+    private string? ResolveClassKeyForOverview()
+    {
+        if (!string.IsNullOrWhiteSpace(_state.SelectedClassKey))
+            return _state.SelectedClassKey;
+
+        if (!string.IsNullOrWhiteSpace(_state.LifePath))
+        {
+            var byName = _story.LifePaths
+                .FirstOrDefault(kv => string.Equals(kv.Value.Name, _state.LifePath, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(byName.Key))
+                return byName.Key;
+        }
+
+        // Legacy save fallback: infer class from starter item overlap.
+        var best = _story.LifePaths
+            .Select(kv => new
+            {
+                Key = kv.Key,
+                Score = kv.Value.StarterItems.Count(item => _state.Inventory.Contains(item, StringComparer.OrdinalIgnoreCase))
+            })
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+
+        return best is { Score: > 0 } ? best.Key : null;
+    }
+
+    private string? ResolveLifePathNameForOverview(string? classKey)
+    {
+        if (!string.IsNullOrWhiteSpace(_state.LifePath))
+            return _state.LifePath;
+
+        if (!string.IsNullOrWhiteSpace(classKey) && _story.LifePaths.TryGetValue(classKey, out var lp))
+            return lp.Name;
+
+        return null;
     }
 
     public string GetInventorySnapshotLine()
@@ -155,6 +224,13 @@ public sealed class GameEngine
             if (_state.Sex == PlayerSex.Unknown)
                 _state.Sex = PlayerSex.Male;
             EnsureRebuildState();
+            if (string.IsNullOrWhiteSpace(_state.SelectedClassKey) || string.IsNullOrWhiteSpace(_state.LifePath))
+            {
+                _state.ActiveMenuId = "life_path";
+                _state.LifePath = null;
+                _state.SelectedClassKey = null;
+            }
+
             if (!string.IsNullOrWhiteSpace(_state.PartyId) && _partyRepo.TryLoadById(_state.PartyId, out var shared) && shared is not null)
             {
                 _partyState = shared;
@@ -175,6 +251,8 @@ public sealed class GameEngine
             Console.WriteLine(CurrentScene().Text);
             Console.WriteLine(ExitLine(CurrentScene()));
             Console.WriteLine(TimeLine());
+            if (string.Equals(_state.ActiveMenuId, "life_path", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine("System update notice: your previous save is missing a stored class, so you need to select your class again.");
             if (_state.ActiveMenuId is { } menuId && _story.Menus.TryGetValue(menuId, out var menu))
                 Console.WriteLine(RenderMenu(menu));
             return true;
@@ -207,6 +285,7 @@ public sealed class GameEngine
                 break;
             case Intent.Look:
                 lines.Add(CurrentScene().Text);
+        MaybeAddHomeFlavor(lines);
                 lines.Add(ExitLine(CurrentScene()));
                 AppendPartyLoreRumors(lines);
                 lines.Add(TimeLine());
@@ -359,7 +438,7 @@ public sealed class GameEngine
     {
         yield return "England, Anno Domini 1403.";
         yield return "You arrive in Blackpine, Yorkshire, where abbey bells, guild quarrels, and lordly levies shape every day.";
-        yield return "Rebellion scars still mark the kingdom, roads are thick with rumor, and hungry winters test both faith and law.";
+        yield return "Rebellion scars still mark the kingdom, roads are full of conflicting reports, and hungry winters test both faith and law.";
         yield return "Saint Catherine Priory endures, but its walls are weary: stores run thin, roofs strain, and rival factions watch your choices.";
         yield return "Here, mercy must be practical, piety must survive politics, and every promise has a cost.";
         yield return "";
@@ -458,7 +537,9 @@ public sealed class GameEngine
 
         if (menu.Id == "life_path")
         {
-            ApplyLifePath(available[index].i, lines);
+            var orderedKeys = _story.LifePaths.Keys.OrderBy(x => x).ToList();
+            if (available[index].i >= 0 && available[index].i < orderedKeys.Count)
+                ApplyLifePathByKey(orderedKeys[available[index].i], lines);
             PersistParty();
             return new(lines, MaybeActivateTimed(lines));
         }
@@ -491,21 +572,31 @@ public sealed class GameEngine
             .Where(x => IsOptionAvailable(x.option, out _, $"menu:{menu.Id}:{x.index}"))
             .ToList();
 
-        var displayToIndex = available.ToDictionary(x => LifePathFlavor(x.option.Text), x => x.index);
-        if (!TryResolveKey(displayToIndex.Keys, target, out var resolved) || resolved is null)
+        var orderedKeys = _story.LifePaths.Keys.OrderBy(x => x).ToList();
+        var displayToKey = available
+            .Where(x => x.index >= 0 && x.index < orderedKeys.Count)
+            .ToDictionary(x => LifePathFlavor(x.option.Text), x => orderedKeys[x.index]);
+        if (!TryResolveKey(displayToKey.Keys, target, out var resolved) || resolved is null)
             return false;
 
-        ApplyLifePath(displayToIndex[resolved], lines);
+        ApplyLifePathByKey(displayToKey[resolved], lines);
         return true;
     }
 
     private void ApplyLifePath(int index, List<string> lines)
     {
         var key = _story.LifePaths.Keys.OrderBy(x => x).ElementAt(index);
-        var lp = _story.LifePaths[key];
+        ApplyLifePathByKey(key, lines);
+    }
+
+    private void ApplyLifePathByKey(string key, List<string> lines)
+    {
+        if (!_story.LifePaths.TryGetValue(key, out var lp))
+            return;
 
         _state.ActiveMenuId = null;
         _state.LifePath = lp.Name;
+        _state.SelectedClassKey = key;
 
         foreach (var kv in lp.VirtueDelta)
             AddVirtue(kv.Key, kv.Value);
@@ -525,6 +616,7 @@ public sealed class GameEngine
 
         _state.SceneId = "house";
         lines.Add(CurrentScene().Text);
+        MaybeAddHomeFlavor(lines);
         AppendPartyLoreRumors(lines);
 
         if (!string.IsNullOrWhiteSpace(lp.IntroMenu))
@@ -784,6 +876,18 @@ public sealed class GameEngine
         if (script.StartsWith("chance:"))
         {
             ResolveChanceEvent(script[7..], lines);
+            return;
+        }
+
+        if (script.StartsWith("property:"))
+        {
+            ResolvePropertyScript(script[9..], lines);
+            return;
+        }
+
+        if (script.StartsWith("furnishing:"))
+        {
+            ResolveFurnishingScript(script[11..], lines);
             return;
         }
 
@@ -1577,7 +1681,7 @@ public sealed class GameEngine
         {
             SetWorldFlag("arc_longwinter");
             StartQuest("winter_mercy", lines);
-            lines.Add("A hard winter sets in. Supplies tighten, rumors multiply, and Saint Catherine must decide what to protect first.");
+            lines.Add("A hard winter sets in. Supplies tighten, anxieties multiply, and Saint Catherine must decide what to protect first.");
             return;
         }
 
@@ -1600,7 +1704,7 @@ public sealed class GameEngine
         {
             SetWorldFlag("arc_bohemia");
             StartQuest("bohemian_spark", lines);
-            lines.Add("Travelers carry troubling reports from Prague: controversy now rides rumor roads faster than carts.");
+            lines.Add("Travelers carry troubling reports from Prague: controversy now travels faster than carts.");
             return;
         }
 
@@ -1645,6 +1749,7 @@ public sealed class GameEngine
         {
             _state.SceneId = sceneId;
             lines.Add(CurrentScene().Text);
+        MaybeAddHomeFlavor(lines);
             lines.Add(ExitLine(CurrentScene()));
             AddContextTip(lines);
         }
@@ -1762,6 +1867,30 @@ public sealed class GameEngine
         _state.CompletedQuests.Add(questId);
         if (_story.Quests.TryGetValue(questId, out var q))
             lines.Add($"[Quest Completed] {q.Title}");
+
+        MaybeGrantQuestMemento(questId, lines);
+    }
+
+    private void MaybeGrantQuestMemento(string questId, List<string> lines)
+    {
+        var rewards = new Dictionary<string, (string id, string name, string blurb)>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["irish_franciscan_storm_relief"] = ("knick_shell_lantern", "Galway Shell Lantern", "a pierced brass lamp gifted by Galway friars after relief work"),
+            ["irish_franciscan_chapter_major"] = ("knick_bonaventure_roll", "Bonaventure Citation Roll", "a carefully copied Franciscan chapter roll bound in blue thread"),
+            ["benedictine_rule_and_reform"] = ("knick_benedict_rule_board", "Rule of Saint Benedict Plaque", "a carved oak plaque inscribed with Ora et Labora"),
+            ["orders_concord"] = ("knick_orders_banner", "Orders Concord Banner", "a small woven banner marking Dominican-Franciscan cooperation")
+        };
+
+        if (!rewards.TryGetValue(questId, out var reward))
+            return;
+
+        var flag = $"home_decor:{reward.id}";
+        if (_state.Flags.Contains(flag))
+            return;
+
+        _state.Flags.Add(flag);
+        lines.Add($"Household memento gained: {reward.name} ({reward.blurb}).");
+        lines.Add("This memento can be displayed from your home furnishings menu.");
     }
 
     private string QuestLog()
@@ -2081,7 +2210,7 @@ public sealed class GameEngine
     private void PlaySermonCraft(List<string> lines)
     {
         lines.Add("You draft theme, tone, and rebuke level, then deliver before a divided crowd.");
-        if (!_state.Inventory.Contains("Rumor (intel)")) _state.Inventory.Add("Rumor (intel)");
+        if (!_state.Inventory.Contains("Field report (intel)")) _state.Inventory.Add("Field report (intel)");
         if (!_state.Inventory.Contains("Donation Coin")) _state.Inventory.Add("Donation Coin");
         var score = _rng.Next(1, 21) + Virtue("faith") + Virtue("humility");
         if (score >= 17)
@@ -2111,7 +2240,7 @@ public sealed class GameEngine
         }
         else
         {
-            lines.Add("You prevent the worst, but tempers flare and rumors linger.");
+            lines.Add("You prevent the worst, but tempers flare and grievances linger.");
         }
         AdvanceTime(lines, 1);
     }
@@ -2160,7 +2289,7 @@ public sealed class GameEngine
 
     private void PlayNightWatchPatrol(List<string> lines)
     {
-        lines.Add("You walk dark corridors and gate paths, checking locks before rumor picks a culprit.");
+        lines.Add("You walk dark corridors and gate paths, checking locks before fear picks a culprit.");
         if (!_state.Inventory.Contains("Recovered Tools")) _state.Inventory.Add("Recovered Tools");
         if (!_state.Inventory.Contains("Key Ring")) _state.Inventory.Add("Key Ring");
         if (!_state.Inventory.Contains("Contraband")) _state.Inventory.Add("Contraband");
@@ -2455,6 +2584,19 @@ public sealed class GameEngine
             return;
         }
 
+        if (NormalizePhrase(target) is "home" or "my home")
+        {
+            var activeHome = GetActiveHomeSceneId();
+            if (string.IsNullOrWhiteSpace(activeHome))
+            {
+                lines.Add("You do not yet hold property suitable as a household home.");
+                return;
+            }
+            MoveToScene(activeHome, lines);
+            AdvanceTime(lines, 1);
+            return;
+        }
+
         if (!TryResolveKey(exits.Keys, target, out var resolvedExit))
         {
             lines.Add("You cannot travel there from this location.");
@@ -2477,6 +2619,9 @@ public sealed class GameEngine
             lines.Add("Be specific. Example: 'talk friar' or 'examine cart'.");
             return;
         }
+
+        if (TryHandleNpcConversation(parsed, target, lines))
+            return;
 
         if (!TryResolveKey(actions.Keys, target, out var resolvedAction))
         {
@@ -2873,6 +3018,436 @@ public sealed class GameEngine
             : $"{shillings}s {pence}d ({pennies}d)";
     }
 
+
+    private bool TryHandleNpcConversation(ParsedInput parsed, string target, List<string> lines)
+    {
+        var normalized = NormalizePhrase(target);
+        foreach (var npc in NpcDefs.Values)
+        {
+            var npcKey = NormalizePhrase(npc.Id);
+            var npcName = NormalizePhrase(npc.Name);
+            if (!(normalized == npcKey || normalized.StartsWith(npcKey + " ") || normalized == npcName || normalized.StartsWith(npcName + " ") || normalized == "spouse"))
+                continue;
+
+            if (!IsNpcAvailableInCurrentScene(npc) || (!string.Equals(CurrentScene().Id, GetActiveHomeSceneId(), StringComparison.OrdinalIgnoreCase) || GetFlagValue("spouse") != npc.Id) && !string.Equals(CurrentNpcScene(npc), CurrentScene().Id, StringComparison.OrdinalIgnoreCase))
+            {
+                lines.Add($"{npc.Name} is not here right now.");
+                lines.Add($"Hint: {npc.Hints[_rng.Next(npc.Hints.Length)]}");
+                return true;
+            }
+
+            if (parsed.Intent != Intent.Talk && parsed.Intent != Intent.Examine)
+            {
+                lines.Add($"You should talk with {npc.Name}, not handle them as an object.");
+                return true;
+            }
+
+            var topic = normalized;
+            if (topic.StartsWith(npcKey + " ")) topic = topic[(npcKey.Length + 1)..];
+            if (topic.StartsWith(npcName + " ")) topic = topic[(npcName.Length + 1)..];
+            if (topic == npcKey || topic == npcName || topic == "spouse") topic = "";
+
+            RunNpcConversation(npc, topic, lines);
+            AdvanceTime(lines, 1);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsNpcAvailableInCurrentScene(NpcDef npc)
+    {
+        var spouse = GetFlagValue("spouse");
+        if (string.IsNullOrWhiteSpace(spouse)) return true;
+        return !string.Equals(spouse, npc.Id, StringComparison.OrdinalIgnoreCase) || string.Equals(CurrentScene().Id, GetActiveHomeSceneId(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string CurrentNpcScene(NpcDef npc)
+    {
+        if (!HasFlag($"npc_met:{npc.Id}"))
+            return npc.RouteScenes[0];
+
+        var firstMetDay = GetCounter($"npc_first_met_day:{npc.Id}");
+        var elapsed = Math.Max(0, _state.Day - Math.Max(1, firstMetDay));
+        var index = Math.Min(npc.RouteScenes.Length - 1, elapsed / Math.Max(1, npc.ProgressIntervalDays));
+        return npc.RouteScenes[index];
+    }
+
+
+    private int NpcStage(NpcDef npc)
+    {
+        if (!HasFlag($"npc_met:{npc.Id}")) return 0;
+        var firstMetDay = GetCounter($"npc_first_met_day:{npc.Id}");
+        var elapsed = Math.Max(0, _state.Day - Math.Max(1, firstMetDay));
+        return Math.Min(6, elapsed / Math.Max(1, npc.ProgressIntervalDays));
+    }
+
+    private void RunNpcConversation(NpcDef npc, string topic, List<string> lines)
+    {
+        if (!HasFlag($"npc_met:{npc.Id}"))
+        {
+            SetFlag($"npc_met:{npc.Id}");
+            _state.Counters[$"npc_first_met_day:{npc.Id}"] = _state.Day;
+            AddRelationship(npc.Id, 6);
+            lines.Add($"{npc.Name} ({npc.Profession}) listens carefully as you introduce yourself.");
+            lines.Add($"A new acquaintance begins. Relationship {RelationshipBar(npc.Id)}.");
+            lines.Add($"Hint: {npc.Hints[_rng.Next(npc.Hints.Length)]}");
+            return;
+        }
+
+        lines.Add($"{npc.Name} ({npc.Profession})");
+        lines.Add($"Relationship {RelationshipBar(npc.Id)}");
+
+        if (string.Equals(GetFlagValue("spouse"), npc.Id, StringComparison.OrdinalIgnoreCase) && string.Equals(CurrentScene().Id, GetActiveHomeSceneId(), StringComparison.OrdinalIgnoreCase))
+        {
+            lines.Add(npc.HomeDialog[_rng.Next(npc.HomeDialog.Length)]);
+            lines.Add("You can discuss: prayer rule | household accounts | neighbors | future plans.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(topic))
+        {
+            lines.Add("You can ask about: work | reports | faith | schedule | friendship | courtship | propose.");
+            lines.Add($"Hint: {npc.Hints[_rng.Next(npc.Hints.Length)]}");
+            return;
+        }
+
+        var stage = NpcStage(npc);
+        switch (topic)
+        {
+            case "work":
+                lines.Add(npc.Id switch
+                {
+                    "alisoun" => stage switch
+                    {
+                        0 or 1 => "Alisoun details wool grades, fair wages, and the temptation to shave measures in lean weeks.",
+                        2 or 3 => "Alisoun now mediates guild pressure and widow petitions, asking you to keep contracts honest.",
+                        _ => "Alisoun shares long-term plans for apprentices, dowries, and alms quotas after difficult seasons."
+                    },
+                    "tomas" => stage switch
+                    {
+                        0 or 1 => "Tomas reviews tides, tolls, and who can safely cross before dark.",
+                        2 or 3 => "Tomas now coordinates rescue watches and freight fairness after recent storms.",
+                        _ => "Tomas speaks of mentoring younger pilots so no village is cut off in winter."
+                    },
+                    "ciaran" => "Brother Ciaran explains relief preaching circuits and careful cooperation with parish clergy.",
+                    _ => "Ysabel walks through difficult clauses where justice and mercy must be balanced precisely."
+                });
+                AddRelationship(npc.Id, 2);
+                break;
+            case "reports":
+                lines.Add(stage >= 3
+                    ? "They mention that old factions have shifted; promises made weeks ago now carry new costs."
+                    : "They share verified updates, urging you to test every claim against charity and truth.");
+                AddRelationship(npc.Id, 1);
+                break;
+            case "faith":
+                lines.Add(npc.Id is "ciaran"
+                    ? "Brother Ciaran insists reform must remain sacramental, obedient, and merciful to the poor."
+                    : "You discuss confession, restitution, and perseverance in ordinary duties rather than dramatic gestures.");
+                AddRelationship(npc.Id, 2);
+                break;
+            case "schedule":
+                lines.Add($"{npc.Name} says: '{npc.Hints[_rng.Next(npc.Hints.Length)]}'");
+                lines.Add(stage >= 2 ? "They also note that circumstances may shift in four to seven days depending on unrest." : "For now they remain in their default rounds until your next conversation.");
+                break;
+            case "friendship":
+                lines.Add("You speak frankly about burdens and hopes; trust grows through consistency over many days.");
+                lines.Add(stage >= 4 ? "Your earlier choices are remembered, and the friendship now carries real obligations." : "Small fidelity now may open deeper trust later.");
+                AddRelationship(npc.Id, 3);
+                break;
+            case "courtship":
+                ResolveCourtship(npc, lines);
+                break;
+            case "propose":
+                ResolveProposal(npc, lines);
+                break;
+            default:
+                lines.Add("The conversation branches around your prior choices and reputation; some doors quietly open while others close.");
+                AddRelationship(npc.Id, 1);
+                break;
+        }
+    }
+
+    private void ResolveCourtship(NpcDef npc, List<string> lines)
+    {
+        if (npc.CourtsSex is null)
+        {
+            lines.Add("This person is not available for courtship.");
+            return;
+        }
+
+        if (_state.Sex != npc.CourtsSex)
+        {
+            lines.Add("You esteem one another as allies, but not as a courtship match.");
+            return;
+        }
+
+        if (HasFlag("vocation_celibate"))
+        {
+            lines.Add("You reaffirm your intention toward priestly celibacy, so courtship would be dishonest.");
+            return;
+        }
+
+        if (!HasFlag("vocation_lay"))
+        {
+            lines.Add("You should settle your vocation first. Rest in the priory dormitory and choose your interior path.");
+            return;
+        }
+
+        AddRelationship(npc.Id, 4);
+        lines.Add("Courtship advances slowly through prayer, family honor, and public reputation over many meetings.");
+        lines.Add($"Current relationship: {RelationshipBar(npc.Id)}");
+        if (GetRelationship(npc.Id) >= 70)
+            lines.Add("A deeper promise may be possible in time, if you can provide a stable Christian household.");
+    }
+
+    private void ResolveProposal(NpcDef npc, List<string> lines)
+    {
+        if (npc.CourtsSex is null || _state.Sex != npc.CourtsSex)
+        {
+            lines.Add("Marriage is not available with this NPC.");
+            return;
+        }
+
+        if (HasFlag("vocation_celibate"))
+        {
+            lines.Add("You chose priestly celibacy; you cannot make a marriage proposal.");
+            return;
+        }
+
+        if (GetRelationship(npc.Id) < 100)
+        {
+            lines.Add("Proposal requires relationship 100/100 earned over time.");
+            lines.Add($"Current: {RelationshipBar(npc.Id)}");
+            return;
+        }
+
+        var home = GetActiveHomeSceneId();
+        if (string.IsNullOrWhiteSpace(home))
+        {
+            lines.Add("Proposal requires a home. Purchase property first through guild charters.");
+            return;
+        }
+
+        SetFlag($"married:{npc.Id}");
+        SetScopedFlag("spouse", npc.Id);
+        lines.Add($"{npc.Name} accepts your proposal after prayer and counsel. You begin household life at your active home.");
+    }
+
+    private int GetRelationship(string npcId) => Math.Clamp(GetCounter($"rel:{npcId}"), 0, 100);
+
+    private void AddRelationship(string npcId, int delta)
+        => _state.Counters[$"rel:{npcId}"] = Math.Clamp(GetRelationship(npcId) + delta, 0, 100);
+
+    private string RelationshipBar(string npcId)
+    {
+        var value = GetRelationship(npcId);
+        var bars = Math.Clamp((int)Math.Round(value / 10.0), 0, 10);
+        return $"[{new string('█', bars)}{new string('░', 10 - bars)}] {value}/100";
+    }
+
+    private bool HasFlag(string flag) => _state.Flags.Contains(flag);
+
+    private void SetFlag(string flag)
+    {
+        _state.Flags.Add(flag);
+    }
+
+    private void SetScopedFlag(string prefix, string value)
+    {
+        _state.Flags.RemoveWhere(x => x.StartsWith(prefix + ":", StringComparison.OrdinalIgnoreCase));
+        _state.Flags.Add($"{prefix}:{value}");
+    }
+
+    private string? GetFlagValue(string prefix)
+    {
+        var match = _state.Flags.FirstOrDefault(x => x.StartsWith(prefix + ":", StringComparison.OrdinalIgnoreCase));
+        return match is null ? null : match[(prefix.Length + 1)..];
+    }
+
+    private int GetCounter(string key) => _state.Counters.GetValueOrDefault(key);
+
+    private string? GetActiveHomeSceneId() => GetFlagValue("active_home");
+
+    private IEnumerable<string> OwnedHomes()
+        => _state.Flags.Where(x => x.StartsWith("home_owned:", StringComparison.OrdinalIgnoreCase)).Select(x => x[11..]);
+
+    private void ResolvePropertyScript(string scriptArgs, List<string> lines)
+    {
+        var parts = scriptArgs.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0) return;
+
+        if (parts[0].Equals("list", StringComparison.OrdinalIgnoreCase))
+        {
+            var homes = OwnedHomes().ToList();
+            lines.Add(homes.Count == 0 ? "You own no properties." : "Owned properties: " + string.Join(", ", homes));
+            var active = GetActiveHomeSceneId();
+            lines.Add(string.IsNullOrWhiteSpace(active) ? "No active home selected." : $"Active home: {active}");
+            return;
+        }
+
+        if (parts.Length < 2)
+            return;
+
+        var homeId = parts[1];
+        var key = $"home_owned:{homeId}";
+        switch (parts[0].ToLowerInvariant())
+        {
+            case "buy":
+            {
+                var prices = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["home_blackpine_cottage"] = 120,
+                    ["home_galway_townhouse"] = 220,
+                    ["home_cologne_rowhouse"] = 260
+                };
+                if (!prices.TryGetValue(homeId, out var price))
+                {
+                    lines.Add("Unknown property charter.");
+                    return;
+                }
+                if (HasFlag(key))
+                {
+                    lines.Add("You already own this property.");
+                    return;
+                }
+                if (_state.Coin < price)
+                {
+                    lines.Add($"You need {price}d to purchase this property.");
+                    return;
+                }
+                _state.Coin -= price;
+                _state.Flags.Add(key);
+                if (string.IsNullOrWhiteSpace(GetActiveHomeSceneId()))
+                    SetScopedFlag("active_home", homeId);
+                lines.Add($"Charter sealed: {homeId}. Remaining purse: {FormatSterling(_state.Coin)}.");
+                if (!string.IsNullOrWhiteSpace(GetFlagValue("spouse")))
+                    lines.Add("Your spouse will reside at your active home.");
+                return;
+            }
+            case "sethome":
+                if (!HasFlag(key))
+                {
+                    lines.Add("You must own this property first.");
+                    return;
+                }
+                _state.Flags.RemoveWhere(x => x.StartsWith("active_home:", StringComparison.OrdinalIgnoreCase));
+                SetScopedFlag("active_home", homeId);
+                lines.Add($"Active home set to {homeId}. Household records updated.");
+                return;
+        }
+    }
+
+    private void ResolveFurnishingScript(string scriptArgs, List<string> lines)
+    {
+        if (!CurrentScene().Id.StartsWith("home_", StringComparison.OrdinalIgnoreCase))
+        {
+            lines.Add("You can only manage furnishings while at home.");
+            return;
+        }
+
+        var args = scriptArgs.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (args.Length == 0) return;
+
+        var catalog = FurnishingCatalog();
+        switch (args[0].ToLowerInvariant())
+        {
+            case "list":
+            {
+                var owned = OwnedDecorItems().ToList();
+                lines.Add(owned.Count == 0 ? "Your home is still sparse." : "Home furnishings: " + string.Join(", ", owned));
+                lines.Add("Tip: major quests can grant knick-knacks automatically.");
+                return;
+            }
+            case "buy":
+            {
+                if (args.Length < 2 || !catalog.TryGetValue(args[1], out var decor))
+                {
+                    lines.Add("Unknown furnishing selection.");
+                    return;
+                }
+
+                var flag = $"home_decor:{decor.id}";
+                if (_state.Flags.Contains(flag))
+                {
+                    lines.Add("You already own this furnishing.");
+                    return;
+                }
+
+                if (_state.Coin < decor.price)
+                {
+                    lines.Add($"Not enough coin. Needed {decor.price}d.");
+                    return;
+                }
+
+                _state.Coin -= decor.price;
+                _state.Flags.Add(flag);
+                lines.Add($"Purchased: {decor.name}. {decor.desc}");
+                lines.Add($"Purse now: {FormatSterling(_state.Coin)}.");
+                return;
+            }
+        }
+    }
+
+    private Dictionary<string, (string id, string name, int price, string desc)> FurnishingCatalog()
+        => new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["rush_bench"] = ("rush_bench", "Rush-Woven Bench", 24, "A sturdy bench for guests and evening conversation."),
+            ["oak_iconshelf"] = ("oak_iconshelf", "Oak Icon Shelf", 42, "A carved shelf for crucifix, candles, and prayer cards."),
+            ["linen_hangings"] = ("linen_hangings", "Linen Wall Hangings", 36, "Dyed linens soften stone walls and keep winter damp at bay."),
+            ["herb_chest"] = ("herb_chest", "Herbal Cedar Chest", 31, "A cedar chest storing rosemary, mint, and medicine bundles."),
+            ["guest_table"] = ("guest_table", "Pilgrim Guest Table", 58, "A broad table for meals, letters, and parish counsel."),
+            ["hearth_tiles"] = ("hearth_tiles", "Glazed Hearth Tiles", 65, "Patterned tiles brighten your hearth and hold heat longer.")
+        };
+
+    private IEnumerable<string> OwnedDecorItems()
+    {
+        var catalog = FurnishingCatalog();
+        foreach (var flag in _state.Flags.Where(x => x.StartsWith("home_decor:", StringComparison.OrdinalIgnoreCase)))
+        {
+            var id = flag[11..];
+            if (catalog.Values.FirstOrDefault(x => x.id.Equals(id, StringComparison.OrdinalIgnoreCase)) is var match && !string.IsNullOrWhiteSpace(match.name))
+                yield return match.name;
+            else
+                yield return id.Replace('_', ' ');
+        }
+    }
+
+    private void MaybeAddHomeFlavor(List<string> lines)
+    {
+        var scene = CurrentScene().Id;
+        if (!scene.StartsWith("home_", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var flavor = scene switch
+        {
+            "home_blackpine_cottage" => new[]
+            {
+                "A peat fire warms the cottage; beeswax and fresh bread scent the room.",
+                "Rain taps the shutter while your household icon corner glows in lamplight.",
+                "A folded wool blanket and neatly stacked ledgers suggest patient domestic order."
+            },
+            "home_galway_townhouse" => new[]
+            {
+                "Harbor bells drift in through carved oak shutters and linen curtains.",
+                "Polished table boards hold a psalter, rosary, and market rolls tied in blue cord.",
+                "A small courtyard herb box perfumes the house with rosemary and mint."
+            },
+            _ => new[]
+            {
+                "The Rhine wind hums outside as candlelight reflects from carefully whitewashed walls.",
+                "A narrow shelf of devotional books and trade codices marks a disciplined home.",
+                "Your household chapel niche bears fresh flowers and a simple crucifix."
+            }
+        };
+
+        lines.Add(flavor[_rng.Next(flavor.Length)]);
+        var decor = OwnedDecorItems().Take(4).ToList();
+        if (decor.Count > 0)
+            lines.Add("Your household displays: " + string.Join(", ", decor) + ".");
+    }
+
     private string PrioryStatusLine() =>
         $"Priory - Food {_state.Priory["food"]}, Morale {_state.Priory["morale"]}, Piety {_state.Priory["piety"]}, Security {_state.Priory["security"]}, Relations {_state.Priory["relations"]}, Treasury {_state.Priory["treasury"]}";
 
@@ -2900,6 +3475,18 @@ public sealed class GameEngine
     private Dictionary<string, string> AvailableActions(SceneDef scene)
     {
         var actions = new Dictionary<string, string>(scene.Actions, StringComparer.OrdinalIgnoreCase);
+        foreach (var npc in NpcDefs.Values)
+        {
+            if (!IsNpcAvailableInCurrentScene(npc) || !string.Equals(scene.Id, CurrentNpcScene(npc), StringComparison.OrdinalIgnoreCase))
+                continue;
+            actions[npc.Id] = $"script:npc:{npc.Id}";
+            actions[npc.Name.ToLowerInvariant()] = $"script:npc:{npc.Id}";
+        }
+
+        var spouseId = GetFlagValue("spouse");
+        if (!string.IsNullOrWhiteSpace(spouseId) && string.Equals(scene.Id, GetActiveHomeSceneId(), StringComparison.OrdinalIgnoreCase) && NpcDefs.ContainsKey(spouseId))
+            actions["spouse"] = $"script:npc:{spouseId}";
+
         if (_state.Flags.Contains("event:cart_departed"))
         {
             _state.Flags.Remove("event:cart_departure_pending");
@@ -2994,6 +3581,7 @@ public sealed class GameEngine
         _state.PreviousSceneId = previousSceneId;
 
         lines.Add(CurrentScene().Text);
+        MaybeAddHomeFlavor(lines);
 
         if (CurrentScene().EnterMenu is { } menu)
         {
@@ -3074,4 +3662,4 @@ public sealed class GameEngine
 
 public sealed record PartyMemberOverview(string Name, string LastSceneId, DateTimeOffset LastSeenUtc, int SecondsSinceSeen);
 public sealed record PartyOverview(string PartyCode, List<PartyMemberOverview> Members);
-public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, List<string> Inventory, int Coin, string SceneId);
+public sealed record PlayerOverview(string PlayerName, PlayerSex Sex, string? LifePath, string? ClassKey, List<string> Inventory, int Coin, string SceneId);

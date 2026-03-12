@@ -6,7 +6,7 @@
     "courtyard": "priory_courtyard"
   },
   "actions": {
-    "rest": "You rest briefly, but the bell will call you again.",
+    "rest": "menu:vocation_reflection_menu",
     "journal": "You note the day: what was gained, what was neglected, what still threatens the priory."
   }
 }

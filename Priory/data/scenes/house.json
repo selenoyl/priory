@@ -1,6 +1,6 @@
 {
   "id": "house",
-  "text": "Your father's house is poor but orderly: rushlight, worn psalter, and patched cloak. Rumor says Saint Catherine seeks disciplined men for rebuilding and mercy-work.",
+  "text": "Your father's house is poor but orderly: rushlight, worn psalter, and patched cloak. Report says Saint Catherine seeks disciplined men for rebuilding and mercy-work.",
   "exits": {
     "outside": "lane"
   },

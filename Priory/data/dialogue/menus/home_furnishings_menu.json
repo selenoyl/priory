@@ -1,0 +1,34 @@
+{
+  "id": "home_furnishings_menu",
+  "prompt": "Choose furnishings for your active household or review mementos from major quests.",
+  "options": [
+    {
+      "text": "Review current furnishings and mementos.",
+      "script": "furnishing:list"
+    },
+    {
+      "text": "Buy Rush-Woven Bench (24d).",
+      "script": "furnishing:buy:rush_bench"
+    },
+    {
+      "text": "Buy Oak Icon Shelf (42d).",
+      "script": "furnishing:buy:oak_iconshelf"
+    },
+    {
+      "text": "Buy Linen Wall Hangings (36d).",
+      "script": "furnishing:buy:linen_hangings"
+    },
+    {
+      "text": "Buy Herbal Cedar Chest (31d).",
+      "script": "furnishing:buy:herb_chest"
+    },
+    {
+      "text": "Buy Pilgrim Guest Table (58d).",
+      "script": "furnishing:buy:guest_table"
+    },
+    {
+      "text": "Buy Glazed Hearth Tiles (65d).",
+      "script": "furnishing:buy:hearth_tiles"
+    }
+  ]
+}

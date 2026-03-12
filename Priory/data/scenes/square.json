@@ -13,7 +13,7 @@
   },
   "actions": {
     "friar": "menu:friar_menu",
-    "well": "A ring of villagers trades rumors beside the well.",
+    "well": "A ring of villagers trades reports beside the well.",
     "cart": "timed:catch_cart",
     "road": "The northern road to Saint Catherine lies beyond the market, open even when no cart is available."
   }

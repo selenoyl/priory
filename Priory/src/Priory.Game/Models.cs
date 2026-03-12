@@ -24,6 +24,7 @@ public sealed class GameState
     public string SceneId { get; set; } = "intro";
     public string? PreviousSceneId { get; set; }
     public string? LifePath { get; set; }
+    public string? SelectedClassKey { get; set; }
     public int Coin { get; set; }
     public int Day { get; set; } = 1;
     public TimeSegment Segment { get; set; } = TimeSegment.Prime;
